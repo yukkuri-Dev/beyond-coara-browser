@@ -56,7 +56,7 @@
    - ライセンス: Apache License, Version 2.0  
    - 著作権: © The Android Open Source Project
 10. **Android SDKライセンス**: Android SDKに関する詳細なライセンス情報は、こちらで確認できます:  
-  [Android SDKライセンス情報](https://developer.android.com/studio#license)
+  [Android SDKライセンス情報]([https://developer.android.com/studio#license](https://developer.android.com/license))
 
 ## 商標通知
 11. **Android™** はGoogle LLCの商標です。
