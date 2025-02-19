@@ -1,8 +1,7 @@
 # CoaraBrowser
 
-Android の WebView を活用した軽量マルチタブ方式の
-Web ブラウザです。
-シンプルかつパワフルなブラウジング体験を提供します。
+- Android の WebView を活用した
+- 軽量マルチタブ方式の Web ブラウザです。
 
 ## 概要
 
