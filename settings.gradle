@@ -14,5 +14,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Cbrowser"
+rootProject.name = "coara-browser"
 include 'app'
