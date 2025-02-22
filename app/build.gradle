@@ -10,8 +10,8 @@ android {
     defaultConfig {
         minSdk = 24
         targetSdk = 30
-        versionCode = 79
-        versionName = "3.6"
+        versionCode = 83
+        versionName = "3.6.6"
         multiDexEnabled = true
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
     }
