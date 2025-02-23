@@ -127,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
     private final List<HistoryItem> historyItems = new ArrayList<>();
     private boolean darkModeEnabled = false;
     private static final String CHANNEL_ID = "download_channel";
-    private final List<WebView> webViews = new ArrayList<>();
+    private final ArrayList<WebView> webViews = new ArrayList<>();
     private int currentTabIndex = 0;
     private static final int MAX_TABS = 30;
     private final Map<WebView, Bitmap> webViewFavicons = new HashMap<>();
@@ -135,18 +135,20 @@ public class MainActivity extends AppCompatActivity {
     private final Map<WebView, String> originalUserAgents = new HashMap<>();
     private View customView = null;
     private WebChromeClient.CustomViewCallback customViewCallback = null;
-    private static final Pattern AD_URL_PATTERN = Pattern.compile(
-            "doubleclick\\.net|googlesyndication|adservice|adserver|adnxs|quantserve|scorecardresearch|exelator|rubiconproject|adroll|popads|propellerads|admob",
-            Pattern.CASE_INSENSITIVE);
     private static final int MAX_HISTORY_SIZE = 100;
     private TextView tabCountTextView;
     private ImageView copyButton;
-    private final ExecutorService backgroundExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService backgroundExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private boolean basicAuthEnabled = false;
-    private static final List<WebView> webViewPool = new ArrayList<>();
+    private boolean defaultLoadsImagesAutomatically;
+    private boolean defaultLoadsImagesAutomaticallyInitialized = false;
+    private WebView preloadedWebView = null;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WebView.setDataDirectorySuffix("MainActivity");
+        }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -168,15 +170,13 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        loadBookmarks();
+        loadHistory();
+        if (!historyItems.isEmpty()) {
+            currentHistoryIndex = historyItems.size() - 1;
+        }
 
-        backgroundExecutor.execute(() -> {
-            loadBookmarks();
-            loadHistory();
-            if (!historyItems.isEmpty()) {
-                currentHistoryIndex = historyItems.size() - 1;
-            }
-            initializePersistentFavicons();
-        });
+        initializePersistentFavicons();
 
         urlEditText = findViewById(R.id.urlEditText);
         urlEditText.setImeOptions(EditorInfo.IME_ACTION_GO);
@@ -187,19 +187,17 @@ public class MainActivity extends AppCompatActivity {
         webViewContainer = findViewById(R.id.webViewContainer);
         tabCountTextView = findViewById(R.id.tabCountTextView);
         tabCountTextView.setOnClickListener(v -> showTabsDialog());
-        
-
         if (pref.contains(KEY_TABS)) {
             loadTabsState();
             if (webViews.isEmpty()) {
-                WebView initialWebView = obtainWebView();
+                WebView initialWebView = createNewWebView();
                 webViews.add(initialWebView);
                 currentTabIndex = 0;
                 webViewContainer.addView(initialWebView);
                 initialWebView.loadUrl(START_PAGE);
             }
         } else {
-            WebView initialWebView = obtainWebView();
+            WebView initialWebView = createNewWebView();
             webViews.add(initialWebView);
             currentTabIndex = 0;
             webViewContainer.addView(initialWebView);
@@ -207,9 +205,15 @@ public class MainActivity extends AppCompatActivity {
         }
         updateTabCount();
 
+        preInitializeWebView();
+
+        if (!defaultLoadsImagesAutomaticallyInitialized && !webViews.isEmpty()) {
+            defaultLoadsImagesAutomatically = webViews.get(0).getSettings().getLoadsImagesAutomatically();
+            defaultLoadsImagesAutomaticallyInitialized = true;
+        }
+
         btnGo.setVisibility(View.GONE);
 
-        
         copyButton = new ImageView(this);
         copyButton.setImageResource(R.drawable.ic_copy);
         copyButton.setAlpha(0.5f);
@@ -285,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
 
         btnNewTab.setOnClickListener(v -> createNewTab());
 
-    
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -311,38 +314,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-    
-        backgroundExecutor.execute(this::saveTabsState);
+        saveTabsState();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         backgroundExecutor.shutdown();
-        
-        for (WebView wv : webViews) {
-            recycleWebView(wv);
-        }
-        webViews.clear();
-    }
-
-    
-    private WebView obtainWebView() {
-        if (!webViewPool.isEmpty()) {
-            WebView reused = webViewPool.remove(0);
-            reused.clearHistory();
-            reused.clearCache(true);
-            return reused;
-        } else {
-            return createNewWebView();
-        }
-    }
-
-
-    private void recycleWebView(WebView wv) {
-        wv.stopLoading();
-        wv.loadUrl("about:blank");
-        webViewPool.add(wv);
     }
 
     private void saveTabsState() {
@@ -366,12 +344,12 @@ public class MainActivity extends AppCompatActivity {
             webViewContainer.removeAllViews();
             for (int i = 0; i < tabsArray.length(); i++) {
                 String url = tabsArray.getString(i);
-                WebView webView = obtainWebView();
+                WebView webView = createNewWebView();
                 webViews.add(webView);
                 webView.loadUrl((url != null && !url.isEmpty()) ? url : START_PAGE);
             }
             if (webViews.isEmpty()) {
-                WebView initialWebView = obtainWebView();
+                WebView initialWebView = createNewWebView();
                 webViews.add(initialWebView);
                 currentTabIndex = 0;
                 webViewContainer.addView(initialWebView);
@@ -382,7 +360,7 @@ public class MainActivity extends AppCompatActivity {
             }
         } catch (JSONException e) {
             e.printStackTrace();
-            WebView initialWebView = obtainWebView();
+            WebView initialWebView = createNewWebView();
             webViews.clear();
             webViews.add(initialWebView);
             currentTabIndex = 0;
@@ -393,18 +371,7 @@ public class MainActivity extends AppCompatActivity {
         updateTabCount();
     }
 
-    
-    private WebView createNewWebView() {
-        WebView webView = new WebView(this);
-        webView.setBackgroundColor(Color.WHITE);
-        webView.setLayoutParams(new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-
-        final WebSettings settings = webView.getSettings();
-        final String defaultUA = settings.getUserAgentString();
-        originalUserAgents.put(webView, defaultUA);
-        settings.setUserAgentString(defaultUA + APPEND_STR);
+    private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
@@ -416,27 +383,74 @@ public class MainActivity extends AppCompatActivity {
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
         settings.setTextZoom(100);
+        settings.setBlockNetworkImage(true);
         settings.setDisplayZoomControls(false);
         settings.setBuiltInZoomControls(false);
         settings.setSupportZoom(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            try {
-                Method setAppCacheEnabled = settings.getClass().getMethod("setAppCacheEnabled", boolean.class);
-                setAppCacheEnabled.invoke(settings, true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setOffscreenPreRaster(true);
-            settings.setSafeBrowsingEnabled(false);
         }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
             WebSettingsCompat.setForceDark(settings,
                     darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
         }
+    }
+
+    private void preInitializeWebView() {
+        runOnUiThread(() -> {
+            WebView webView = new WebView(MainActivity.this);
+            WebSettings settings = webView.getSettings();
+            applyOptimizedSettings(settings);
+            final String defaultUA = settings.getUserAgentString();
+            settings.setUserAgentString(defaultUA + APPEND_STR);
+            preloadedWebView = webView;
+        });
+    }
+    
+    private WebView createNewWebView() {
+        WebView webView;
+        if (preloadedWebView != null) {
+            webView = preloadedWebView;
+            preloadedWebView = null;
+            preInitializeWebView();
+        } else {
+            webView = new WebView(this);
+        }
+        webView.setBackgroundColor(Color.WHITE);
+        webView.setLayoutParams(new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+        WebSettings settings = webView.getSettings();
+        final String defaultUA = settings.getUserAgentString();
+        originalUserAgents.put(webView, defaultUA);
+        settings.setUserAgentString(defaultUA + APPEND_STR);
+        applyOptimizedSettings(settings);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            try {
+                Method setSaveFormData = settings.getClass().getMethod("setSaveFormData", boolean.class);
+                setSaveFormData.invoke(settings, false);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                Method setDatabaseEnabled = settings.getClass().getMethod("setDatabaseEnabled", boolean.class);
+                setDatabaseEnabled.invoke(settings, true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                Method setAppCacheEnabled = settings.getClass().getMethod("setAppCacheEnabled", boolean.class);
+                setAppCacheEnabled.invoke(settings, true);
+                Method setAppCachePath = settings.getClass().getMethod("setAppCachePath", String.class);
+                setAppCachePath.invoke(settings, getCacheDir().getAbsolutePath());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
 
         webView.setOnLongClickListener(v -> {
@@ -460,7 +474,7 @@ public class MainActivity extends AppCompatActivity {
                                     if (webViews.size() >= MAX_TABS) {
                                         Toast.makeText(MainActivity.this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
                                     } else {
-                                        WebView newWebView = obtainWebView();
+                                        WebView newWebView = createNewWebView();
                                         webViews.add(newWebView);
                                         updateTabCount();
                                         switchToTab(webViews.size() - 1);
@@ -489,7 +503,7 @@ public class MainActivity extends AppCompatActivity {
                                     if (webViews.size() >= MAX_TABS) {
                                         Toast.makeText(MainActivity.this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
                                     } else {
-                                        WebView newWebView = obtainWebView();
+                                        WebView newWebView = createNewWebView();
                                         webViews.add(newWebView);
                                         updateTabCount();
                                         switchToTab(webViews.size() - 1);
@@ -516,11 +530,6 @@ public class MainActivity extends AppCompatActivity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                final String url = request.getUrl().toString();
-                if (isAdUrl(url)) {
-                    return new WebResourceResponse("text/plain", "UTF-8",
-                            new ByteArrayInputStream("".getBytes()));
-                }
                 return super.shouldInterceptRequest(view, request);
             }
 
@@ -547,7 +556,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return false;
             }
-
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
@@ -565,7 +573,7 @@ public class MainActivity extends AppCompatActivity {
                             historyItems.remove(0);
                         }
                         currentHistoryIndex = historyItems.size() - 1;
-                        backgroundExecutor.execute(MainActivity.this::saveHistory);
+                        saveHistory();
                     }
                 } else {
                     isBackNavigation = false;
@@ -758,7 +766,6 @@ public class MainActivity extends AppCompatActivity {
         return "blob_download_" + timeStamp + ext;
     }
 
-
     private class BlobDownloadInterface {
         @android.webkit.JavascriptInterface
         public void onBlobDownloaded(String base64Data, String mimeType, String fileName) {
@@ -849,7 +856,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
             return;
         }
-        WebView newWebView = obtainWebView();
+        WebView newWebView = createNewWebView();
         webViews.add(newWebView);
         updateTabCount();
         switchToTab(webViews.size() - 1);
@@ -1194,9 +1201,9 @@ public class MainActivity extends AppCompatActivity {
         WebSettings settings = getCurrentWebView().getSettings();
         String originalUA = originalUserAgents.get(getCurrentWebView());
         if (originalUA != null) {
-            settings.setUserAgentString(originalUA + "Coarabrowser");
+            settings.setUserAgentString(originalUA + APPEND_STR);
         } else {
-            settings.setUserAgentString("Coarabrowser");
+            settings.setUserAgentString(APPEND_STR.trim());
         }
         Toast.makeText(MainActivity.this, "ガラケーUA解除", Toast.LENGTH_SHORT).show();
         reloadCurrentPage();
@@ -1217,10 +1224,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void disableimgunlock() {
         WebView webView = getCurrentWebView();
-        String currentUrl = webView.getUrl();
-        WebSettings oldSettings = webView.getSettings();
-        WebSettings newSettings = new WebView(this).getSettings();
-        oldSettings.setLoadsImagesAutomatically(newSettings.getLoadsImagesAutomatically());
+        webView.getSettings().setLoadsImagesAutomatically(defaultLoadsImagesAutomatically);
         webView.clearCache(true);
         webView.reload();
         Toast.makeText(MainActivity.this, "画像ブロック無効", Toast.LENGTH_SHORT).show();
@@ -1303,7 +1307,7 @@ public class MainActivity extends AppCompatActivity {
         EditText etUrl = editView.findViewById(R.id.editUrl);
         etTitle.setText(bm.getTitle());
         etUrl.setText(bm.getUrl());
-        new MaterialAlertDialogBuilder(this)
+        new MaterialAlertDialogBuilder(MainActivity.this)
                 .setTitle("ブックマーク")
                 .setView(editView)
                 .setPositiveButton("保存", (dialog, which) -> {
@@ -1433,12 +1437,7 @@ public class MainActivity extends AppCompatActivity {
         saveHistory();
     }
 
-    private boolean isAdUrl(String url) {
-        if (url == null || url.isEmpty())
-            return false;
-        Matcher matcher = AD_URL_PATTERN.matcher(url);
-        return matcher.find();
-    }
+    // 広告ブロック処理に関するメソッドは削除
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -1468,7 +1467,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    
     public static class Bookmark {
         private final String title;
         private final String url;
@@ -1491,7 +1489,6 @@ public class MainActivity extends AppCompatActivity {
         public String getUrl() { return url; }
     }
 
-    
     private class TabAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private static final int VIEW_TYPE_TAB = 0;
         private static final int VIEW_TYPE_ADD = 1;
@@ -1541,8 +1538,7 @@ public class MainActivity extends AppCompatActivity {
                 });
                 tabHolder.closeButton.setOnClickListener(v -> {
                     if (tabs.size() > 1) {
-                        WebView closingWebView = tabs.remove(position);
-                        closingWebView.destroy();
+                        tabs.remove(position);
                         notifyItemRemoved(position);
                         if (currentTabIndex >= tabs.size()) {
                             currentTabIndex = tabs.size() - 1;
@@ -1755,6 +1751,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
     private Bitmap fetchFavicon(String bookmarkUrl) {
         try {
             URL urlObj = new URL(bookmarkUrl);
@@ -1762,8 +1759,8 @@ public class MainActivity extends AppCompatActivity {
             String host = urlObj.getHost();
             String faviconUrl = protocol + "://" + host + "/favicon.ico";
             HttpURLConnection connection = (HttpURLConnection) new URL(faviconUrl).openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.setRequestMethod("GET");
             connection.connect();
             if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
@@ -1845,18 +1842,5 @@ public class MainActivity extends AppCompatActivity {
             final String url = hi.getUrl();
             backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
         }
-    }
-
-
-    private void prefetchUrl(String url) {
-        WebView prefetchWebView = obtainWebView();
-        prefetchWebView.setVisibility(View.GONE); 
-        prefetchWebView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                recycleWebView(view);
-            }
-        });
-        prefetchWebView.loadUrl(url);
     }
 }
