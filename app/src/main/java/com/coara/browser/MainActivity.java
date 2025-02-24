@@ -464,10 +464,7 @@ public class MainActivity extends AppCompatActivity {
                             .setTitle("オプションを選択")
                             .setItems(options, (dialog, which) -> {
                                 if (which == 0) {
-                                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                                    ClipData clip = ClipData.newPlainText("リンク", extra);
-                                    clipboard.setPrimaryClip(clip);
-                                    Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
+                                    copyLink(extra);
                                 } else if (which == 1) {
                                     handleDownload(extra, null, null, null, 0);
                                 } else if (which == 2) {
@@ -493,10 +490,7 @@ public class MainActivity extends AppCompatActivity {
                             .setTitle("オプションを選択")
                             .setItems(options, (dialog, which) -> {
                                 if (which == 0) {
-                                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                                    ClipData clip = ClipData.newPlainText("リンク", extra);
-                                    clipboard.setPrimaryClip(clip);
-                                    Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
+                                    copyLink(extra);
                                 } else if (which == 1) {
                                     handleDownload(extra, null, null, null, 0);
                                 } else if (which == 2) {
@@ -513,11 +507,14 @@ public class MainActivity extends AppCompatActivity {
                             }).show();
                     return true;
                 } else if (type == WebView.HitTestResult.IMAGE_TYPE) {
-                    final String[] options = {"画像を保存"};
+                    // 画像単体の場合、画像保存だけでなくリンクコピーも表示
+                    final String[] options = {"リンクをコピー", "画像を保存"};
                     new MaterialAlertDialogBuilder(MainActivity.this)
                             .setTitle("オプションを選択")
                             .setItems(options, (dialog, which) -> {
-                                if (which == 0 && extra != null && !extra.isEmpty()) {
+                                if (which == 0) {
+                                    copyLink(extra);
+                                } else if (which == 1 && extra != null && !extra.isEmpty()) {
                                     saveImage(extra);
                                 }
                             }).show();
@@ -1251,12 +1248,6 @@ public class MainActivity extends AppCompatActivity {
         reloadCurrentPage();
     }
 
-    private void clearPageCache() {
-        for (WebView webView : webViews) {
-            webView.clearCache(true);
-        }
-    }
-
     private void enableimgblock() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setLoadsImagesAutomatically(false);
@@ -1479,7 +1470,6 @@ public class MainActivity extends AppCompatActivity {
         saveHistory();
     }
 
-
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "Downloads";
@@ -1506,6 +1496,13 @@ public class MainActivity extends AppCompatActivity {
             webViewContainer.setVisibility(View.VISIBLE);
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         }
+    }
+
+    private void copyLink(String link) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("リンク", link);
+        clipboard.setPrimaryClip(clip);
+        Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
     }
 
     public static class Bookmark {
@@ -1658,10 +1655,7 @@ public class MainActivity extends AppCompatActivity {
                         .setTitle("操作を選択")
                         .setItems(options, (dialogInterface, which) -> {
                             if (which == 0) {
-                                ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                                ClipData clip = ClipData.newPlainText("URL", currentItem.getUrl());
-                                clipboard.setPrimaryClip(clip);
-                                Toast.makeText(MainActivity.this, "URLをコピーしました", Toast.LENGTH_SHORT).show();
+                                copyLink(currentItem.getUrl());
                             } else if (which == 1) {
                                 items.remove(currentPosition);
                                 notifyItemRemoved(currentPosition);
