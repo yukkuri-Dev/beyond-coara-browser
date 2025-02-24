@@ -876,15 +876,19 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void loadUrl() {
-        String url = urlEditText.getText().toString().trim();
-        if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("intent:")) {
-            url = "http://" + url;
-        }
-        WebView current = getCurrentWebView();
-        if (current != null) {
-            current.loadUrl(url);
-        }
+    String url = urlEditText.getText().toString().trim();
+    if (url.isEmpty()) return;
+    Uri uri = Uri.parse(url);
+    if (uri.getScheme() == null) {
+        url = "http://" + url;
     }
+    
+    WebView current = getCurrentWebView();
+    if (current != null) {
+        current.loadUrl(url);
+    }
+}
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -1436,8 +1440,6 @@ public class MainActivity extends AppCompatActivity {
         }
         saveHistory();
     }
-
-    // 広告ブロック処理に関するメソッドは削除
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
