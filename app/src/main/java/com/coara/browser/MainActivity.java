@@ -507,7 +507,6 @@ public class MainActivity extends AppCompatActivity {
                             }).show();
                     return true;
                 } else if (type == WebView.HitTestResult.IMAGE_TYPE) {
-                    // 画像単体の場合、画像保存だけでなくリンクコピーも表示
                     final String[] options = {"リンクをコピー", "画像を保存"};
                     new MaterialAlertDialogBuilder(MainActivity.this)
                             .setTitle("オプションを選択")
@@ -1246,6 +1245,12 @@ public class MainActivity extends AppCompatActivity {
         }
         Toast.makeText(MainActivity.this, "ガラケーUA解除", Toast.LENGTH_SHORT).show();
         reloadCurrentPage();
+    }
+
+    private void clearPageCache() {
+        for (WebView webView : webViews) {
+            webView.clearCache(true);
+        }
     }
 
     private void enableimgblock() {
