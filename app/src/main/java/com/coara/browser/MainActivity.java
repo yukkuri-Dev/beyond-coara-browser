@@ -526,7 +526,7 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-
+        
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -536,7 +536,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (url.startsWith("intent:")) {
+                if (url.startsWith("tel:")) {
+                    Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(url));
+                    startActivity(intent);
+                    return true;
+                }
+                else if (url.startsWith("mailto:")) {
+                    Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
+                    startActivity(intent);
+                    return true;
+                }
+                else if (url.startsWith("intent:")) {
                     try {
                         Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                         if (intent != null) {
@@ -556,6 +566,38 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return false;
             }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (url.startsWith("tel:")) {
+                    Intent intent = new Intent(Intent.ACTION_DIAL, Uri.parse(url));
+                    startActivity(intent);
+                    return true;
+                } else if (url.startsWith("mailto:")) {
+                    Intent intent = new Intent(Intent.ACTION_SENDTO, Uri.parse(url));
+                    startActivity(intent);
+                    return true;
+                } else if (url.startsWith("intent:")) {
+                    try {
+                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                        if (intent != null) {
+                            if (intent.resolveActivity(getPackageManager()) != null) {
+                                startActivity(intent);
+                            } else {
+                                String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                                if (fallbackUrl != null) {
+                                    view.loadUrl(fallbackUrl);
+                                }
+                            }
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                return false;
+            }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
@@ -876,19 +918,15 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void loadUrl() {
-    String url = urlEditText.getText().toString().trim();
-    if (url.isEmpty()) return;
-    Uri uri = Uri.parse(url);
-    if (uri.getScheme() == null) {
-        url = "http://" + url;
+        String url = urlEditText.getText().toString().trim();
+        if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("intent:")) {
+            url = "http://" + url;
+        }
+        WebView current = getCurrentWebView();
+        if (current != null) {
+            current.loadUrl(url);
+        }
     }
-    
-    WebView current = getCurrentWebView();
-    if (current != null) {
-        current.loadUrl(url);
-    }
-}
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -1440,6 +1478,7 @@ public class MainActivity extends AppCompatActivity {
         }
         saveHistory();
     }
+
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
