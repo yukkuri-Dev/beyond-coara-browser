@@ -61,7 +61,6 @@
 
                 </LinearLayout>
 
-                <!-- Goボタン記念に残す() -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnGo"
                     android:layout_width="wrap_content"
