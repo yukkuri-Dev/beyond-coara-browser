@@ -55,7 +55,7 @@ public class pagedl extends AppCompatActivity {
         saveButton = findViewById(R.id.saveButton);
         webView = findViewById(R.id.webView);
 
-        
+    
         webView.addJavascriptInterface(new BlobDownloaderInterface(), "BlobDownloader");
 
         
@@ -83,7 +83,7 @@ public class pagedl extends AppCompatActivity {
             final String siteName = urlString.replaceAll("[^a-zA-Z0-9]", "_");
             isSaving = true;
 
-            
+        
             if (urlString.startsWith("blob:")) {
                 blobSiteName = siteName;
                 saveBlobUrl(urlString);
@@ -95,7 +95,7 @@ public class pagedl extends AppCompatActivity {
                 return;
             }
 
-    
+            
             if (jsSwitch.isChecked()) {
                 
                 webView.setWebViewClient(new WebViewClient() {
@@ -225,7 +225,9 @@ public class pagedl extends AppCompatActivity {
         });
     }
 
-    private void saveBlobUrl(String blobUrl) 
+
+    private void saveBlobUrl(String blobUrl) {
+        
         String js = "javascript:(function() {" +
                 "fetch('" + blobUrl + "')" +
                 ".then(function(response){return response.blob();})" +
@@ -242,7 +244,9 @@ public class pagedl extends AppCompatActivity {
         webView.evaluateJavascript(js, null);
     }
 
+    
     private void saveDataUrl(String dataUrl, String siteName) {
+        
         File outputDir = getOutputDirectory(siteName, "data");
         if (outputDir == null) {
             isSaving = false;
@@ -250,6 +254,7 @@ public class pagedl extends AppCompatActivity {
         }
         saveDataUrlContent(dataUrl, outputDir);
     }
+
 
     private void saveDataUrlContent(String dataUrl, File outputDir) {
         try {
@@ -283,10 +288,11 @@ public class pagedl extends AppCompatActivity {
         }
     }
 
+
     private class BlobDownloaderInterface {
         @android.webkit.JavascriptInterface
         public void onBlobDownloaded(String base64Data) {
-        
+            
             File outputDir = getOutputDirectory(blobSiteName, "blob");
             if (outputDir == null) {
                 isSaving = false;
@@ -388,6 +394,8 @@ public class pagedl extends AppCompatActivity {
         }
         return "untitled";
     }
+
+
     private String getExtensionForMimeType(String mimeType) {
         if (mimeType.contains("html")) {
             return ".html";
@@ -403,7 +411,8 @@ public class pagedl extends AppCompatActivity {
         return "";
     }
 }
-}
+
+
 class Utils {
     public static String readFileToString(File file) throws IOException {
         byte[] data = new byte[(int) file.length()];
