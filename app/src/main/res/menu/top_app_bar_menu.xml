@@ -19,9 +19,18 @@
         </menu>
     </item>
     <item
+        android:title="ツール"
+        android:showAsAction="never">
+        <menu>
+    <item
         android:id="@+id/action_basic_auth"
         android:title="basicモード"
         android:checkable="true" />
+    <item
+        android:id="@+id/action_pgdl"
+        android:title="ページ保存ツール" />
+        </menu>
+    </item>
     <item
         android:id="@+id/action_tabs"
         android:title="タブ一覧" />
