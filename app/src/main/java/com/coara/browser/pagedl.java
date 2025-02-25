@@ -18,6 +18,8 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.util.Log;
 import android.util.Base64;
+import android.webkit.CookieManager;
+import android.view.View;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -35,7 +37,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class pagedl extends AppCompatActivity {
-
     private static final int PERMISSION_REQUEST_CODE = 1;
     private static final String TAG = "WebSaver";
     private EditText urlInput;
@@ -45,7 +46,6 @@ public class pagedl extends AppCompatActivity {
     private WebView webView;
     private volatile boolean isSaving = false;
     private Handler handler = new Handler();
-    private String blobSiteName = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +56,7 @@ public class pagedl extends AppCompatActivity {
         localPathSwitch = findViewById(R.id.localPathSwitch);
         saveButton = findViewById(R.id.saveButton);
         webView = findViewById(R.id.webView);
-        webView.addJavascriptInterface(new BlobDownloaderInterface(), "BlobDownloader");
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
@@ -74,8 +74,8 @@ public class pagedl extends AppCompatActivity {
             final String siteName = urlString.replaceAll("[^a-zA-Z0-9]", "_");
             isSaving = true;
             if (urlString.startsWith("blob:")) {
-                blobSiteName = siteName;
-                saveBlobUrl(urlString);
+                Toast.makeText(pagedl.this, "blob: URLはサポートされていません", Toast.LENGTH_LONG).show();
+                isSaving = false;
                 return;
             }
             if (urlString.startsWith("data:")) {
@@ -112,13 +112,19 @@ public class pagedl extends AppCompatActivity {
                                                 String rewrittenContent = MimeParser.rewriteContentLocations(originalContent, outputDir);
                                                 File rewrittenFile = new File(outputDir, "page_archive_rewritten.mht");
                                                 Utils.writeStringToFile(rewrittenFile, rewrittenContent);
-                                                runOnUiThread(() -> Toast.makeText(pagedl.this, "Web Archive 保存＆書換完了：\n" + rewrittenFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                                                runOnUiThread(() -> {
+                                                    Toast.makeText(pagedl.this, "Web Archive 保存＆書換完了：\n" + rewrittenFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                                                    clearCacheAndCookies();
+                                                });
                                             } catch (Exception e) {
                                                 Log.e(TAG, "MIME書換エラー", e);
                                                 runOnUiThread(() -> Toast.makeText(pagedl.this, "MIME書換エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
                                             }
                                         } else {
-                                            runOnUiThread(() -> Toast.makeText(pagedl.this, "Web Archive 保存完了：\n" + archiveFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                                            runOnUiThread(() -> {
+                                                Toast.makeText(pagedl.this, "Web Archive 保存完了：\n" + archiveFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                                                clearCacheAndCookies();
+                                            });
                                         }
                                     }
                                     isSaving = false;
@@ -169,7 +175,10 @@ public class pagedl extends AppCompatActivity {
                         File htmlFile = new File(outputDir, "page.html");
                         Utils.writeStringToFile(htmlFile, htmlContent);
                         if (htmlFile.exists()) {
-                            runOnUiThread(() -> Toast.makeText(pagedl.this, "HTML 保存完了：\n" + htmlFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                            runOnUiThread(() -> {
+                                Toast.makeText(pagedl.this, "HTML 保存完了：\n" + htmlFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                                clearCacheAndCookies();
+                            });
                         } else {
                             runOnUiThread(() -> Toast.makeText(pagedl.this, "HTML ファイルが存在しません", Toast.LENGTH_LONG).show());
                         }
@@ -187,61 +196,11 @@ public class pagedl extends AppCompatActivity {
         });
     }
 
-    private void saveBlobUrl(String blobUrl) {
-        String js = "javascript:(function() {fetch('" + blobUrl + "').then(function(response){return response.blob();}).then(function(blob){var reader = new FileReader();reader.onloadend = function(){window.BlobDownloader.onBlobDownloaded(reader.result);};reader.readAsDataURL(blob);}).catch(function(error){window.BlobDownloader.onBlobDownloadError(error.toString());});})()";
-        webView.evaluateJavascript(js, null);
-    }
-
-    private void saveDataUrl(String dataUrl, String siteName) {
-        String datetime = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        File baseDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "page");
-        File outputDir = new File(baseDir, datetime);
-        if (!outputDir.exists() && !outputDir.mkdirs()) {
-            isSaving = false;
-            return;
-        }
-        saveDataUrlContent(dataUrl, outputDir, datetime);
-    }
-
-    private void saveDataUrlContent(String dataUrl, File outputDir, String baseName) {
-        try {
-            int commaIndex = dataUrl.indexOf(",");
-            if (commaIndex == -1) {
-                throw new IOException("data URL の形式が不正です");
-            }
-            String header = dataUrl.substring(0, commaIndex);
-            String base64Data = dataUrl.substring(commaIndex + 1);
-            String mimeType = "application/octet-stream";
-            Pattern pattern = Pattern.compile("data:([^;]+);base64");
-            Matcher matcher = pattern.matcher(header);
-            if (matcher.find()) {
-                mimeType = matcher.group(1);
-            }
-            String extension = getExtensionForMimeType(mimeType);
-            String fileName = baseName + extension;
-            File outFile = new File(outputDir, fileName);
-            byte[] data = Base64.decode(base64Data, Base64.DEFAULT);
-            try (FileOutputStream fos = new FileOutputStream(outFile)) {
-                fos.write(data);
-            }
-            runOnUiThread(() -> Toast.makeText(pagedl.this, "保存完了：\n" + outFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
-        } catch (Exception e) {
-            Log.e(TAG, "Data URL 保存エラー", e);
-            runOnUiThread(() -> Toast.makeText(pagedl.this, "Data URL 保存エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
-        } finally {
-            isSaving = false;
-        }
-    }
-
-    private File getOutputDirectory(String siteName, String safePageTitle) {
-        File baseDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "page");
-        File outputDir = new File(baseDir, siteName + "(" + safePageTitle + ")/データ保存");
-        if (!outputDir.exists() && !outputDir.mkdirs()) {
-            Log.e(TAG, "フォルダ作成失敗: " + outputDir.getAbsolutePath());
-            runOnUiThread(() -> Toast.makeText(pagedl.this, "フォルダ作成失敗: " + outputDir.getAbsolutePath(), Toast.LENGTH_LONG).show());
-            return null;
-        }
-        return outputDir;
+    private void clearCacheAndCookies() {
+        webView.clearCache(true);
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.removeAllCookies(null);
+        cookieManager.flush();
     }
 
     @Override
@@ -327,19 +286,46 @@ public class pagedl extends AppCompatActivity {
         return "";
     }
 
-    private class BlobDownloaderInterface {
-        @android.webkit.JavascriptInterface
-        public void onBlobDownloaded(String base64Data) {
-            File outputDir = getOutputDirectory(blobSiteName, "blob");
-            if (outputDir == null) {
-                isSaving = false;
-                return;
-            }
-            saveDataUrlContent(base64Data, outputDir, new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()));
+    private void saveDataUrl(String dataUrl, String siteName) {
+        String datetime = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        File baseDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "page");
+        File outputDir = new File(baseDir, datetime);
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            isSaving = false;
+            return;
         }
-        @android.webkit.JavascriptInterface
-        public void onBlobDownloadError(String errorMessage) {
-            runOnUiThread(() -> Toast.makeText(pagedl.this, "Blob URL 保存エラー：" + errorMessage, Toast.LENGTH_LONG).show());
+        saveDataUrlContent(dataUrl, outputDir, datetime);
+    }
+
+    private void saveDataUrlContent(String dataUrl, File outputDir, String baseName) {
+        try {
+            int commaIndex = dataUrl.indexOf(",");
+            if (commaIndex == -1) {
+                throw new IOException("data URL の形式が不正です");
+            }
+            String header = dataUrl.substring(0, commaIndex);
+            String base64Data = dataUrl.substring(commaIndex + 1);
+            String mimeType = "application/octet-stream";
+            Pattern pattern = Pattern.compile("data:([^;]+);base64");
+            Matcher matcher = pattern.matcher(header);
+            if (matcher.find()) {
+                mimeType = matcher.group(1);
+            }
+            String extension = getExtensionForMimeType(mimeType);
+            String fileName = baseName + extension;
+            File outFile = new File(outputDir, fileName);
+            byte[] data = Base64.decode(base64Data, Base64.DEFAULT);
+            try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                fos.write(data);
+            }
+            runOnUiThread(() -> {
+                Toast.makeText(pagedl.this, "保存完了：\n" + outFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                clearCacheAndCookies();
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Data URL 保存エラー", e);
+            runOnUiThread(() -> Toast.makeText(pagedl.this, "Data URL 保存エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
+        } finally {
             isSaving = false;
         }
     }
