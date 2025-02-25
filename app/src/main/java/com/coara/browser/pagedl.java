@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.util.Log;
+import android.util.Base64;
 import android.webkit.CookieManager;
 import android.view.View;
 import java.io.File;
