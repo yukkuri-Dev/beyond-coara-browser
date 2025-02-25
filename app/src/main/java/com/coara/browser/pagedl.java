@@ -403,7 +403,7 @@ public class pagedl extends AppCompatActivity {
         return "";
     }
 }
-
+}
 class Utils {
     public static String readFileToString(File file) throws IOException {
         byte[] data = new byte[(int) file.length()];
