@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.util.Log;
+import android.util.Base64;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -41,6 +42,7 @@ public class pagedl extends AppCompatActivity {
     private WebView webView;
     private volatile boolean isSaving = false;
     private Handler handler = new Handler();
+    private String blobSiteName = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +55,10 @@ public class pagedl extends AppCompatActivity {
         saveButton = findViewById(R.id.saveButton);
         webView = findViewById(R.id.webView);
 
+        
+        webView.addJavascriptInterface(new BlobDownloaderInterface(), "BlobDownloader");
+
+        
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
@@ -70,13 +76,26 @@ public class pagedl extends AppCompatActivity {
         saveButton.setOnClickListener(v -> {
             final String urlString = urlInput.getText().toString().trim();
             if (urlString.isEmpty()) {
-                Toast.makeText(pagedl.this, "URLを入力してください", 
-                        Toast.LENGTH_SHORT).show();
+                Toast.makeText(pagedl.this, "URLを入力してください", Toast.LENGTH_SHORT).show();
                 return;
             }
+            
             final String siteName = urlString.replaceAll("[^a-zA-Z0-9]", "_");
             isSaving = true;
 
+            
+            if (urlString.startsWith("blob:")) {
+                blobSiteName = siteName;
+                saveBlobUrl(urlString);
+                return;
+            }
+            
+            if (urlString.startsWith("data:")) {
+                saveDataUrl(urlString, siteName);
+                return;
+            }
+
+    
             if (jsSwitch.isChecked()) {
                 
                 webView.setWebViewClient(new WebViewClient() {
@@ -86,64 +105,44 @@ public class pagedl extends AppCompatActivity {
                         if (pageTitle == null || pageTitle.isEmpty()) {
                             pageTitle = "untitled";
                         }
-                        String safePageTitle = 
-                            pageTitle.replaceAll("[^a-zA-Z0-9]", "_");
-
+                        String safePageTitle = pageTitle.replaceAll("[^a-zA-Z0-9]", "_");
                         File outputDir = getOutputDirectory(siteName, safePageTitle);
                         if (outputDir == null) {
                             isSaving = false;
                             return;
                         }
-
-            
+                    
                         handler.postDelayed(() -> {
-                            String archivePath = new File(outputDir,
-                                    "page_archive.mht").getAbsolutePath();
-                            webView.saveWebArchive(archivePath, false, 
-                                    new ValueCallback<String>() {
+                            String archivePath = new File(outputDir, "page_archive.mht").getAbsolutePath();
+                            webView.saveWebArchive(archivePath, false, new ValueCallback<String>() {
                                 @Override
                                 public void onReceiveValue(String value) {
-                                    File archiveFile = (value != null)
-                                            ? new File(value) : null;
-                                    if (value == null || archiveFile == null ||
-                                            !archiveFile.exists()) {
-                                        Log.e(TAG, "saveWebArchive 失敗。返り値: " 
-                                                + value);
+                                    File archiveFile = (value != null) ? new File(value) : null;
+                                    if (value == null || archiveFile == null || !archiveFile.exists()) {
+                                        Log.e(TAG, "saveWebArchive 失敗。返り値: " + value);
                                         runOnUiThread(() ->
-                                                Toast.makeText(pagedl.this,
-                                                        "Web Archive 保存失敗",
+                                                Toast.makeText(pagedl.this, "Web Archive 保存失敗", 
                                                         Toast.LENGTH_LONG).show());
                                     } else {
                                         if (localPathSwitch.isChecked()) {
                                             try {
-                                                String originalContent =
-                                                        Utils.readFileToString(archiveFile);
-                                                String rewrittenContent =
-                                                        MimeParser.rewriteContentLocations(
-                                                                originalContent, outputDir);
-                                                File rewrittenFile = new File(outputDir,
-                                                        "page_archive_rewritten.mht");
-                                                Utils.writeStringToFile(rewrittenFile,
-                                                        rewrittenContent);
+                                                String originalContent = Utils.readFileToString(archiveFile);
+                                                String rewrittenContent = MimeParser.rewriteContentLocations(originalContent, outputDir);
+                                                File rewrittenFile = new File(outputDir, "page_archive_rewritten.mht");
+                                                Utils.writeStringToFile(rewrittenFile, rewrittenContent);
                                                 runOnUiThread(() ->
-                                                        Toast.makeText(pagedl.this,
-                                                                "Web Archive 保存＆書換完了：\n" +
-                                                                rewrittenFile.getAbsolutePath(),
-                                                                Toast.LENGTH_LONG).show());
+                                                        Toast.makeText(pagedl.this, "Web Archive 保存＆書換完了：\n" +
+                                                                rewrittenFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
                                             } catch (Exception e) {
                                                 Log.e(TAG, "MIME書換エラー", e);
                                                 runOnUiThread(() ->
-                                                        Toast.makeText(pagedl.this,
-                                                                "MIME書換エラー：" 
-                                                                + e.getMessage(),
+                                                        Toast.makeText(pagedl.this, "MIME書換エラー：" + e.getMessage(), 
                                                                 Toast.LENGTH_LONG).show());
                                             }
                                         } else {
                                             runOnUiThread(() ->
-                                                    Toast.makeText(pagedl.this,
-                                                            "Web Archive 保存完了：\n" +
-                                                            archiveFile.getAbsolutePath(),
-                                                            Toast.LENGTH_LONG).show());
+                                                    Toast.makeText(pagedl.this, "Web Archive 保存完了：\n" +
+                                                            archiveFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
                                         }
                                     }
                                     isSaving = false;
@@ -154,6 +153,7 @@ public class pagedl extends AppCompatActivity {
                 });
                 webView.loadUrl(urlString);
             } else {
+        
                 new Thread(() -> {
                     HttpURLConnection conn = null;
                     try {
@@ -164,11 +164,9 @@ public class pagedl extends AppCompatActivity {
                         conn.setConnectTimeout(15000);
                         conn.setReadTimeout(15000);
                         conn.setRequestProperty("User-Agent",
-                                "Mozilla/5.0 (Linux; Android 10; Mobile; rv:89.0) " +
-                                "Gecko/89.0 Firefox/89.0");
+                                "Mozilla/5.0 (Linux; Android 10; Mobile; rv:89.0) Gecko/89.0 Firefox/89.0");
                         conn.setRequestProperty("Accept",
-                                "text/html,application/xhtml+xml," +
-                                "application/xml;q=0.9,*/*;q=0.8");
+                                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
                         conn.setRequestProperty("Accept-Language",
                                 "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7");
 
@@ -176,16 +174,14 @@ public class pagedl extends AppCompatActivity {
                         if (responseCode != HttpURLConnection.HTTP_OK) {
                             Log.e(TAG, "HTTP error code: " + responseCode);
                             runOnUiThread(() ->
-                                    Toast.makeText(pagedl.this,
-                                            "HTTP error code: " + responseCode,
+                                    Toast.makeText(pagedl.this, "HTTP error code: " + responseCode, 
                                             Toast.LENGTH_LONG).show());
                             return;
                         }
                         StringBuilder html = new StringBuilder();
                         try (InputStream is = conn.getInputStream();
                              BufferedReader reader = new BufferedReader(
-                                     new InputStreamReader(is, 
-                                             StandardCharsets.UTF_8))) {
+                                     new InputStreamReader(is, StandardCharsets.UTF_8))) {
                             String line;
                             while ((line = reader.readLine()) != null) {
                                 html.append(line).append("\n");
@@ -193,37 +189,30 @@ public class pagedl extends AppCompatActivity {
                         }
                         String htmlContent = html.toString();
                         String pageTitle = extractTitle(htmlContent);
-                        String safePageTitle = 
-                                pageTitle.replaceAll("[^a-zA-Z0-9]", "_");
-
+                        String safePageTitle = pageTitle.replaceAll("[^a-zA-Z0-9]", "_");
                         File outputDir = getOutputDirectory(siteName, safePageTitle);
                         if (outputDir == null) {
                             isSaving = false;
                             return;
                         }
                         if (localPathSwitch.isChecked()) {
-                            htmlContent = rewriteHtmlLocalPaths(htmlContent, 
-                                    urlString, outputDir);
+                            htmlContent = rewriteHtmlLocalPaths(htmlContent, urlString, outputDir);
                         }
                         File htmlFile = new File(outputDir, "page.html");
                         Utils.writeStringToFile(htmlFile, htmlContent);
                         if (htmlFile.exists()) {
                             runOnUiThread(() ->
-                                    Toast.makeText(pagedl.this,
-                                            "HTML 保存完了：\n" +
-                                            htmlFile.getAbsolutePath(),
-                                            Toast.LENGTH_LONG).show());
+                                    Toast.makeText(pagedl.this, "HTML 保存完了：\n" +
+                                            htmlFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
                         } else {
                             runOnUiThread(() ->
-                                    Toast.makeText(pagedl.this,
-                                            "HTML ファイルが存在しません",
+                                    Toast.makeText(pagedl.this, "HTML ファイルが存在しません", 
                                             Toast.LENGTH_LONG).show());
                         }
                     } catch (Exception e) {
                         Log.e(TAG, "HTML保存エラー", e);
                         runOnUiThread(() ->
-                                Toast.makeText(pagedl.this,
-                                        "エラー：" + e.getMessage(),
+                                Toast.makeText(pagedl.this, "エラー：" + e.getMessage(), 
                                         Toast.LENGTH_LONG).show());
                     } finally {
                         if (conn != null) {
@@ -235,16 +224,92 @@ public class pagedl extends AppCompatActivity {
             }
         });
     }
+
+    private void saveBlobUrl(String blobUrl) 
+        String js = "javascript:(function() {" +
+                "fetch('" + blobUrl + "')" +
+                ".then(function(response){return response.blob();})" +
+                ".then(function(blob){" +
+                "  var reader = new FileReader();" +
+                "  reader.onloadend = function(){" +
+                "    window.BlobDownloader.onBlobDownloaded(reader.result);" +
+                "  };" +
+                "  reader.readAsDataURL(blob);" +
+                "}).catch(function(error){" +
+                "  window.BlobDownloader.onBlobDownloadError(error.toString());" +
+                "});" +
+                "})()";
+        webView.evaluateJavascript(js, null);
+    }
+
+    private void saveDataUrl(String dataUrl, String siteName) {
+        File outputDir = getOutputDirectory(siteName, "data");
+        if (outputDir == null) {
+            isSaving = false;
+            return;
+        }
+        saveDataUrlContent(dataUrl, outputDir);
+    }
+
+    private void saveDataUrlContent(String dataUrl, File outputDir) {
+        try {
+            int commaIndex = dataUrl.indexOf(",");
+            if (commaIndex == -1) {
+                throw new IOException("data URL の形式が不正です");
+            }
+            String header = dataUrl.substring(0, commaIndex);
+            String base64Data = dataUrl.substring(commaIndex + 1);
+            String mimeType = "application/octet-stream";
+            Pattern pattern = Pattern.compile("data:([^;]+);base64");
+            Matcher matcher = pattern.matcher(header);
+            if (matcher.find()) {
+                mimeType = matcher.group(1);
+            }
+            String extension = getExtensionForMimeType(mimeType);
+            String fileName = "download_" + System.currentTimeMillis() + extension;
+            File outFile = new File(outputDir, fileName);
+            byte[] data = Base64.decode(base64Data, Base64.DEFAULT);
+            try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                fos.write(data);
+            }
+            runOnUiThread(() -> Toast.makeText(pagedl.this,
+                    "保存完了：\n" + outFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+        } catch (Exception e) {
+            Log.e(TAG, "Data URL 保存エラー", e);
+            runOnUiThread(() -> Toast.makeText(pagedl.this,
+                    "Data URL 保存エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
+        } finally {
+            isSaving = false;
+        }
+    }
+
+    private class BlobDownloaderInterface {
+        @android.webkit.JavascriptInterface
+        public void onBlobDownloaded(String base64Data) {
+        
+            File outputDir = getOutputDirectory(blobSiteName, "blob");
+            if (outputDir == null) {
+                isSaving = false;
+                return;
+            }
+            saveDataUrlContent(base64Data, outputDir);
+        }
+
+        @android.webkit.JavascriptInterface
+        public void onBlobDownloadError(String errorMessage) {
+            runOnUiThread(() -> Toast.makeText(pagedl.this,
+                    "Blob URL 保存エラー：" + errorMessage, Toast.LENGTH_LONG).show());
+            isSaving = false;
+        }
+    }
+
     private File getOutputDirectory(String siteName, String safePageTitle) {
-        File baseDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),
-                "page");
-        File outputDir = new File(baseDir,
-                siteName + "(" + safePageTitle + ")/データ保存");
+        File baseDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "page");
+        File outputDir = new File(baseDir, siteName + "(" + safePageTitle + ")/データ保存");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
             Log.e(TAG, "フォルダ作成失敗: " + outputDir.getAbsolutePath());
             runOnUiThread(() ->
-                    Toast.makeText(pagedl.this,
-                            "フォルダ作成失敗: " + outputDir.getAbsolutePath(),
+                    Toast.makeText(pagedl.this, "フォルダ作成失敗: " + outputDir.getAbsolutePath(),
                             Toast.LENGTH_LONG).show());
             return null;
         }
@@ -254,8 +319,7 @@ public class pagedl extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         if (isSaving) {
-            Toast.makeText(this, "保存中はバックキーが無効です",
-                    Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "保存中はバックキーが無効です", Toast.LENGTH_SHORT).show();
         } else {
             super.onBackPressed();
         }
@@ -289,7 +353,6 @@ public class pagedl extends AppCompatActivity {
         return sb.toString();
     }
 
-
     private void downloadResource(String resourceUrl, File destination)
             throws IOException {
         if (destination.exists()) {
@@ -318,16 +381,28 @@ public class pagedl extends AppCompatActivity {
     }
 
     private String extractTitle(String html) {
-        Pattern pattern = Pattern.compile("<title>(.*?)</title>",
-                Pattern.CASE_INSENSITIVE);
+        Pattern pattern = Pattern.compile("<title>(.*?)</title>", Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(html);
         if (matcher.find()) {
             return matcher.group(1).trim();
         }
         return "untitled";
     }
+    private String getExtensionForMimeType(String mimeType) {
+        if (mimeType.contains("html")) {
+            return ".html";
+        } else if (mimeType.contains("jpeg") || mimeType.contains("jpg")) {
+            return ".jpg";
+        } else if (mimeType.contains("png")) {
+            return ".png";
+        } else if (mimeType.contains("gif")) {
+            return ".gif";
+        } else if (mimeType.contains("pdf")) {
+            return ".pdf";
+        }
+        return "";
+    }
 }
-
 
 class Utils {
     public static String readFileToString(File file) throws IOException {
@@ -341,8 +416,7 @@ class Utils {
         return new String(data, StandardCharsets.UTF_8);
     }
 
-    public static void writeStringToFile(File file, String content)
-            throws IOException {
+    public static void writeStringToFile(File file, String content) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(content.getBytes(StandardCharsets.UTF_8));
         }
@@ -362,14 +436,11 @@ class MimeParser {
                 if (fileName.isEmpty()) {
                     fileName = "index.html";
                 }
-                String localPath = "file://" + dir.getAbsolutePath() 
-                        + "/" + fileName;
+                String localPath = "file://" + dir.getAbsolutePath() + "/" + fileName;
                 String replacement = matcher.group(1) + localPath;
-                matcher.appendReplacement(sb, 
-                        Matcher.quoteReplacement(replacement));
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
             } catch (Exception e) {
-                matcher.appendReplacement(sb, 
-                        Matcher.quoteReplacement(matcher.group(0)));
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(matcher.group(0)));
             }
         }
         matcher.appendTail(sb);
