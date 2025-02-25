@@ -17,7 +17,6 @@ import androidx.core.content.ContextCompat;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.util.Log;
-import android.util.Base64;
 import android.webkit.CookieManager;
 import android.view.View;
 import java.io.File;
@@ -314,7 +313,7 @@ public class pagedl extends AppCompatActivity {
             String extension = getExtensionForMimeType(mimeType);
             String fileName = baseName + extension;
             File outFile = new File(outputDir, fileName);
-            byte[] data = Base64.decode(base64Data, Base64.DEFAULT);
+            byte[] data = android.util.Base64.decode(base64Data, Base64.DEFAULT);
             try (FileOutputStream fos = new FileOutputStream(outFile)) {
                 fos.write(data);
             }
@@ -328,6 +327,17 @@ public class pagedl extends AppCompatActivity {
         } finally {
             isSaving = false;
         }
+    }
+
+    private File getOutputDirectory(String siteName, String safePageTitle) {
+        File baseDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "page");
+        File outputDir = new File(baseDir, siteName + "(" + safePageTitle + ")/データ保存");
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            Log.e(TAG, "フォルダ作成失敗: " + outputDir.getAbsolutePath());
+            runOnUiThread(() -> Toast.makeText(pagedl.this, "フォルダ作成失敗: " + outputDir.getAbsolutePath(), Toast.LENGTH_LONG).show());
+            return null;
+        }
+        return outputDir;
     }
 }
 
