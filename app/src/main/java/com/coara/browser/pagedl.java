@@ -28,6 +28,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,56 +51,38 @@ public class pagedl extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pgdl);
-
         urlInput = findViewById(R.id.urlInput);
         jsSwitch = findViewById(R.id.jsSwitch);
         localPathSwitch = findViewById(R.id.localPathSwitch);
         saveButton = findViewById(R.id.saveButton);
         webView = findViewById(R.id.webView);
-
-    
         webView.addJavascriptInterface(new BlobDownloaderInterface(), "BlobDownloader");
-
-        
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        PERMISSION_REQUEST_CODE);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
             }
         }
-
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(jsSwitch.isChecked());
-        jsSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
-                webSettings.setJavaScriptEnabled(isChecked));
-
+        jsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> webSettings.setJavaScriptEnabled(isChecked));
         saveButton.setOnClickListener(v -> {
             final String urlString = urlInput.getText().toString().trim();
             if (urlString.isEmpty()) {
                 Toast.makeText(pagedl.this, "URLを入力してください", Toast.LENGTH_SHORT).show();
                 return;
             }
-            
             final String siteName = urlString.replaceAll("[^a-zA-Z0-9]", "_");
             isSaving = true;
-
-        
             if (urlString.startsWith("blob:")) {
                 blobSiteName = siteName;
                 saveBlobUrl(urlString);
                 return;
             }
-            
             if (urlString.startsWith("data:")) {
                 saveDataUrl(urlString, siteName);
                 return;
             }
-
-            
             if (jsSwitch.isChecked()) {
-                
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
                     public void onPageFinished(WebView view, String url) {
@@ -111,7 +96,6 @@ public class pagedl extends AppCompatActivity {
                             isSaving = false;
                             return;
                         }
-                    
                         handler.postDelayed(() -> {
                             String archivePath = new File(outputDir, "page_archive.mht").getAbsolutePath();
                             webView.saveWebArchive(archivePath, false, new ValueCallback<String>() {
@@ -120,9 +104,7 @@ public class pagedl extends AppCompatActivity {
                                     File archiveFile = (value != null) ? new File(value) : null;
                                     if (value == null || archiveFile == null || !archiveFile.exists()) {
                                         Log.e(TAG, "saveWebArchive 失敗。返り値: " + value);
-                                        runOnUiThread(() ->
-                                                Toast.makeText(pagedl.this, "Web Archive 保存失敗", 
-                                                        Toast.LENGTH_LONG).show());
+                                        runOnUiThread(() -> Toast.makeText(pagedl.this, "Web Archive 保存失敗", Toast.LENGTH_LONG).show());
                                     } else {
                                         if (localPathSwitch.isChecked()) {
                                             try {
@@ -130,19 +112,13 @@ public class pagedl extends AppCompatActivity {
                                                 String rewrittenContent = MimeParser.rewriteContentLocations(originalContent, outputDir);
                                                 File rewrittenFile = new File(outputDir, "page_archive_rewritten.mht");
                                                 Utils.writeStringToFile(rewrittenFile, rewrittenContent);
-                                                runOnUiThread(() ->
-                                                        Toast.makeText(pagedl.this, "Web Archive 保存＆書換完了：\n" +
-                                                                rewrittenFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                                                runOnUiThread(() -> Toast.makeText(pagedl.this, "Web Archive 保存＆書換完了：\n" + rewrittenFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
                                             } catch (Exception e) {
                                                 Log.e(TAG, "MIME書換エラー", e);
-                                                runOnUiThread(() ->
-                                                        Toast.makeText(pagedl.this, "MIME書換エラー：" + e.getMessage(), 
-                                                                Toast.LENGTH_LONG).show());
+                                                runOnUiThread(() -> Toast.makeText(pagedl.this, "MIME書換エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
                                             }
                                         } else {
-                                            runOnUiThread(() ->
-                                                    Toast.makeText(pagedl.this, "Web Archive 保存完了：\n" +
-                                                            archiveFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                                            runOnUiThread(() -> Toast.makeText(pagedl.this, "Web Archive 保存完了：\n" + archiveFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
                                         }
                                     }
                                     isSaving = false;
@@ -153,7 +129,6 @@ public class pagedl extends AppCompatActivity {
                 });
                 webView.loadUrl(urlString);
             } else {
-        
                 new Thread(() -> {
                     HttpURLConnection conn = null;
                     try {
@@ -163,25 +138,18 @@ public class pagedl extends AppCompatActivity {
                         conn.setRequestMethod("GET");
                         conn.setConnectTimeout(15000);
                         conn.setReadTimeout(15000);
-                        conn.setRequestProperty("User-Agent",
-                                "Mozilla/5.0 (Linux; Android 10; Mobile; rv:89.0) Gecko/89.0 Firefox/89.0");
-                        conn.setRequestProperty("Accept",
-                                "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                        conn.setRequestProperty("Accept-Language",
-                                "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7");
-
+                        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10; Mobile; rv:89.0) Gecko/89.0 Firefox/89.0");
+                        conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                        conn.setRequestProperty("Accept-Language", "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7");
                         int responseCode = conn.getResponseCode();
                         if (responseCode != HttpURLConnection.HTTP_OK) {
                             Log.e(TAG, "HTTP error code: " + responseCode);
-                            runOnUiThread(() ->
-                                    Toast.makeText(pagedl.this, "HTTP error code: " + responseCode, 
-                                            Toast.LENGTH_LONG).show());
+                            runOnUiThread(() -> Toast.makeText(pagedl.this, "HTTP error code: " + responseCode, Toast.LENGTH_LONG).show());
                             return;
                         }
                         StringBuilder html = new StringBuilder();
                         try (InputStream is = conn.getInputStream();
-                             BufferedReader reader = new BufferedReader(
-                                     new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                             BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                             String line;
                             while ((line = reader.readLine()) != null) {
                                 html.append(line).append("\n");
@@ -201,19 +169,13 @@ public class pagedl extends AppCompatActivity {
                         File htmlFile = new File(outputDir, "page.html");
                         Utils.writeStringToFile(htmlFile, htmlContent);
                         if (htmlFile.exists()) {
-                            runOnUiThread(() ->
-                                    Toast.makeText(pagedl.this, "HTML 保存完了：\n" +
-                                            htmlFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+                            runOnUiThread(() -> Toast.makeText(pagedl.this, "HTML 保存完了：\n" + htmlFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
                         } else {
-                            runOnUiThread(() ->
-                                    Toast.makeText(pagedl.this, "HTML ファイルが存在しません", 
-                                            Toast.LENGTH_LONG).show());
+                            runOnUiThread(() -> Toast.makeText(pagedl.this, "HTML ファイルが存在しません", Toast.LENGTH_LONG).show());
                         }
                     } catch (Exception e) {
                         Log.e(TAG, "HTML保存エラー", e);
-                        runOnUiThread(() ->
-                                Toast.makeText(pagedl.this, "エラー：" + e.getMessage(), 
-                                        Toast.LENGTH_LONG).show());
+                        runOnUiThread(() -> Toast.makeText(pagedl.this, "エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
                     } finally {
                         if (conn != null) {
                             conn.disconnect();
@@ -225,38 +187,23 @@ public class pagedl extends AppCompatActivity {
         });
     }
 
-
     private void saveBlobUrl(String blobUrl) {
-        
-        String js = "javascript:(function() {" +
-                "fetch('" + blobUrl + "')" +
-                ".then(function(response){return response.blob();})" +
-                ".then(function(blob){" +
-                "  var reader = new FileReader();" +
-                "  reader.onloadend = function(){" +
-                "    window.BlobDownloader.onBlobDownloaded(reader.result);" +
-                "  };" +
-                "  reader.readAsDataURL(blob);" +
-                "}).catch(function(error){" +
-                "  window.BlobDownloader.onBlobDownloadError(error.toString());" +
-                "});" +
-                "})()";
+        String js = "javascript:(function() {fetch('" + blobUrl + "').then(function(response){return response.blob();}).then(function(blob){var reader = new FileReader();reader.onloadend = function(){window.BlobDownloader.onBlobDownloaded(reader.result);};reader.readAsDataURL(blob);}).catch(function(error){window.BlobDownloader.onBlobDownloadError(error.toString());});})()";
         webView.evaluateJavascript(js, null);
     }
 
-    
     private void saveDataUrl(String dataUrl, String siteName) {
-        
-        File outputDir = getOutputDirectory(siteName, "data");
-        if (outputDir == null) {
+        String datetime = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        File baseDir = new File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "page");
+        File outputDir = new File(baseDir, datetime);
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
             isSaving = false;
             return;
         }
-        saveDataUrlContent(dataUrl, outputDir);
+        saveDataUrlContent(dataUrl, outputDir, datetime);
     }
 
-
-    private void saveDataUrlContent(String dataUrl, File outputDir) {
+    private void saveDataUrlContent(String dataUrl, File outputDir, String baseName) {
         try {
             int commaIndex = dataUrl.indexOf(",");
             if (commaIndex == -1) {
@@ -271,40 +218,17 @@ public class pagedl extends AppCompatActivity {
                 mimeType = matcher.group(1);
             }
             String extension = getExtensionForMimeType(mimeType);
-            String fileName = "download_" + System.currentTimeMillis() + extension;
+            String fileName = baseName + extension;
             File outFile = new File(outputDir, fileName);
             byte[] data = Base64.decode(base64Data, Base64.DEFAULT);
             try (FileOutputStream fos = new FileOutputStream(outFile)) {
                 fos.write(data);
             }
-            runOnUiThread(() -> Toast.makeText(pagedl.this,
-                    "保存完了：\n" + outFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
+            runOnUiThread(() -> Toast.makeText(pagedl.this, "保存完了：\n" + outFile.getAbsolutePath(), Toast.LENGTH_LONG).show());
         } catch (Exception e) {
             Log.e(TAG, "Data URL 保存エラー", e);
-            runOnUiThread(() -> Toast.makeText(pagedl.this,
-                    "Data URL 保存エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
+            runOnUiThread(() -> Toast.makeText(pagedl.this, "Data URL 保存エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
         } finally {
-            isSaving = false;
-        }
-    }
-
-
-    private class BlobDownloaderInterface {
-        @android.webkit.JavascriptInterface
-        public void onBlobDownloaded(String base64Data) {
-            
-            File outputDir = getOutputDirectory(blobSiteName, "blob");
-            if (outputDir == null) {
-                isSaving = false;
-                return;
-            }
-            saveDataUrlContent(base64Data, outputDir);
-        }
-
-        @android.webkit.JavascriptInterface
-        public void onBlobDownloadError(String errorMessage) {
-            runOnUiThread(() -> Toast.makeText(pagedl.this,
-                    "Blob URL 保存エラー：" + errorMessage, Toast.LENGTH_LONG).show());
             isSaving = false;
         }
     }
@@ -314,9 +238,7 @@ public class pagedl extends AppCompatActivity {
         File outputDir = new File(baseDir, siteName + "(" + safePageTitle + ")/データ保存");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
             Log.e(TAG, "フォルダ作成失敗: " + outputDir.getAbsolutePath());
-            runOnUiThread(() ->
-                    Toast.makeText(pagedl.this, "フォルダ作成失敗: " + outputDir.getAbsolutePath(),
-                            Toast.LENGTH_LONG).show());
+            runOnUiThread(() -> Toast.makeText(pagedl.this, "フォルダ作成失敗: " + outputDir.getAbsolutePath(), Toast.LENGTH_LONG).show());
             return null;
         }
         return outputDir;
@@ -339,10 +261,7 @@ public class pagedl extends AppCompatActivity {
             String attr = matcher.group(1);
             String originalUrl = matcher.group(2);
             try {
-                URL resourceUrl = originalUrl.startsWith("http://") ||
-                        originalUrl.startsWith("https://")
-                        ? new URL(originalUrl)
-                        : new URL(new URL(baseUrl), originalUrl);
+                URL resourceUrl = originalUrl.startsWith("http://") || originalUrl.startsWith("https://") ? new URL(originalUrl) : new URL(new URL(baseUrl), originalUrl);
                 String fileName = new File(resourceUrl.getPath()).getName();
                 if (fileName.isEmpty()) {
                     fileName = "index.html";
@@ -359,8 +278,7 @@ public class pagedl extends AppCompatActivity {
         return sb.toString();
     }
 
-    private void downloadResource(String resourceUrl, File destination)
-            throws IOException {
+    private void downloadResource(String resourceUrl, File destination) throws IOException {
         if (destination.exists()) {
             return;
         }
@@ -371,8 +289,7 @@ public class pagedl extends AppCompatActivity {
             conn.setInstanceFollowRedirects(true);
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(15000);
-            try (InputStream in = conn.getInputStream();
-                 FileOutputStream out = new FileOutputStream(destination)) {
+            try (InputStream in = conn.getInputStream(); FileOutputStream out = new FileOutputStream(destination)) {
                 byte[] buffer = new byte[4096];
                 int bytesRead;
                 while ((bytesRead = in.read(buffer)) != -1) {
@@ -395,7 +312,6 @@ public class pagedl extends AppCompatActivity {
         return "untitled";
     }
 
-
     private String getExtensionForMimeType(String mimeType) {
         if (mimeType.contains("html")) {
             return ".html";
@@ -410,8 +326,24 @@ public class pagedl extends AppCompatActivity {
         }
         return "";
     }
-}
 
+    private class BlobDownloaderInterface {
+        @android.webkit.JavascriptInterface
+        public void onBlobDownloaded(String base64Data) {
+            File outputDir = getOutputDirectory(blobSiteName, "blob");
+            if (outputDir == null) {
+                isSaving = false;
+                return;
+            }
+            saveDataUrlContent(base64Data, outputDir, new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()));
+        }
+        @android.webkit.JavascriptInterface
+        public void onBlobDownloadError(String errorMessage) {
+            runOnUiThread(() -> Toast.makeText(pagedl.this, "Blob URL 保存エラー：" + errorMessage, Toast.LENGTH_LONG).show());
+            isSaving = false;
+        }
+    }
+}
 
 class Utils {
     public static String readFileToString(File file) throws IOException {
@@ -424,7 +356,6 @@ class Utils {
         }
         return new String(data, StandardCharsets.UTF_8);
     }
-
     public static void writeStringToFile(File file, String content) throws IOException {
         try (FileOutputStream fos = new FileOutputStream(file)) {
             fos.write(content.getBytes(StandardCharsets.UTF_8));
