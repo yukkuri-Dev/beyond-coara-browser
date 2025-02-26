@@ -503,7 +503,7 @@ public class MainActivity extends AppCompatActivity {
             settings.setSupportZoom(false);
         }
 
-        settings.setJavaScriptEnabled(jsEnabled);
+        settings.setJavaScriptEnabled(!jsEnabled);
         settings.setLoadsImagesAutomatically(!imgBlockEnabled);
         if (uaEnabled) {
             settings.setUserAgentString("DoCoMo/2.0 SH902i(c100;TB)");
