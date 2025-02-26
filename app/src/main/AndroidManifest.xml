@@ -14,11 +14,16 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.MaterialComponents.Light.NoActionBar">
+   
+    <meta-data
+        android:name="android.theme.customization.icon"
+        android:resource="@xml/icon_palette" />
 
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
