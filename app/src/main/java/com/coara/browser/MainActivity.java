@@ -935,6 +935,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem darkModeItem = menu.findItem(R.id.action_dark_mode);
         darkModeItem.setVisible(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q);
+        darkModeItem.setCheckable(true); 
+        darkModeItem.setChecked(darkModeEnabled); 
         MenuItem uaItem = menu.findItem(R.id.action_ua);
         if (uaItem != null) uaItem.setChecked(uaEnabled);
         MenuItem deskuaItem = menu.findItem(R.id.action_deskua);
