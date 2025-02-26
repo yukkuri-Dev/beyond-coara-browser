@@ -144,7 +144,6 @@ public class MainActivity extends AppCompatActivity {
     private final List<Bookmark> bookmarks = new ArrayList<>();
     private final List<HistoryItem> historyItems = new ArrayList<>();
 
-    // 状態フラグ
     private boolean darkModeEnabled = false;
     private boolean basicAuthEnabled = false;
     private boolean zoomEnabled = false;
@@ -432,7 +431,6 @@ public class MainActivity extends AppCompatActivity {
         settings.setUseWideViewPort(true);
         settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setSafeBrowsingEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
         settings.setTextZoom(100);
@@ -480,7 +478,6 @@ public class MainActivity extends AppCompatActivity {
         originalUserAgents.put(webView, defaultUA);
         applyOptimizedSettings(settings);
 
-        // 選択状態に応じた設定の適用
         if (zoomEnabled) {
             settings.setBuiltInZoomControls(true);
             settings.setSupportZoom(true);
