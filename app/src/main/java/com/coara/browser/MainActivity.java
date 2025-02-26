@@ -442,10 +442,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * applyOptimizedSettings は基本の最適化設定を行う。
-     * ※ ここではダークモードも forceDark を用いて反映する。
-     */
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(true);
@@ -460,7 +456,6 @@ public class MainActivity extends AppCompatActivity {
         settings.setGeolocationEnabled(false);
         settings.setTextZoom(100);
         settings.setDisplayZoomControls(false);
-        // デフォルトではズームは無効（以下 createNewWebView で上書き）
         settings.setBuiltInZoomControls(false);
         settings.setSupportZoom(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
@@ -482,10 +477,6 @@ public class MainActivity extends AppCompatActivity {
             preloadedWebView = webView;
         });
     }
-
-    /**
-     * createNewWebView では、SharedPreferences から読み込んだ各設定（zoomEnabled, jsEnabled, imgBlockEnabled, ua/deskua/ct3ua の各フラグ）を必ず反映する。
-     */
     private WebView createNewWebView() {
         WebView webView;
         if (preloadedWebView != null) {
@@ -500,16 +491,10 @@ public class MainActivity extends AppCompatActivity {
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         WebSettings settings = webView.getSettings();
-        // 既存のユーザーエージェントを取得
         final String defaultUA = settings.getUserAgentString();
         originalUserAgents.put(webView, defaultUA);
-
-        // applyOptimizedSettings で一通り最適化（ダークモード等も反映）
         applyOptimizedSettings(settings);
 
-        // ↓ ここから SharedPreferences に基づく個別設定の反映
-
-        // 1. ズーム設定
         if (zoomEnabled) {
             settings.setBuiltInZoomControls(true);
             settings.setSupportZoom(true);
@@ -518,29 +503,19 @@ public class MainActivity extends AppCompatActivity {
             settings.setSupportZoom(false);
         }
 
-        // 2. JavaScript の有効／無効
         settings.setJavaScriptEnabled(jsEnabled);
-
-        // 3. 画像の自動読み込み（imgBlockEnabled が true なら読み込みを無効）
         settings.setLoadsImagesAutomatically(!imgBlockEnabled);
-
-        // 4. ユーザーエージェントの切替
         if (uaEnabled) {
-            // ガラケーUA例
             settings.setUserAgentString("DoCoMo/2.0 SH902i(c100;TB)");
         } else if (deskuaEnabled) {
-            // デスクトップUA：元の UA から "Mobile" や "Android" を除去
             String desktopUA = defaultUA.replace("Mobile", "").replace("Android", "");
             settings.setUserAgentString(desktopUA + APPEND_STR);
         } else if (ct3uaEnabled) {
             settings.setUserAgentString("Mozilla/5.0 (Linux; Android 7.0; TAB-A03-BR3 Build/02.05.000; wv) " +
                     "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Safari/537.36");
         } else {
-            // どれも選択されていなければ、デフォルトの UA + APPEND_STR
             settings.setUserAgentString(defaultUA + APPEND_STR);
         }
-
-        // ここまでが初期化時に反映する各設定
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             try {
@@ -1961,7 +1936,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateDarkMode() {
-        // 各 WebView に対して forceDark を再適用
         for (WebView webView : webViews) {
             WebSettings settings = webView.getSettings();
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
