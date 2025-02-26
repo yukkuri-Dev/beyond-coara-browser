@@ -1,6 +1,7 @@
 package com.coara.browser;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -22,7 +23,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.InputType;
 import android.util.Base64;
 import android.util.LruCache;
 import android.view.Gravity;
@@ -59,8 +59,9 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -100,10 +101,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 public class MainActivity extends AppCompatActivity {
+
 
     private static final String PREF_NAME = "AdvancedBrowserPrefs";
     private static final String KEY_DARK_MODE = "dark_mode";
@@ -126,15 +126,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int MAX_HISTORY_SIZE = 100;
 
     private WebView webView;
-    private boolean darkModeEnabled = false;
-    private boolean basicAuthEnabled = false;
-    private boolean zoomEnabled = false;
-    private boolean jsEnabled = false;  
-    private boolean imgBlockEnabled = false;
-    private boolean uaEnabled = false;
-    private boolean deskuaEnabled = false;
-    private boolean ct3uaEnabled = false;
-
     private TextInputEditText urlEditText;
     private ImageView faviconImageView;
     private MaterialButton btnGo;
@@ -148,13 +139,22 @@ public class MainActivity extends AppCompatActivity {
     private ValueCallback<Uri[]> filePathCallback;
     private ActivityResultLauncher<String> permissionLauncher;
     private SharedPreferences pref;
-    private final ExecutorService backgroundExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private final ExecutorService backgroundExecutor = Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors());
     private final ArrayList<WebView> webViews = new ArrayList<>();
     private int currentTabIndex = 0;
     private int currentHistoryIndex = -1;
     private boolean isBackNavigation = false;
     private final List<Bookmark> bookmarks = new ArrayList<>();
     private final List<HistoryItem> historyItems = new ArrayList<>();
+    private boolean darkModeEnabled = false;
+    private boolean basicAuthEnabled = false;
+    private boolean zoomEnabled = false;
+    private boolean jsEnabled = false;
+    private boolean imgBlockEnabled = false;
+    private boolean uaEnabled = false;
+    private boolean deskuaEnabled = false;
+    private boolean ct3uaEnabled = false;
     private final Map<WebView, Bitmap> webViewFavicons = new HashMap<>();
     private LruCache<String, Bitmap> faviconCache;
     private final Map<WebView, String> originalUserAgents = new HashMap<>();
@@ -163,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
     private WebView preloadedWebView = null;
     private View customView = null;
     private WebChromeClient.CustomViewCallback customViewCallback = null;
+
 
     public static class Bookmark {
         private final String title;
@@ -174,7 +175,6 @@ public class MainActivity extends AppCompatActivity {
         public String getTitle() { return title; }
         public String getUrl() { return url; }
     }
-
     public static class HistoryItem {
         private final String title;
         private final String url;
@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
         deskuaEnabled = pref.getBoolean(KEY_DESKUA_ENABLED, false);
         ct3uaEnabled = pref.getBoolean(KEY_CT3UA_ENABLED, false);
 
-        final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+        final int maxMemory = (int)(Runtime.getRuntime().maxMemory() / 1024);
         final int cacheSize = maxMemory / 8;
         faviconCache = new LruCache<String, Bitmap>(cacheSize) {
             @Override
@@ -272,10 +272,11 @@ public class MainActivity extends AppCompatActivity {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText("URL", url);
             clipboard.setPrimaryClip(clip);
-            showToast("URLをコピーしました");
+            Toast.makeText(MainActivity.this, "URLをコピーしました", Toast.LENGTH_SHORT).show();
         });
         ViewGroup parentView = (ViewGroup) urlEditText.getParent();
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         layoutParams.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
         copyButton.setLayoutParams(layoutParams);
         parentView.addView(copyButton);
@@ -300,11 +301,12 @@ public class MainActivity extends AppCompatActivity {
                 new ActivityResultContracts.RequestPermission(),
                 isGranted -> {
                     if (!isGranted) {
-                        showToast("ストレージ権限が必要です。アプリを終了します");
+                        Toast.makeText(this, "ストレージ権限が必要です。アプリを終了します", Toast.LENGTH_LONG).show();
                         finish();
                     }
                 });
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
                 permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             }
         }
@@ -325,7 +327,8 @@ public class MainActivity extends AppCompatActivity {
 
         urlEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
             if (actionId == EditorInfo.IME_ACTION_GO ||
-                (keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == KeyEvent.ACTION_DOWN)) {
+               (keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER &&
+                keyEvent.getAction() == KeyEvent.ACTION_DOWN)) {
                 loadUrl();
                 return true;
             }
@@ -333,8 +336,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnNewTab.setOnClickListener(v -> createNewTab());
-
-        handleIntent(getIntent());
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -352,28 +353,10 @@ public class MainActivity extends AppCompatActivity {
                 } else if (current != null && current.canGoBack()) {
                     current.goBack();
                 } else {
-                    showToast("履歴がありません");
+                    Toast.makeText(MainActivity.this, "履歴がありません", Toast.LENGTH_SHORT).show();
                 }
             }
         });
-    }
-
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleIntent(intent);
-    }
-
-    private void handleIntent(Intent intent) {
-        if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
-            Uri data = intent.getData();
-            if (data != null) {
-                String url = data.toString();
-                createNewTab(url);
-                getCurrentWebView().setTag("external");
-            }
-            setIntent(new Intent());
-        }
     }
 
     @Override
@@ -443,24 +426,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyOptimizedSettings(WebSettings settings) {
-        settings.setJavaScriptEnabled(true); 
+        settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        settings.setSafeBrowsingEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
         settings.setTextZoom(100);
+        settings.setBlockNetworkImage(true);
         settings.setDisplayZoomControls(false);
         settings.setBuiltInZoomControls(false);
         settings.setSupportZoom(false);
+        settings.setMediaPlaybackRequiresUserGesture(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setOffscreenPreRaster(true);
         }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
-            WebSettingsCompat.setForceDark(settings, darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+            WebSettingsCompat.setForceDark(settings, darkModeEnabled ?
+                    WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
         }
     }
 
@@ -474,6 +461,7 @@ public class MainActivity extends AppCompatActivity {
             preloadedWebView = webView;
         });
     }
+
     private WebView createNewWebView() {
         WebView webView;
         if (preloadedWebView != null) {
@@ -484,60 +472,35 @@ public class MainActivity extends AppCompatActivity {
             webView = new WebView(this);
         }
         webView.setBackgroundColor(Color.WHITE);
-        webView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        webView.setLayoutParams(new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         WebSettings settings = webView.getSettings();
         String defaultUA = settings.getUserAgentString();
         originalUserAgents.put(webView, defaultUA);
+        settings.setUserAgentString(defaultUA + APPEND_STR);
         applyOptimizedSettings(settings);
-
-        if (zoomEnabled) {
-            settings.setBuiltInZoomControls(true);
-            settings.setSupportZoom(true);
-        } else {
-            settings.setBuiltInZoomControls(false);
-            settings.setSupportZoom(false);
-        }
-
-        settings.setJavaScriptEnabled(!jsEnabled);
-        settings.setLoadsImagesAutomatically(!imgBlockEnabled);
-        if (uaEnabled) {
-            settings.setUserAgentString("DoCoMo/2.0 SH902i(c100;TB)");
-        } else if (deskuaEnabled) {
-            String desktopUA = defaultUA.replace("Mobile", "").replace("Android", "");
-            settings.setUserAgentString(desktopUA + APPEND_STR);
-        } else if (ct3uaEnabled) {
-            settings.setUserAgentString("Mozilla/5.0 (Linux; Android 7.0; TAB-A03-BR3 Build/02.05.000; wv) " +
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Safari/537.36");
-        } else {
-            settings.setUserAgentString(defaultUA + APPEND_STR);
-        }
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             try {
                 Method setSaveFormData = settings.getClass().getMethod("setSaveFormData", boolean.class);
                 setSaveFormData.invoke(settings, false);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { e.printStackTrace(); }
             try {
                 Method setDatabaseEnabled = settings.getClass().getMethod("setDatabaseEnabled", boolean.class);
                 setDatabaseEnabled.invoke(settings, true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { e.printStackTrace(); }
             try {
                 Method setAppCacheEnabled = settings.getClass().getMethod("setAppCacheEnabled", boolean.class);
                 setAppCacheEnabled.invoke(settings, true);
                 Method setAppCachePath = settings.getClass().getMethod("setAppCachePath", String.class);
                 setAppCachePath.invoke(settings, getCacheDir().getAbsolutePath());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { e.printStackTrace(); }
         }
 
         webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
+
         webView.setOnLongClickListener(v -> {
             WebView.HitTestResult result = webView.getHitTestResult();
             if (result != null) {
@@ -554,7 +517,7 @@ public class MainActivity extends AppCompatActivity {
                                 handleDownload(extra, null, null, null, 0);
                             } else if (which == 2) {
                                 if (webViews.size() >= MAX_TABS) {
-                                    showToast("最大タブ数に達しました");
+                                    Toast.makeText(MainActivity.this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
                                 } else {
                                     WebView newWebView = createNewWebView();
                                     webViews.add(newWebView);
@@ -580,7 +543,7 @@ public class MainActivity extends AppCompatActivity {
                                 handleDownload(extra, null, null, null, 0);
                             } else if (which == 2) {
                                 if (webViews.size() >= MAX_TABS) {
-                                    showToast("最大タブ数に達しました");
+                                    Toast.makeText(MainActivity.this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
                                 } else {
                                     WebView newWebView = createNewWebView();
                                     webViews.add(newWebView);
@@ -607,9 +570,15 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-        webView.setWebViewClient(new WebViewClient() {
 
-            private boolean handleSpecialUrl(String url, WebView view) {
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return super.shouldInterceptRequest(view, request);
+            }
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
                 if (url.startsWith("tel:")) {
                     startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
                     return true;
@@ -636,27 +605,38 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return false;
             }
-
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return super.shouldInterceptRequest(view, request);
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                if (handleSpecialUrl(url, view)) return true;
-                return false;
-            }
-
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return handleSpecialUrl(url, view);
+                if (url.startsWith("tel:")) {
+                    startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
+                    return true;
+                } else if (url.startsWith("mailto:")) {
+                    startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse(url)));
+                    return true;
+                } else if (url.startsWith("intent:")) {
+                    try {
+                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                        if (intent != null) {
+                            if (intent.resolveActivity(getPackageManager()) != null) {
+                                startActivity(intent);
+                            } else {
+                                String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                                if (fallbackUrl != null) {
+                                    view.loadUrl(fallbackUrl);
+                                }
+                            }
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                return false;
             }
-
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                view.getSettings().setBlockNetworkImage(false);
                 if (view == getCurrentWebView()) {
                     urlEditText.setText(url);
                 }
@@ -679,7 +659,6 @@ public class MainActivity extends AppCompatActivity {
                     swipeRefreshLayout.setRefreshing(false);
                 }
             }
-
             @Override
             public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
                 if (!basicAuthEnabled) {
@@ -688,19 +667,16 @@ public class MainActivity extends AppCompatActivity {
                 }
                 LinearLayout layout = new LinearLayout(MainActivity.this);
                 layout.setOrientation(LinearLayout.VERTICAL);
-                int padding = (int) (16 * getResources().getDisplayMetrics().density);
+                int padding = (int)(16 * getResources().getDisplayMetrics().density);
                 layout.setPadding(padding, padding, padding, padding);
-
                 final EditText usernameInput = new EditText(MainActivity.this);
                 usernameInput.setHint("ユーザー名");
                 usernameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME);
                 layout.addView(usernameInput);
-
                 final EditText passwordInput = new EditText(MainActivity.this);
                 passwordInput.setHint("パスワード");
                 passwordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
                 layout.addView(passwordInput);
-
                 new MaterialAlertDialogBuilder(MainActivity.this)
                     .setTitle("Basic認証情報を入力")
                     .setView(layout)
@@ -710,12 +686,70 @@ public class MainActivity extends AppCompatActivity {
                         if (!username.isEmpty() && !password.isEmpty()) {
                             handler.proceed(username, password);
                         } else {
-                            showToast("ユーザー名とパスワードを入力してください");
+                            Toast.makeText(MainActivity.this, "ユーザー名とパスワードを入力してください", Toast.LENGTH_SHORT).show();
                             handler.cancel();
                         }
                     })
                     .setNegativeButton("キャンセル", (dialog, which) -> handler.cancel())
                     .show();
+            }
+        });
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback,
+                                               FileChooserParams fileChooserParams) {
+                MainActivity.this.filePathCallback = filePathCallback;
+                try {
+                    fileChooserLauncher.launch(fileChooserParams.createIntent());
+                } catch (Exception e) {
+                    MainActivity.this.filePathCallback = null;
+                    Toast.makeText(MainActivity.this, "ファイル選択エラー", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+                return true;
+            }
+            @Override
+            public void onReceivedIcon(WebView view, Bitmap icon) {
+                // favicon を現在の WebView に表示
+                if (view == getCurrentWebView()) {
+                    faviconImageView.setImageBitmap(icon);
+                }
+                webViewFavicons.put(view, icon);
+                String currentUrl = view.getUrl();
+                if (currentUrl != null) {
+                    faviconCache.put(currentUrl, icon);
+                    backgroundExecutor.execute(() -> saveFaviconToFile(currentUrl, icon));
+                }
+            }
+            @Override
+            public void onShowCustomView(View view, CustomViewCallback callback) {
+                if (customView != null) {
+                    callback.onCustomViewHidden();
+                    return;
+                }
+                customView = view;
+                customViewCallback = callback;
+                webViewContainer.setVisibility(View.GONE);
+                FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+                decor.addView(customView, new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            }
+            @Override
+            public void onHideCustomView() {
+                if (customView == null) {
+                    return;
+                }
+                FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+                decor.removeView(customView);
+                customView = null;
+                if (customViewCallback != null) {
+                    customViewCallback.onCustomViewHidden();
+                    customViewCallback = null;
+                }
+                webViewContainer.setVisibility(View.VISIBLE);
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             }
         });
 
@@ -725,33 +759,15 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 handleDownload(url, userAgent, contentDisposition, mimeType, contentLength);
             }
-            if ("external".equals(webView.getTag())) {
-                closeTab(webView);
-            }
         });
 
         return webView;
     }
-    private void closeTab(WebView webView) {
-        int index = webViews.indexOf(webView);
-        if (index != -1) {
-            if (webViews.size() > 1) {
-                webViews.remove(index);
-                if (currentTabIndex >= webViews.size()) {
-                    currentTabIndex = webViews.size() - 1;
-                }
-                webViewContainer.removeAllViews();
-                webViewContainer.addView(getCurrentWebView());
-                updateTabCount();
-            } else {
-                webView.loadUrl(START_PAGE);
-            }
-        }
-    }
 
     private void handleDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-            ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+           ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+           != PackageManager.PERMISSION_GRANTED) {
             if (permissionLauncher != null) {
                 permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             }
@@ -771,35 +787,35 @@ public class MainActivity extends AppCompatActivity {
         request.setTitle(fileName);
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-        DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        DownloadManager dm = (DownloadManager)getSystemService(DOWNLOAD_SERVICE);
         try {
             long downloadId = dm.enqueue(request);
             String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                .getAbsolutePath() + "/" + fileName;
+                    .getAbsolutePath() + "/" + fileName;
             DownloadHistoryManager.addDownloadHistory(MainActivity.this, downloadId, fileName, filePath);
             DownloadHistoryManager.monitorDownloadProgress(MainActivity.this, downloadId, dm);
-            showToast("ダウンロードを開始しました");
+            Toast.makeText(MainActivity.this, "ダウンロードを開始しました", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
-            showToast("ダウンロードに失敗しました");
+            Toast.makeText(MainActivity.this, "ダウンロードに失敗しました", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void handleBlobDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
         String js = "javascript:(function() {" +
-            "fetch('" + url + "').then(function(response) {" +
-            "  return response.blob();" +
-            "}).then(function(blob) {" +
-            "  var reader = new FileReader();" +
-            "  reader.onloadend = function() {" +
-            "    var base64data = reader.result;" +
-            "    var fileName = '" + generateBlobFileName(mimeType) + "';" +
-            "    window.BlobDownloader.onBlobDownloaded(base64data, '" + (mimeType != null ? mimeType : "application/octet-stream") + "', fileName);" +
-            "  };" +
-            "  reader.readAsDataURL(blob);" +
-            "}).catch(function(error) {" +
-            "  window.BlobDownloader.onBlobDownloadError(error.toString());" +
-            "});" +
-            "})()";
+                "fetch('" + url + "').then(function(response) {" +
+                "  return response.blob();" +
+                "}).then(function(blob) {" +
+                "  var reader = new FileReader();" +
+                "  reader.onloadend = function() {" +
+                "    var base64data = reader.result;" +
+                "    var fileName = '" + generateBlobFileName(mimeType) + "';" +
+                "    window.BlobDownloader.onBlobDownloaded(base64data, '" + (mimeType != null ? mimeType : "application/octet-stream") + "', fileName);" +
+                "  };" +
+                "  reader.readAsDataURL(blob);" +
+                "}).catch(function(error) {" +
+                "  window.BlobDownloader.onBlobDownloadError(error.toString());" +
+                "});" +
+                "})()";
         getCurrentWebView().evaluateJavascript(js, null);
     }
 
@@ -837,26 +853,27 @@ public class MainActivity extends AppCompatActivity {
                         fos.write(data);
                         fos.flush();
                     }
-                    showToast("blob ダウンロード完了: " + file.getAbsolutePath());
+                    Toast.makeText(MainActivity.this, "blob ダウンロード完了: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
                 } catch (Exception e) {
-                    showToast("blob ダウンロードエラー: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "blob ダウンロードエラー: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         }
         @android.webkit.JavascriptInterface
         public void onBlobDownloadError(String errorMessage) {
-            runOnUiThread(() -> showToast("blob ダウンロードエラー: " + errorMessage));
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "blob ダウンロードエラー: " + errorMessage, Toast.LENGTH_LONG).show());
         }
     }
 
     private void saveImage(String imageUrl) {
         try {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-                ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                showToast("ストレージ権限が必要です");
+                ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(MainActivity.this, "ストレージ権限が必要です", Toast.LENGTH_SHORT).show();
                 return;
             }
-            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            DownloadManager dm = (DownloadManager)getSystemService(DOWNLOAD_SERVICE);
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(imageUrl));
             request.setMimeType("image/*");
             String fileName = URLUtil.guessFileName(imageUrl, null, "image/*");
@@ -865,12 +882,13 @@ public class MainActivity extends AppCompatActivity {
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             request.setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, fileName);
             dm.enqueue(request);
-            showToast("画像の保存を開始しました");
+            Toast.makeText(MainActivity.this, "画像の保存を開始しました", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
-            showToast("画像の保存に失敗しました");
+            Toast.makeText(MainActivity.this, "画像の保存に失敗しました", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
     }
+
     private void exportBookmarksToFile() {
         final String bookmarksJson = pref.getString(KEY_BOOKMARKS, "[]");
         File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -888,29 +906,28 @@ public class MainActivity extends AppCompatActivity {
             try (FileOutputStream fos = new FileOutputStream(file)) {
                 fos.write(bookmarksJson.getBytes("UTF-8"));
                 fos.flush();
-                runOnUiThread(() -> showToast("ブックマークをエクスポートしました: " + file.getAbsolutePath()));
+                runOnUiThread(() ->
+                    Toast.makeText(MainActivity.this, "ブックマークをエクスポートしました: " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show()
+                );
             } catch (Exception e) {
-                runOnUiThread(() -> showToast("ブックマークのエクスポートに失敗しました: " + e.getMessage()));
+                runOnUiThread(() ->
+                    Toast.makeText(MainActivity.this, "ブックマークのエクスポートに失敗しました: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                );
                 e.printStackTrace();
             }
         });
     }
 
-
     private void createNewTab() {
-        createNewTab(START_PAGE);
-    }
-
-    private void createNewTab(String url) {
         if (webViews.size() >= MAX_TABS) {
-            showToast("最大タブ数に達しました");
+            Toast.makeText(this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
             return;
         }
         WebView newWebView = createNewWebView();
         webViews.add(newWebView);
         updateTabCount();
         switchToTab(webViews.size() - 1);
-        newWebView.loadUrl(url);
+        getCurrentWebView().loadUrl(START_PAGE);
     }
 
     private void switchToTab(int index) {
@@ -941,7 +958,6 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.top_app_bar_menu, menu);
         return true;
     }
-
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem darkModeItem = menu.findItem(R.id.action_dark_mode);
@@ -964,7 +980,6 @@ public class MainActivity extends AppCompatActivity {
         if (basicAuthItem != null) basicAuthItem.setChecked(basicAuthEnabled);
         return super.onPrepareOptionsMenu(menu);
     }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -976,9 +991,9 @@ public class MainActivity extends AppCompatActivity {
                 item.setChecked(darkModeEnabled);
                 updateDarkMode();
                 pref.edit().putBoolean(KEY_DARK_MODE, darkModeEnabled).apply();
-                showToast("ダークモード " + (darkModeEnabled ? "ON" : "OFF"));
+                Toast.makeText(this, "ダークモード " + (darkModeEnabled ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
             } else {
-                showToast("この機能はAndroid 10以上で利用可能です");
+                Toast.makeText(this, "この機能はAndroid 10以上で利用可能です", Toast.LENGTH_SHORT).show();
             }
         } else if (id == R.id.action_downloads) {
             startActivity(new Intent(MainActivity.this, DownloadHistoryActivity.class));
@@ -1011,10 +1026,10 @@ public class MainActivity extends AppCompatActivity {
             pref.edit().putBoolean(KEY_ZOOM_ENABLED, zoomEnabled).apply();
         } else if (id == R.id.action_js) {
             if (item.isChecked()) {
-                disablejs(); 
+                disablejs();
                 jsEnabled = false;
             } else {
-                enablejs(); 
+                enablejs();
                 jsEnabled = true;
             }
             item.setChecked(jsEnabled);
@@ -1096,12 +1111,12 @@ public class MainActivity extends AppCompatActivity {
             if (!basicAuthEnabled) {
                 basicAuthEnabled = true;
                 item.setChecked(true);
-                showToast("Basic認証 ON");
+                Toast.makeText(MainActivity.this, "Basic認証 ON", Toast.LENGTH_SHORT).show();
             } else {
                 basicAuthEnabled = false;
                 item.setChecked(false);
                 clearBasicAuthCacheAndReload();
-                showToast("Basic認証 OFF");
+                Toast.makeText(MainActivity.this, "Basic認証 OFF", Toast.LENGTH_SHORT).show();
             }
             pref.edit().putBoolean(KEY_BASIC_AUTH, basicAuthEnabled).apply();
         } else if (id == R.id.action_clear_history) {
@@ -1117,16 +1132,15 @@ public class MainActivity extends AppCompatActivity {
             CookieManager cookieManager = CookieManager.getInstance();
             cookieManager.removeAllCookies(null);
             cookieManager.flush();
-
-            urlEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-            urlEditText.setRawInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            urlEditText.setInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_URI | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            urlEditText.setRawInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_URI | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             urlEditText.setPrivateImeOptions("nm");
             urlEditText.setAutofillHints("");
             urlEditText.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
             String currentText = urlEditText.getText().toString();
             urlEditText.setText("");
             urlEditText.setText(currentText);
-            showToast("履歴、フォームデータ、検索候補、及びCookieを消去しました");
+            Toast.makeText(MainActivity.this, "履歴、フォームデータ、検索候補、及びCookieを消去しました", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.action_negapoji) {
             applyNegapoji();
         } else if (id == R.id.action_translate) {
@@ -1152,7 +1166,7 @@ public class MainActivity extends AppCompatActivity {
     private void translatePageToJapanese() {
         String currentUrl = getCurrentWebView().getUrl();
         if (currentUrl == null || currentUrl.isEmpty()) {
-            showToast("翻訳するページが見つかりません");
+            Toast.makeText(MainActivity.this, "翻訳するページが見つかりません", Toast.LENGTH_SHORT).show();
             return;
         }
         try {
@@ -1160,19 +1174,19 @@ public class MainActivity extends AppCompatActivity {
             String translateUrl = "https://translate.google.com/translate?hl=ja&sl=auto&tl=ja&u=" + encodedUrl;
             getCurrentWebView().loadUrl(translateUrl);
         } catch (UnsupportedEncodingException e) {
-            showToast("翻訳中にエラーが発生しました");
+            Toast.makeText(MainActivity.this, "翻訳中にエラーが発生しました", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
     }
 
     private void applyNegapoji() {
         String js = "javascript:(function() {" +
-            "document.documentElement.style.filter = 'invert(1)';" +
-            "var media = document.getElementsByTagName('img');" +
-            "for (var i = 0; i < media.length; i++) {" +
-            "    media[i].style.filter = 'invert(1)';" +
-            "}" +
-            "})()";
+                "document.documentElement.style.filter = 'invert(1)';" +
+                "var media = document.getElementsByTagName('img');" +
+                "for (var i = 0; i < media.length; i++) {" +
+                "    media[i].style.filter = 'invert(1)';" +
+                "}" +
+                "})()";
         getCurrentWebView().evaluateJavascript(js, null);
     }
 
@@ -1219,7 +1233,7 @@ public class MainActivity extends AppCompatActivity {
         int width = rootView.getWidth();
         int height = rootView.getHeight();
         if (width <= 0 || height <= 0) {
-            showToast("スクリーンショット取得エラー: ビューサイズが無効");
+            Toast.makeText(MainActivity.this, "スクリーンショット取得エラー: ビューサイズが無効", Toast.LENGTH_SHORT).show();
             return;
         }
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -1228,7 +1242,7 @@ public class MainActivity extends AppCompatActivity {
             if (copyResult == PixelCopy.SUCCESS) {
                 saveScreenshot(bitmap);
             } else {
-                showToast("スクリーンショットの取得に失敗しました");
+                Toast.makeText(MainActivity.this, "スクリーンショットの取得に失敗しました", Toast.LENGTH_SHORT).show();
             }
         }, handler);
     }
@@ -1247,18 +1261,35 @@ public class MainActivity extends AppCompatActivity {
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
                     fos.flush();
                 }
-                runOnUiThread(() -> showToast("スクリーンショットを保存しました: " + screenshotFile.getAbsolutePath()));
+                runOnUiThread(() ->
+                    Toast.makeText(MainActivity.this, "スクリーンショットを保存しました: " + screenshotFile.getAbsolutePath(), Toast.LENGTH_LONG).show()
+                );
             } catch (Exception e) {
-                runOnUiThread(() -> showToast("スクリーンショット保存中にエラー: " + e.getMessage()));
+                runOnUiThread(() ->
+                    Toast.makeText(MainActivity.this, "スクリーンショット保存中にエラー: " + e.getMessage(), Toast.LENGTH_LONG).show()
+                );
             }
         });
+    }
+
+    private void updateDarkMode() {
+        for (WebView webView : webViews) {
+            WebSettings settings = webView.getSettings();
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+                WebSettingsCompat.setForceDark(settings, darkModeEnabled ?
+                        WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+            }
+            if (webView == getCurrentWebView()) {
+                webView.reload();
+            }
+        }
     }
 
     private void enableCT3UA() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setUserAgentString("Mozilla/5.0 (Linux; Android 7.0; TAB-A03-BR3 Build/02.05.000; wv) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Safari/537.36");
-        showToast("CT3UA適用");
+        Toast.makeText(MainActivity.this, "CT3UA適用", Toast.LENGTH_SHORT).show();
         reloadCurrentPage();
     }
 
@@ -1270,7 +1301,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             settings.setUserAgentString(APPEND_STR.trim());
         }
-        showToast("CT3UA解除");
+        Toast.makeText(MainActivity.this, "CT3UA解除", Toast.LENGTH_SHORT).show();
         reloadCurrentPage();
     }
 
@@ -1282,7 +1313,7 @@ public class MainActivity extends AppCompatActivity {
         }
         String desktopUA = originalUA.replace("Mobile", "").replace("Android", "");
         settings.setUserAgentString(desktopUA + APPEND_STR);
-        showToast("デスクトップ表示有効");
+        Toast.makeText(MainActivity.this, "デスクトップ表示有効", Toast.LENGTH_SHORT).show();
         reloadCurrentPage();
     }
 
@@ -1295,13 +1326,13 @@ public class MainActivity extends AppCompatActivity {
             settings.setUserAgentString(APPEND_STR.trim());
         }
         reloadCurrentPage();
-        showToast("デスクトップ表示無効");
+        Toast.makeText(MainActivity.this, "デスクトップ表示無効", Toast.LENGTH_SHORT).show();
     }
 
     private void enableUA() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setUserAgentString("DoCoMo/2.0 SH902i(c100;TB)");
-        showToast("ガラケーUA有効");
+        Toast.makeText(MainActivity.this, "ガラケーUA有効", Toast.LENGTH_SHORT).show();
         reloadCurrentPage();
     }
 
@@ -1313,27 +1344,27 @@ public class MainActivity extends AppCompatActivity {
         } else {
             settings.setUserAgentString(APPEND_STR.trim());
         }
-        showToast("ガラケーUA解除");
+        Toast.makeText(MainActivity.this, "ガラケーUA解除", Toast.LENGTH_SHORT).show();
         reloadCurrentPage();
     }
 
-    
-    private void disablejs() {
-        WebSettings settings = getCurrentWebView().getSettings();
-        settings.setJavaScriptEnabled(true);
-        showToast("JavaScript有効");
-    }
     private void enablejs() {
         WebSettings settings = getCurrentWebView().getSettings();
+        settings.setJavaScriptEnabled(true);
+        Toast.makeText(MainActivity.this, "JavaScript有効", Toast.LENGTH_SHORT).show();
+    }
+
+    private void disablejs() {
+        WebSettings settings = getCurrentWebView().getSettings();
         settings.setJavaScriptEnabled(false);
-        showToast("JavaScript無効");
+        Toast.makeText(MainActivity.this, "JavaScript無効", Toast.LENGTH_SHORT).show();
     }
 
     private void enableZoom() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setBuiltInZoomControls(true);
         settings.setSupportZoom(true);
-        showToast("ズームを有効にしました");
+        Toast.makeText(MainActivity.this, "ズームを有効にしました", Toast.LENGTH_SHORT).show();
     }
 
     private void disableZoom() {
@@ -1341,32 +1372,17 @@ public class MainActivity extends AppCompatActivity {
         settings.setBuiltInZoomControls(false);
         settings.setSupportZoom(false);
         reloadCurrentPage();
-        showToast("ズームを無効にしました");
-    }
-
-    private void enableimgblock() {
-        WebSettings settings = getCurrentWebView().getSettings();
-        settings.setLoadsImagesAutomatically(false);
-        reloadCurrentPage();
-        showToast("画像ブロック有効");
-    }
-
-    private void disableimgunlock() {
-        WebView webView = getCurrentWebView();
-        webView.getSettings().setLoadsImagesAutomatically(defaultLoadsImagesAutomatically);
-        webView.clearCache(true);
-        webView.reload();
-        showToast("画像ブロック無効");
+        Toast.makeText(MainActivity.this, "ズームを無効にしました", Toast.LENGTH_SHORT).show();
     }
 
     private void showHistoryDialog() {
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-            .setTitle("履歴")
-            .setPositiveButton("閉じる", null)
-            .setView(recyclerView)
-            .create();
+                .setTitle("履歴")
+                .setPositiveButton("閉じる", null)
+                .setView(recyclerView)
+                .create();
         HistoryAdapter adapter = new HistoryAdapter(historyItems, dialog);
         recyclerView.setAdapter(adapter);
         dialog.show();
@@ -1376,10 +1392,10 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-            .setTitle("タブ")
-            .setNegativeButton("閉じる", null)
-            .setView(recyclerView)
-            .create();
+                .setTitle("タブ")
+                .setNegativeButton("閉じる", null)
+                .setView(recyclerView)
+                .create();
         TabAdapter adapter = new TabAdapter(webViews, dialog);
         recyclerView.setAdapter(adapter);
         dialog.show();
@@ -1387,16 +1403,16 @@ public class MainActivity extends AppCompatActivity {
 
     private void showBookmarksManagementDialog() {
         if (bookmarks.isEmpty()) {
-            showToast("ブックマークがありません");
+            Toast.makeText(this, "ブックマークがありません", Toast.LENGTH_SHORT).show();
             return;
         }
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-            .setTitle("ブックマーク")
-            .setNegativeButton("閉じる", null)
-            .setView(recyclerView)
-            .create();
+                .setTitle("ブックマーク")
+                .setNegativeButton("閉じる", null)
+                .setView(recyclerView)
+                .create();
         BookmarkAdapter adapter = new BookmarkAdapter(bookmarks, true, dialog);
         recyclerView.setAdapter(adapter);
         dialog.show();
@@ -1410,21 +1426,21 @@ public class MainActivity extends AppCompatActivity {
         etTitle.setText(bm.getTitle());
         etUrl.setText(bm.getUrl());
         new MaterialAlertDialogBuilder(MainActivity.this)
-            .setTitle("ブックマーク")
-            .setView(editView)
-            .setPositiveButton("保存", (dialog, which) -> {
-                String newTitle = etTitle.getText().toString().trim();
-                String newUrl = etUrl.getText().toString().trim();
-                if (!newUrl.startsWith("http://") && !newUrl.startsWith("https://")) {
-                    newUrl = "http://" + newUrl;
-                }
-                bookmarks.set(position, new Bookmark(newTitle, newUrl));
-                saveBookmarks();
-                adapter.notifyDataSetChanged();
-                showToast("保存しました");
-            })
-            .setNegativeButton("キャンセル", null)
-            .show();
+                .setTitle("ブックマーク")
+                .setView(editView)
+                .setPositiveButton("保存", (dialog, which) -> {
+                    String newTitle = etTitle.getText().toString().trim();
+                    String newUrl = etUrl.getText().toString().trim();
+                    if (!newUrl.startsWith("http://") && !newUrl.startsWith("https://")) {
+                        newUrl = "http://" + newUrl;
+                    }
+                    bookmarks.set(position, new Bookmark(newTitle, newUrl));
+                    saveBookmarks();
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(MainActivity.this, "保存しました", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("キャンセル", null)
+                .show();
     }
 
     private void addBookmark() {
@@ -1433,7 +1449,7 @@ public class MainActivity extends AppCompatActivity {
         if (currentUrl != null && !currentUrl.isEmpty()) {
             bookmarks.add(new Bookmark(title, currentUrl));
             saveBookmarks();
-            showToast("ブックマークを追加しました");
+            Toast.makeText(MainActivity.this, "ブックマークを追加しました", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -1556,7 +1572,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void exitFullScreen() {
         if (customView != null) {
-            FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+            FrameLayout decor = (FrameLayout)getWindow().getDecorView();
             decor.removeView(customView);
             customView = null;
             if (customViewCallback != null) {
@@ -1569,14 +1585,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void copyLink(String link) {
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        ClipboardManager clipboard = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText("リンク", link);
         clipboard.setPrimaryClip(clip);
-        showToast("リンクをコピーしました");
-    }
-
-    private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
     }
 
     private String getFaviconFilename(String url) {
@@ -1592,17 +1604,15 @@ public class MainActivity extends AppCompatActivity {
             return Integer.toString(url.hashCode()) + ".png";
         }
     }
-
     private void saveFaviconToFile(String url, Bitmap bitmap) {
         File faviconsDir = new File(getFilesDir(), "favicons");
         if (!faviconsDir.exists()) {
             faviconsDir.mkdirs();
         }
-        File faviconFile = new File(faviconsDir, getFaviconFilename(url));
-        try (FileOutputStream fos = new FileOutputStream(faviconFile)) {
+        File file = new File(faviconsDir, getFaviconFilename(url));
+        try (FileOutputStream fos = new FileOutputStream(file)) {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-            fos.flush();
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -1616,81 +1626,17 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-    private Bitmap fetchFavicon(String bookmarkUrl) {
-        try {
-            URL urlObj = new URL(bookmarkUrl);
-            String protocol = urlObj.getProtocol();
-            String host = urlObj.getHost();
-            String faviconUrl = protocol + "://" + host + "/favicon.ico";
-            HttpURLConnection connection = (HttpURLConnection) new URL(faviconUrl).openConnection();
-            connection.setConnectTimeout(3000);
-            connection.setReadTimeout(3000);
-            connection.setRequestMethod("GET");
-            connection.connect();
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                try (InputStream is = connection.getInputStream()) {
-                    return BitmapFactory.decodeStream(is);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+    private void initializePersistentFavicons() {
+        for (Bookmark bm : bookmarks) {
+            final String url = bm.getUrl();
+            backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
         }
-        return null;
-    }
-
-    private final ActivityResultLauncher<Intent> filePickerLauncher = registerForActivityResult(
-        new ActivityResultContracts.StartActivityForResult(),
-        result -> {
-            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                Uri uri = result.getData().getData();
-                if (uri != null) {
-                    handleFileImport(uri);
-                } else {
-                    showToast("ファイルが選択されませんでした");
-                }
-            } else {
-                showToast("ファイル選択がキャンセルされました");
-            }
-        });
-
-    private void importBookmarksFromFile() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            intent.setType("*/*");
-        } else {
-            intent.setType("application/json");
-        }
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        filePickerLauncher.launch(intent);
-    }
-
-    private void handleFileImport(Uri uri) {
-        try {
-            String json = readTextFromUri(uri);
-            parseAndImportBookmarks(json);
-            showToast("ブックマークをインポートしました");
-        } catch (IOException e) {
-            showToast("ファイルの読み取りに失敗しました: " + e.getMessage());
-            e.printStackTrace();
-        } catch (JSONException e) {
-            showToast("JSON解析エラー: " + e.getMessage());
-            e.printStackTrace();
+        for (HistoryItem hi : historyItems) {
+            final String url = hi.getUrl();
+            backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
         }
     }
 
-    private String readTextFromUri(Uri uri) throws IOException {
-        StringBuilder builder = new StringBuilder();
-        try (InputStream inputStream = getContentResolver().openInputStream(uri);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                builder.append(line);
-            }
-        }
-        return builder.toString();
-    }
     private class TabAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private static final int VIEW_TYPE_TAB = 0;
         private static final int VIEW_TYPE_ADD = 1;
@@ -1749,7 +1695,7 @@ public class MainActivity extends AppCompatActivity {
                         webViewContainer.addView(getCurrentWebView());
                         updateTabCount();
                     } else {
-                        showToast("これ以上タブを閉じられません");
+                        Toast.makeText(MainActivity.this, "これ以上タブを閉じられません", Toast.LENGTH_SHORT).show();
                     }
                 });
             } else {
@@ -1814,17 +1760,17 @@ public class MainActivity extends AppCompatActivity {
                 HistoryItem currentItem = items.get(currentPosition);
                 String[] options = {"URLコピー", "削除"};
                 new MaterialAlertDialogBuilder(MainActivity.this)
-                    .setTitle("操作を選択")
-                    .setItems(options, (dialogInterface, which) -> {
-                        if (which == 0) {
-                            copyLink(currentItem.getUrl());
-                        } else if (which == 1) {
-                            items.remove(currentPosition);
-                            notifyItemRemoved(currentPosition);
-                            saveHistory();
-                            showToast("削除しました");
-                        }
-                    }).show();
+                        .setTitle("操作を選択")
+                        .setItems(options, (dialogInterface, which) -> {
+                            if (which == 0) {
+                                copyLink(currentItem.getUrl());
+                            } else if (which == 1) {
+                                items.remove(currentPosition);
+                                notifyItemRemoved(currentPosition);
+                                saveHistory();
+                                Toast.makeText(MainActivity.this, "削除しました", Toast.LENGTH_SHORT).show();
+                            }
+                        }).show();
                 return true;
             });
         }
@@ -1878,17 +1824,17 @@ public class MainActivity extends AppCompatActivity {
                     if (currentPosition == RecyclerView.NO_POSITION) return true;
                     String[] options = {"編集", "削除"};
                     new MaterialAlertDialogBuilder(MainActivity.this)
-                        .setTitle("操作を選択")
-                        .setItems(options, (dialogInterface, which) -> {
-                            if (which == 0) {
-                                showEditBookmarkDialog(currentPosition, this);
-                            } else if (which == 1) {
-                                items.remove(currentPosition);
-                                notifyItemRemoved(currentPosition);
-                                saveBookmarks();
-                                showToast("削除しました");
-                            }
-                        }).show();
+                            .setTitle("操作を選択")
+                            .setItems(options, (dialogInterface, which) -> {
+                                if (which == 0) {
+                                    showEditBookmarkDialog(currentPosition, this);
+                                } else if (which == 1) {
+                                    items.remove(currentPosition);
+                                    notifyItemRemoved(currentPosition);
+                                    saveBookmarks();
+                                    Toast.makeText(MainActivity.this, "削除しました", Toast.LENGTH_SHORT).show();
+                                }
+                            }).show();
                     return true;
                 });
             }
@@ -1907,23 +1853,57 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-   private void initializePersistentFavicons() {
-        for (Bookmark bm : bookmarks) {
-            final String url = bm.getUrl();
-            backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
+
+    private final ActivityResultLauncher<Intent> filePickerLauncher = registerForActivityResult(
+        new ActivityResultContracts.StartActivityForResult(),
+        result -> {
+            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                Uri uri = result.getData().getData();
+                if (uri != null) {
+                    handleFileImport(uri);
+                } else {
+                    Toast.makeText(MainActivity.this, "ファイルが選択されませんでした", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "ファイル選択がキャンセルされました", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+    private void importBookmarksFromFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            intent.setType("*/*");
+        } else {
+            intent.setType("application/json");
         }
-        for (HistoryItem hi : historyItems) {
-            final String url = hi.getUrl();
-            backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        filePickerLauncher.launch(intent);
+    }
+
+    private void handleFileImport(Uri uri) {
+        try {
+            String json = readTextFromUri(uri);
+            parseAndImportBookmarks(json);
+            Toast.makeText(MainActivity.this, "ブックマークをインポートしました", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            Toast.makeText(MainActivity.this, "ファイルの読み取りに失敗しました: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        } catch (JSONException e) {
+            Toast.makeText(MainActivity.this, "JSON解析エラー: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
         }
     }
-    private void updateDarkMode() {
-        for (WebView webView : webViews) {
-            WebSettings settings = webView.getSettings();
-            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
-                WebSettingsCompat.setForceDark(settings, darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+
+    private String readTextFromUri(Uri uri) throws IOException {
+        StringBuilder builder = new StringBuilder();
+        try (InputStream inputStream = getContentResolver().openInputStream(uri);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line);
             }
-            webView.reload();
         }
+        return builder.toString();
     }
 }
