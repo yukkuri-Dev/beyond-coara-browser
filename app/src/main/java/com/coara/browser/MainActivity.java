@@ -1371,13 +1371,13 @@ public class MainActivity extends AppCompatActivity {
         reloadCurrentPage();
     }
 
-    private void enablejs() {
+    private void disablejs() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setJavaScriptEnabled(true);
         Toast.makeText(MainActivity.this, "JavaScript有効", Toast.LENGTH_SHORT).show();
     }
 
-    private void disablejs() {
+    private void enablejs() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setJavaScriptEnabled(false);
         Toast.makeText(MainActivity.this, "JavaScript無効", Toast.LENGTH_SHORT).show();
