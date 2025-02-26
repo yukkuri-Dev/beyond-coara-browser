@@ -104,6 +104,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public class MainActivity extends AppCompatActivity {
+
     private WebView webView;
     private static final String PREF_NAME = "AdvancedBrowserPrefs";
     private static final String KEY_DARK_MODE = "dark_mode";
@@ -124,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_SELECT_CODE = 1001;
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
+
     private boolean darkModeEnabled = false;
     private boolean basicAuthEnabled = false;
     private boolean zoomEnabled = false;
@@ -132,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean uaEnabled = false;
     private boolean deskuaEnabled = false;
     private boolean ct3uaEnabled = false;
+
     private TextInputEditText urlEditText;
     private ImageView faviconImageView;
     private MaterialButton btnGo;
@@ -171,6 +174,7 @@ public class MainActivity extends AppCompatActivity {
         public String getTitle() { return title; }
         public String getUrl() { return url; }
     }
+
     public static class HistoryItem {
         private final String title;
         private final String url;
@@ -331,10 +335,11 @@ public class MainActivity extends AppCompatActivity {
         btnNewTab.setOnClickListener(v -> createNewTab());
 
         handleIntent(getIntent());
-        
-        applyPersistentSettings();
-    
 
+        // 状態反映：保存された各種設定を現在の WebView に適用する
+        applyPersistentSettings();
+
+        // 完全履歴消去強化のため、action_clear_history 実行時に SharedPreferences も全削除する処理は下記に追加
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -464,6 +469,42 @@ public class MainActivity extends AppCompatActivity {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
             WebSettingsCompat.setForceDark(settings, darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
         }
+    }
+
+    // 保存された各種設定を現在の WebView に反映するメソッド
+    private void applyPersistentSettings() {
+        WebView current = getCurrentWebView();
+        if (current == null) return;
+        // JavaScript
+        if (!jsEnabled) {
+            disablejs();
+        } else {
+            enablejs();
+        }
+        // Zoom
+        if (zoomEnabled) {
+            enableZoom();
+        } else {
+            disableZoom();
+        }
+        // 画像ブロック
+        if (imgBlockEnabled) {
+            enableimgblock();
+        } else {
+            disableimgunlock();
+        }
+        // UA設定（優先順位：ガラケー > デスクトップ > CT3UA）
+        if (uaEnabled) {
+            enableUA();
+        } else if (deskuaEnabled) {
+            enabledeskUA();
+        } else if (ct3uaEnabled) {
+            enableCT3UA();
+        } else {
+            // デフォルトに戻す
+            disableUA();
+        }
+        // Basic認証については、認証時にプロンプト表示するため起動時処理は不要
     }
 
     private void preInitializeWebView() {
@@ -935,8 +976,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem darkModeItem = menu.findItem(R.id.action_dark_mode);
         darkModeItem.setVisible(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q);
-        darkModeItem.setCheckable(true); 
-        darkModeItem.setChecked(darkModeEnabled); 
+        darkModeItem.setCheckable(true);
+        darkModeItem.setChecked(darkModeEnabled);
         MenuItem uaItem = menu.findItem(R.id.action_ua);
         if (uaItem != null) uaItem.setChecked(uaEnabled);
         MenuItem deskuaItem = menu.findItem(R.id.action_deskua);
@@ -1094,6 +1135,7 @@ public class MainActivity extends AppCompatActivity {
             }
             pref.edit().putBoolean(KEY_BASIC_AUTH, basicAuthEnabled).apply();
         } else if (id == R.id.action_clear_history) {
+            // 完全履歴消去の強化：WebView の履歴、フォームデータ、Cookie、キャッシュに加え、保存されたSharedPreferences の状態も全削除
             WebView current = getCurrentWebView();
             if (current != null) {
                 current.clearHistory();
@@ -1107,6 +1149,7 @@ public class MainActivity extends AppCompatActivity {
             cookieManager.removeAllCookies(null);
             cookieManager.flush();
 
+            // URL入力欄なども再初期化
             urlEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             urlEditText.setRawInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             urlEditText.setPrivateImeOptions("nm");
@@ -1115,7 +1158,9 @@ public class MainActivity extends AppCompatActivity {
             String currentText = urlEditText.getText().toString();
             urlEditText.setText("");
             urlEditText.setText(currentText);
-            Toast.makeText(MainActivity.this, "履歴、フォームデータ、検索候補、及びCookieを消去しました", Toast.LENGTH_SHORT).show();
+            // SharedPreferences の全データ（ボタン状態なども含む）をクリア
+            pref.edit().clear().apply();
+            Toast.makeText(MainActivity.this, "履歴、フォームデータ、Cookie、キャッシュおよび保存状態を全て消去しました", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.action_negapoji) {
             applyNegapoji();
         } else if (id == R.id.action_translate) {
@@ -1437,6 +1482,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void parseAndImportBookmarks(String jsonStr) throws JSONException {
+        JSONArray array = new JSONArray(jsonStr);
+        bookmarks.clear();
+        for (int i = 0; i < array.length(); i++) {
+            JSONObject obj = array.getJSONObject(i);
+            String title = obj.optString("title", "Untitled");
+            String url = obj.optString("url", "");
+            if (!url.isEmpty()) {
+                bookmarks.add(new Bookmark(title, url));
+                backgroundExecutor.execute(() -> {
+                    Bitmap favicon = fetchFavicon(url);
+                    if (favicon != null) {
+                        runOnUiThread(() -> faviconCache.put(url, favicon));
+                        saveFaviconToFile(url, favicon);
+                    }
+                });
+            }
+        }
+        saveBookmarks();
+    }
+
     private void parseAndAddBookmarks(String jsonStr) {
         try {
             JSONArray array = new JSONArray(jsonStr);
@@ -1545,35 +1611,6 @@ public class MainActivity extends AppCompatActivity {
         clipboard.setPrimaryClip(clip);
         Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
     }
-
-    
-    private void applyPersistentSettings() {
-        WebView current = getCurrentWebView();
-        if (current == null) return;
-        
-        if (!jsEnabled) {
-            disablejs();
-        }
-        if (zoomEnabled) {
-            enableZoom();
-        } else {
-            disableZoom();
-        }
-        if (imgBlockEnabled) {
-            enableimgblock();
-        } else {
-            disableimgunlock();
-        }
-        if (uaEnabled) {
-            enableUA();
-        } else if (deskuaEnabled) {
-            enabledeskUA();
-        } else if (ct3uaEnabled) {
-            enableCT3UA();
-        } else {
-            disableUA();
-        }
-    
 
     private class TabAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private static final int VIEW_TYPE_TAB = 0;
@@ -1885,6 +1922,7 @@ public class MainActivity extends AppCompatActivity {
             return Integer.toString(url.hashCode()) + ".png";
         }
     }
+
     private void saveFaviconToFile(String url, Bitmap bitmap) {
         File faviconsDir = new File(getFilesDir(), "favicons");
         if (!faviconsDir.exists()) {
@@ -1898,6 +1936,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
     private void loadFaviconFromDisk(String url) {
         File faviconsDir = new File(getFilesDir(), "favicons");
         File file = new File(faviconsDir, getFaviconFilename(url));
@@ -1908,6 +1947,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
     private void initializePersistentFavicons() {
         for (Bookmark bm : bookmarks) {
             final String url = bm.getUrl();
@@ -1918,6 +1958,7 @@ public class MainActivity extends AppCompatActivity {
             backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
         }
     }
+
     private void updateDarkMode() {
         for (WebView webView : webViews) {
             WebSettings settings = webView.getSettings();
