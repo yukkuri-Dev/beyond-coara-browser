@@ -336,10 +336,31 @@ public class MainActivity extends AppCompatActivity {
 
         handleIntent(getIntent());
 
-        // 状態反映：保存された各種設定を現在の WebView に適用する
-        applyPersistentSettings();
+        if (zoomEnabled) {
+            enableZoom();
+        } else {
+            disableZoom();
+        }
+        if (jsEnabled) {
+            enablejs();
+        } else {
+            disablejs();
+        }
+        if (imgBlockEnabled) {
+            enableimgblock();
+        } else {
+            disableimgunlock();
+        }
+        if (uaEnabled) {
+            enableUA();
+        } else if (deskuaEnabled) {
+            enabledeskUA();
+        } else if (ct3uaEnabled) {
+            enableCT3UA();
+        } else {
+            disableUA();
+        }
 
-        // 完全履歴消去強化のため、action_clear_history 実行時に SharedPreferences も全削除する処理は下記に追加
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -469,42 +490,6 @@ public class MainActivity extends AppCompatActivity {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
             WebSettingsCompat.setForceDark(settings, darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
         }
-    }
-
-    // 保存された各種設定を現在の WebView に反映するメソッド
-    private void applyPersistentSettings() {
-        WebView current = getCurrentWebView();
-        if (current == null) return;
-        // JavaScript
-        if (!jsEnabled) {
-            disablejs();
-        } else {
-            enablejs();
-        }
-        // Zoom
-        if (zoomEnabled) {
-            enableZoom();
-        } else {
-            disableZoom();
-        }
-        // 画像ブロック
-        if (imgBlockEnabled) {
-            enableimgblock();
-        } else {
-            disableimgunlock();
-        }
-        // UA設定（優先順位：ガラケー > デスクトップ > CT3UA）
-        if (uaEnabled) {
-            enableUA();
-        } else if (deskuaEnabled) {
-            enabledeskUA();
-        } else if (ct3uaEnabled) {
-            enableCT3UA();
-        } else {
-            // デフォルトに戻す
-            disableUA();
-        }
-        // Basic認証については、認証時にプロンプト表示するため起動時処理は不要
     }
 
     private void preInitializeWebView() {
@@ -1135,7 +1120,6 @@ public class MainActivity extends AppCompatActivity {
             }
             pref.edit().putBoolean(KEY_BASIC_AUTH, basicAuthEnabled).apply();
         } else if (id == R.id.action_clear_history) {
-            // 完全履歴消去の強化：WebView の履歴、フォームデータ、Cookie、キャッシュに加え、保存されたSharedPreferences の状態も全削除
             WebView current = getCurrentWebView();
             if (current != null) {
                 current.clearHistory();
@@ -1149,7 +1133,6 @@ public class MainActivity extends AppCompatActivity {
             cookieManager.removeAllCookies(null);
             cookieManager.flush();
 
-            // URL入力欄なども再初期化
             urlEditText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             urlEditText.setRawInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
             urlEditText.setPrivateImeOptions("nm");
@@ -1158,9 +1141,7 @@ public class MainActivity extends AppCompatActivity {
             String currentText = urlEditText.getText().toString();
             urlEditText.setText("");
             urlEditText.setText(currentText);
-            // SharedPreferences の全データ（ボタン状態なども含む）をクリア
-            pref.edit().clear().apply();
-            Toast.makeText(MainActivity.this, "履歴、フォームデータ、Cookie、キャッシュおよび保存状態を全て消去しました", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "履歴、フォームデータ、検索候補、及びCookieを消去しました", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.action_negapoji) {
             applyNegapoji();
         } else if (id == R.id.action_translate) {
@@ -1231,7 +1212,7 @@ public class MainActivity extends AppCompatActivity {
             webView.clearCache(true);
         }
     }
-    
+
     private void clearTabs() {
         WebView current = getCurrentWebView();
         current.loadUrl(START_PAGE);
