@@ -322,6 +322,24 @@ protected void onCreate(@Nullable Bundle savedInstanceState) {
             }
             filePathCallback = null;
         });
+      private final ActivityResultLauncher<Intent> filePickerLauncher =
+      registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+        result -> {
+            if (result.getResultCode() == Activity.RESULT_OK &&
+                result.getData() != null) {
+                Uri uri = result.getData().getData();
+                if (uri != null) {
+                    handleFileImport(uri);
+                } else {
+                    Toast.makeText(MainActivity.this,
+                        "ファイルが選択されませんでした", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this,
+                    "ファイル選択がキャンセルされました", Toast.LENGTH_SHORT).show();
+            }
+        });
+
 
     urlEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
         if (actionId == EditorInfo.IME_ACTION_GO ||
@@ -1973,9 +1991,8 @@ private void importBookmarksFromFile() {
     }
     intent.addCategory(Intent.CATEGORY_OPENABLE);
     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-    fileChooserLauncher.launch(intent);
+    filePickerLauncher.launch(intent);
 }
-
 private void handleFileImport(Uri uri) {
     try {
         String json = readTextFromUri(uri);
