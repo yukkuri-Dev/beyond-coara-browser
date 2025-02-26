@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_CURRENT_TAB = "current_tab_index";
     private static final String KEY_BOOKMARKS = "bookmarks";
     private static final String KEY_HISTORY = "history";
-    private static final String APPEND_STR = "";
+    private static final String APPEND_STR = " CoaraBrowser";
     private static final String CHANNEL_ID = "download_channel";
     private static final String START_PAGE = "file:///android_asset/index.html";
     private static final int FILE_SELECT_CODE = 1001;
@@ -451,7 +451,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
-        settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        //settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);//
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
