@@ -26,7 +26,6 @@ import android.text.InputType;
 import android.util.Base64;
 import android.util.LruCache;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -43,9 +42,9 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
+import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.WebStorage;
 import android.webkit.WebViewDatabase;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -80,8 +79,6 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -321,7 +318,7 @@ public class MainActivity extends AppCompatActivity {
 
         urlEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
             if (actionId == EditorInfo.IME_ACTION_GO ||
-                (keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == KeyEvent.ACTION_DOWN)) {
+                (keyEvent != null && keyEvent.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == android.view.KeyEvent.ACTION_DOWN)) {
                 loadUrl();
                 return true;
             }
@@ -447,6 +444,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        settings.setAppCacheEnabled(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
@@ -483,11 +481,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             webView = new WebView(this);
         }
-        CookieManager cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            cookieManager.setAcceptThirdPartyCookies(webView, true);
-        }
         webView.setBackgroundColor(Color.WHITE);
         webView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
@@ -497,6 +490,16 @@ public class MainActivity extends AppCompatActivity {
         originalUserAgents.put(webView, defaultUA);
         settings.setUserAgentString(defaultUA + APPEND_STR);
         applyOptimizedSettings(settings);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
+        settings.setSupportMultipleWindows(true);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        settings.setAppCacheEnabled(false);
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
+        }
+        webView.setWebChromeClient(new WebChromeClient());
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             try {
@@ -594,14 +597,57 @@ public class MainActivity extends AppCompatActivity {
         });
 
         webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                super.onPageStarted(view, url, favicon);
+            private boolean handleSpecialUrl(String url, WebView view) {
+                if (url.startsWith("tel:")) {
+                    startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
+                    return true;
+                } else if (url.startsWith("mailto:")) {
+                    startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse(url)));
+                    return true;
+                } else if (url.startsWith("intent:")) {
+                    try {
+                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                        if (intent != null) {
+                            if (intent.resolveActivity(getPackageManager()) != null) {
+                                startActivity(intent);
+                            } else {
+                                String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                                if (fallbackUrl != null) {
+                                    view.loadUrl(fallbackUrl);
+                                }
+                            }
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                return false;
             }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
+                if (handleSpecialUrl(url, view)) return true;
+                return false;
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return handleSpecialUrl(url, view);
+            }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                urlEditText.setText(url);
+                if (view == getCurrentWebView()) {
+                    urlEditText.setText(url);
+                }
                 if (!isBackNavigation) {
                     if (historyItems.size() > currentHistoryIndex + 1) {
                         historyItems.subList(currentHistoryIndex + 1, historyItems.size()).clear();
@@ -621,14 +667,7 @@ public class MainActivity extends AppCompatActivity {
                     swipeRefreshLayout.setRefreshing(false);
                 }
             }
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return false;
-            }
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return false;
-            }
+
             @Override
             public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
                 if (!basicAuthEnabled) {
@@ -639,14 +678,17 @@ public class MainActivity extends AppCompatActivity {
                 layout.setOrientation(LinearLayout.VERTICAL);
                 int padding = (int) (16 * getResources().getDisplayMetrics().density);
                 layout.setPadding(padding, padding, padding, padding);
+
                 final EditText usernameInput = new EditText(MainActivity.this);
                 usernameInput.setHint("ユーザー名");
                 usernameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PERSON_NAME);
                 layout.addView(usernameInput);
+
                 final EditText passwordInput = new EditText(MainActivity.this);
                 passwordInput.setHint("パスワード");
                 passwordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
                 layout.addView(passwordInput);
+
                 new MaterialAlertDialogBuilder(MainActivity.this)
                     .setTitle("Basic認証情報を入力")
                     .setView(layout)
@@ -662,10 +704,6 @@ public class MainActivity extends AppCompatActivity {
                     })
                     .setNegativeButton("キャンセル", (dialog, which) -> handler.cancel())
                     .show();
-            }
-            @Override
-            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                super.onReceivedHttpError(view, request, errorResponse);
             }
         });
 
@@ -931,9 +969,9 @@ public class MainActivity extends AppCompatActivity {
                 item.setChecked(darkModeEnabled);
                 updateDarkMode();
                 pref.edit().putBoolean(KEY_DARK_MODE, darkModeEnabled).apply();
-                Toast.makeText(this, "ダークモード " + (darkModeEnabled ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "ダークモード " + (darkModeEnabled ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "この機能はAndroid 10以上で利用可能です", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "この機能はAndroid 10以上で利用可能です", Toast.LENGTH_SHORT).show();
             }
         } else if (id == R.id.action_downloads) {
             startActivity(new Intent(MainActivity.this, DownloadHistoryActivity.class));
@@ -1152,7 +1190,7 @@ public class MainActivity extends AppCompatActivity {
             webView.clearCache(true);
         }
     }
-
+    
     private void clearTabs() {
         WebView current = getCurrentWebView();
         current.loadUrl(START_PAGE);
@@ -1763,8 +1801,7 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 showToast("ファイル選択がキャンセルされました");
             }
-        }
-    );
+        });
 
     private void importBookmarksFromFile() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -1818,7 +1855,7 @@ public class MainActivity extends AppCompatActivity {
     private String readTextFromUri(Uri uri) throws IOException {
         StringBuilder builder = new StringBuilder();
         try (InputStream inputStream = getContentResolver().openInputStream(uri);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -1858,7 +1895,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-
     private void loadFaviconFromDisk(String url) {
         File faviconsDir = new File(getFilesDir(), "favicons");
         File file = new File(faviconsDir, getFaviconFilename(url));
@@ -1869,7 +1905,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
     private void initializePersistentFavicons() {
         for (Bookmark bm : bookmarks) {
             final String url = bm.getUrl();
@@ -1880,15 +1915,12 @@ public class MainActivity extends AppCompatActivity {
             backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
         }
     }
-
     private void updateDarkMode() {
-        WebView current = getCurrentWebView();
-        if (current != null) {
-            WebSettings settings = current.getSettings();
+        for (WebView webView : webViews) {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
-                WebSettingsCompat.setForceDark(settings, darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+                WebSettingsCompat.setForceDark(webView.getSettings(), darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
             }
-            current.reload();
+            webView.reload();
         }
     }
 }
