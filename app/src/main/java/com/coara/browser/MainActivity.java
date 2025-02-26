@@ -26,6 +26,7 @@ import android.text.InputType;
 import android.util.Base64;
 import android.util.LruCache;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -42,9 +43,9 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
-import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebStorage;
 import android.webkit.WebViewDatabase;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -79,6 +80,8 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -158,6 +161,7 @@ public class MainActivity extends AppCompatActivity {
     private View customView = null;
     private WebChromeClient.CustomViewCallback customViewCallback = null;
 
+    
     public static class Bookmark {
         private final String title;
         private final String url;
@@ -221,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
         }
         initializePersistentFavicons();
 
+        
         urlEditText = findViewById(R.id.urlEditText);
         urlEditText.setImeOptions(EditorInfo.IME_ACTION_GO);
         faviconImageView = findViewById(R.id.favicon);
@@ -230,6 +235,7 @@ public class MainActivity extends AppCompatActivity {
         webViewContainer = findViewById(R.id.webViewContainer);
         tabCountTextView = findViewById(R.id.tabCountTextView);
         tabCountTextView.setOnClickListener(v -> showTabsDialog());
+
 
         if (pref.contains(KEY_TABS)) {
             loadTabsState();
@@ -318,7 +324,7 @@ public class MainActivity extends AppCompatActivity {
 
         urlEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
             if (actionId == EditorInfo.IME_ACTION_GO ||
-                (keyEvent != null && keyEvent.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == android.view.KeyEvent.ACTION_DOWN)) {
+                (keyEvent != null && keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER && keyEvent.getAction() == KeyEvent.ACTION_DOWN)) {
                 loadUrl();
                 return true;
             }
@@ -437,13 +443,13 @@ public class MainActivity extends AppCompatActivity {
 
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true); 
+        settings.setSupportMultipleWindows(true);
         settings.setAllowFileAccess(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
-        settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
-        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
@@ -483,22 +489,19 @@ public class MainActivity extends AppCompatActivity {
         webView.setBackgroundColor(Color.WHITE);
         webView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-
+        webView.setWebChromeClient(new WebChromeClient());
+        
         WebSettings settings = webView.getSettings();
         final String defaultUA = settings.getUserAgentString();
         originalUserAgents.put(webView, defaultUA);
-        settings.setUserAgentString(defaultUA + APPEND_STR);
+        settings.setUserAgentString(defaultUA);
         applyOptimizedSettings(settings);
-        settings.setJavaScriptCanOpenWindowsAutomatically(true);
-        settings.setSupportMultipleWindows(true);
-        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
-        CookieManager cookieManager = CookieManager.getInstance();
-        cookieManager.setAcceptCookie(true);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        
+        CookieManager cookieManager = CookieManager.getInstance(); 
+        cookieManager.setAcceptCookie(true); 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) { 
             cookieManager.setAcceptThirdPartyCookies(webView, true);
         }
-        webView.setWebChromeClient(new WebChromeClient());
-
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             try {
                 Method setSaveFormData = settings.getClass().getMethod("setSaveFormData", boolean.class);
@@ -595,6 +598,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         webView.setWebViewClient(new WebViewClient() {
+
             private boolean handleSpecialUrl(String url, WebView view) {
                 if (url.startsWith("tel:")) {
                     startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
@@ -937,8 +941,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem darkModeItem = menu.findItem(R.id.action_dark_mode);
         darkModeItem.setVisible(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q);
-        darkModeItem.setCheckable(true);
-        darkModeItem.setChecked(darkModeEnabled);
+        darkModeItem.setCheckable(true); 
+        darkModeItem.setChecked(darkModeEnabled); 
         MenuItem uaItem = menu.findItem(R.id.action_ua);
         if (uaItem != null) uaItem.setChecked(uaEnabled);
         MenuItem deskuaItem = menu.findItem(R.id.action_deskua);
@@ -967,9 +971,9 @@ public class MainActivity extends AppCompatActivity {
                 item.setChecked(darkModeEnabled);
                 updateDarkMode();
                 pref.edit().putBoolean(KEY_DARK_MODE, darkModeEnabled).apply();
-                Toast.makeText(MainActivity.this, "ダークモード " + (darkModeEnabled ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "ダークモード " + (darkModeEnabled ? "ON" : "OFF"), Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(MainActivity.this, "この機能はAndroid 10以上で利用可能です", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "この機能はAndroid 10以上で利用可能です", Toast.LENGTH_SHORT).show();
             }
         } else if (id == R.id.action_downloads) {
             startActivity(new Intent(MainActivity.this, DownloadHistoryActivity.class));
@@ -1249,6 +1253,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    
     private void enableCT3UA() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setUserAgentString("Mozilla/5.0 (Linux; Android 7.0; TAB-A03-BR3 Build/02.05.000; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Safari/537.36");
@@ -1311,6 +1316,7 @@ public class MainActivity extends AppCompatActivity {
         reloadCurrentPage();
     }
 
+    
     private void enablejs() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setJavaScriptEnabled(true);
@@ -1322,6 +1328,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setJavaScriptEnabled(false);
         Toast.makeText(MainActivity.this, "JavaScript無効", Toast.LENGTH_SHORT).show();
     }
+
 
     private void enableZoom() {
         WebSettings settings = getCurrentWebView().getSettings();
@@ -1338,6 +1345,7 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, "ズームを無効にしました", Toast.LENGTH_SHORT).show();
     }
 
+    
     private void enableimgblock() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setLoadsImagesAutomatically(false);
@@ -1352,6 +1360,7 @@ public class MainActivity extends AppCompatActivity {
         webView.reload();
         Toast.makeText(MainActivity.this, "画像ブロック無効", Toast.LENGTH_SHORT).show();
     }
+
 
     private void showHistoryDialog() {
         RecyclerView recyclerView = new RecyclerView(this);
@@ -1568,6 +1577,8 @@ public class MainActivity extends AppCompatActivity {
         clipboard.setPrimaryClip(clip);
         Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
     }
+
+    
 
     private class TabAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         private static final int VIEW_TYPE_TAB = 0;
@@ -1853,7 +1864,7 @@ public class MainActivity extends AppCompatActivity {
     private String readTextFromUri(Uri uri) throws IOException {
         StringBuilder builder = new StringBuilder();
         try (InputStream inputStream = getContentResolver().openInputStream(uri);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
@@ -1879,7 +1890,6 @@ public class MainActivity extends AppCompatActivity {
             return Integer.toString(url.hashCode()) + ".png";
         }
     }
-
     private void saveFaviconToFile(String url, Bitmap bitmap) {
         File faviconsDir = new File(getFilesDir(), "favicons");
         if (!faviconsDir.exists()) {
@@ -1915,8 +1925,9 @@ public class MainActivity extends AppCompatActivity {
     }
     private void updateDarkMode() {
         for (WebView webView : webViews) {
+            WebSettings settings = webView.getSettings();
             if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
-                WebSettingsCompat.setForceDark(webView.getSettings(), darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
+                WebSettingsCompat.setForceDark(settings, darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
             }
             webView.reload();
         }
