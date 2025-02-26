@@ -5,14 +5,12 @@ import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.ContentResolver;
 import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -82,8 +80,6 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -104,7 +100,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
-
 
     private static final String PREF_NAME = "AdvancedBrowserPrefs";
     private static final String KEY_DARK_MODE = "dark_mode";
@@ -148,6 +143,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean isBackNavigation = false;
     private final List<Bookmark> bookmarks = new ArrayList<>();
     private final List<HistoryItem> historyItems = new ArrayList<>();
+
+    // 状態フラグ
     private boolean darkModeEnabled = false;
     private boolean basicAuthEnabled = false;
     private boolean zoomEnabled = false;
@@ -156,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean uaEnabled = false;
     private boolean deskuaEnabled = false;
     private boolean ct3uaEnabled = false;
+
     private final Map<WebView, Bitmap> webViewFavicons = new HashMap<>();
     private LruCache<String, Bitmap> faviconCache;
     private final Map<WebView, String> originalUserAgents = new HashMap<>();
@@ -164,7 +162,6 @@ public class MainActivity extends AppCompatActivity {
     private WebView preloadedWebView = null;
     private View customView = null;
     private WebChromeClient.CustomViewCallback customViewCallback = null;
-
 
     public static class Bookmark {
         private final String title;
@@ -176,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
         public String getTitle() { return title; }
         public String getUrl() { return url; }
     }
+
     public static class HistoryItem {
         private final String title;
         private final String url;
@@ -480,24 +478,29 @@ public class MainActivity extends AppCompatActivity {
         WebSettings settings = webView.getSettings();
         String defaultUA = settings.getUserAgentString();
         originalUserAgents.put(webView, defaultUA);
-        settings.setUserAgentString(defaultUA + APPEND_STR);
         applyOptimizedSettings(settings);
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            try {
-                Method setSaveFormData = settings.getClass().getMethod("setSaveFormData", boolean.class);
-                setSaveFormData.invoke(settings, false);
-            } catch (Exception e) { e.printStackTrace(); }
-            try {
-                Method setDatabaseEnabled = settings.getClass().getMethod("setDatabaseEnabled", boolean.class);
-                setDatabaseEnabled.invoke(settings, true);
-            } catch (Exception e) { e.printStackTrace(); }
-            try {
-                Method setAppCacheEnabled = settings.getClass().getMethod("setAppCacheEnabled", boolean.class);
-                setAppCacheEnabled.invoke(settings, true);
-                Method setAppCachePath = settings.getClass().getMethod("setAppCachePath", String.class);
-                setAppCachePath.invoke(settings, getCacheDir().getAbsolutePath());
-            } catch (Exception e) { e.printStackTrace(); }
+        // 選択状態に応じた設定の適用
+        if (zoomEnabled) {
+            settings.setBuiltInZoomControls(true);
+            settings.setSupportZoom(true);
+        } else {
+            settings.setBuiltInZoomControls(false);
+            settings.setSupportZoom(false);
+        }
+        settings.setJavaScriptEnabled(jsEnabled);
+        settings.setLoadsImagesAutomatically(!imgBlockEnabled);
+
+        if (uaEnabled) {
+            settings.setUserAgentString("DoCoMo/2.0 SH902i(c100;TB)");
+        } else if (deskuaEnabled) {
+            String desktopUA = defaultUA.replace("Mobile", "").replace("Android", "");
+            settings.setUserAgentString(desktopUA + APPEND_STR);
+        } else if (ct3uaEnabled) {
+            settings.setUserAgentString("Mozilla/5.0 (Linux; Android 7.0; TAB-A03-BR3 Build/02.05.000; wv) " +
+                "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Safari/537.36");
+        } else {
+            settings.setUserAgentString(defaultUA + APPEND_STR);
         }
 
         webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
@@ -606,7 +609,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return false;
             }
-            
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.startsWith("tel:")) {
@@ -788,7 +790,7 @@ public class MainActivity extends AppCompatActivity {
         request.setTitle(fileName);
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-        DownloadManager dm = (DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+        DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         try {
             long downloadId = dm.enqueue(request);
             String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -874,7 +876,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "ストレージ権限が必要です", Toast.LENGTH_SHORT).show();
                 return;
             }
-            DownloadManager dm = (DownloadManager)getSystemService(DOWNLOAD_SERVICE);
+            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(imageUrl));
             request.setMimeType("image/*");
             String fileName = URLUtil.guessFileName(imageUrl, null, "image/*");
@@ -1375,6 +1377,7 @@ public class MainActivity extends AppCompatActivity {
         reloadCurrentPage();
         Toast.makeText(MainActivity.this, "ズームを無効にしました", Toast.LENGTH_SHORT).show();
     }
+
     private void enableimgblock() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setLoadsImagesAutomatically(false);
@@ -1394,10 +1397,10 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle("履歴")
-                .setPositiveButton("閉じる", null)
-                .setView(recyclerView)
-                .create();
+            .setTitle("履歴")
+            .setPositiveButton("閉じる", null)
+            .setView(recyclerView)
+            .create();
         HistoryAdapter adapter = new HistoryAdapter(historyItems, dialog);
         recyclerView.setAdapter(adapter);
         dialog.show();
@@ -1407,10 +1410,10 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle("タブ")
-                .setNegativeButton("閉じる", null)
-                .setView(recyclerView)
-                .create();
+            .setTitle("タブ")
+            .setNegativeButton("閉じる", null)
+            .setView(recyclerView)
+            .create();
         TabAdapter adapter = new TabAdapter(webViews, dialog);
         recyclerView.setAdapter(adapter);
         dialog.show();
@@ -1424,10 +1427,10 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle("ブックマーク")
-                .setNegativeButton("閉じる", null)
-                .setView(recyclerView)
-                .create();
+            .setTitle("ブックマーク")
+            .setNegativeButton("閉じる", null)
+            .setView(recyclerView)
+            .create();
         BookmarkAdapter adapter = new BookmarkAdapter(bookmarks, true, dialog);
         recyclerView.setAdapter(adapter);
         dialog.show();
@@ -1441,21 +1444,21 @@ public class MainActivity extends AppCompatActivity {
         etTitle.setText(bm.getTitle());
         etUrl.setText(bm.getUrl());
         new MaterialAlertDialogBuilder(MainActivity.this)
-                .setTitle("ブックマーク")
-                .setView(editView)
-                .setPositiveButton("保存", (dialog, which) -> {
-                    String newTitle = etTitle.getText().toString().trim();
-                    String newUrl = etUrl.getText().toString().trim();
-                    if (!newUrl.startsWith("http://") && !newUrl.startsWith("https://")) {
-                        newUrl = "http://" + newUrl;
-                    }
-                    bookmarks.set(position, new Bookmark(newTitle, newUrl));
-                    saveBookmarks();
-                    adapter.notifyDataSetChanged();
-                    Toast.makeText(MainActivity.this, "保存しました", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("キャンセル", null)
-                .show();
+            .setTitle("ブックマーク")
+            .setView(editView)
+            .setPositiveButton("保存", (dialog, which) -> {
+                String newTitle = etTitle.getText().toString().trim();
+                String newUrl = etUrl.getText().toString().trim();
+                if (!newUrl.startsWith("http://") && !newUrl.startsWith("https://")) {
+                    newUrl = "http://" + newUrl;
+                }
+                bookmarks.set(position, new Bookmark(newTitle, newUrl));
+                saveBookmarks();
+                adapter.notifyDataSetChanged();
+                Toast.makeText(MainActivity.this, "保存しました", Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("キャンセル", null)
+            .show();
     }
 
     private void addBookmark() {
@@ -1605,6 +1608,7 @@ public class MainActivity extends AppCompatActivity {
         clipboard.setPrimaryClip(clip);
         Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
     }
+
     private Bitmap fetchFavicon(String bookmarkUrl) {
         try {
             URL urlObj = new URL(bookmarkUrl);
@@ -1618,8 +1622,7 @@ public class MainActivity extends AppCompatActivity {
             connection.connect();
             if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 try (InputStream is = connection.getInputStream()) {
-                    Bitmap bitmap = BitmapFactory.decodeStream(is);
-                    return bitmap;
+                    return BitmapFactory.decodeStream(is);
                 }
             }
         } catch (Exception e) {
@@ -1935,7 +1938,7 @@ public class MainActivity extends AppCompatActivity {
     private String readTextFromUri(Uri uri) throws IOException {
         StringBuilder builder = new StringBuilder();
         try (InputStream inputStream = getContentResolver().openInputStream(uri);
-             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 builder.append(line);
