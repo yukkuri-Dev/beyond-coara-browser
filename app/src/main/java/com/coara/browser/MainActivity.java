@@ -451,7 +451,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
-        //settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);//
+        settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
@@ -498,6 +498,11 @@ public class MainActivity extends AppCompatActivity {
         settings.setUserAgentString(defaultUA + APPEND_STR);
         applyOptimizedSettings(settings);
 
+        CookieManager cookieManager = CookieManager.getInstance(); 
+        cookieManager.setAcceptCookie(true); 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) { 
+            cookieManager.setAcceptThirdPartyCookies(webView, true);
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             try {
                 Method setSaveFormData = settings.getClass().getMethod("setSaveFormData", boolean.class);
