@@ -450,7 +450,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+       // settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);//
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
         settings.setTextZoom(100);
