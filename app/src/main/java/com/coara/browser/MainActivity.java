@@ -54,6 +54,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -66,19 +67,22 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
+
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.io.ByteArrayInputStream;
-import java.util.concurrent.ExecutorService; 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -101,7 +105,6 @@ import java.util.regex.Matcher;
 
 public class MainActivity extends AppCompatActivity {
 
-    // 各設定状態をSharedPreferencesに保存するためのキー
     private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_BASIC_AUTH = "basic_auth";
     private static final String KEY_ZOOM_ENABLED = "zoom_enabled";
@@ -110,6 +113,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_UA_ENABLED = "ua_enabled";
     private static final String KEY_DESKUA_ENABLED = "deskua_enabled";
     private static final String KEY_CT3UA_ENABLED = "ct3ua_enabled";
+    private static final String PREF_NAME = "AdvancedBrowserPrefs";
+    private static final String KEY_TABS = "tabs";
+    private static final String KEY_CURRENT_TAB = "current_tab_index";
+    private static final String KEY_BOOKMARKS = "bookmarks";
+    private static final String KEY_HISTORY = "history";
 
     private boolean darkModeEnabled = false;
     private boolean basicAuthEnabled = false;
@@ -137,12 +145,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean defaultLoadsImagesAutomaticallyInitialized = false;
     private WebView preloadedWebView = null;
 
-    private SharedPreferences pref;
-    private static final String PREF_NAME = "AdvancedBrowserPrefs";
-    private static final String KEY_TABS = "tabs";
-    private static final String KEY_CURRENT_TAB = "current_tab_index";
-    private static final String KEY_BOOKMARKS = "bookmarks";
-    private static final String KEY_HISTORY = "history";
+    private SharedPreferences prefObj;
 
     private TextInputEditText urlEditText;
     private ImageView faviconImageView;
@@ -158,6 +161,8 @@ public class MainActivity extends AppCompatActivity {
     private final List<HistoryItem> historyItems = new ArrayList<>();
     private int currentHistoryIndex = -1;
     private boolean isBackNavigation = false;
+
+    private static final String START_PAGE = "file:///android_asset/index.html";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -175,16 +180,17 @@ public class MainActivity extends AppCompatActivity {
             getSupportActionBar().setTitle("");
         }
 
-        pref = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        // SharedPreferencesから各設定状態を読み込む
-        darkModeEnabled = pref.getBoolean(KEY_DARK_MODE, false);
-        basicAuthEnabled = pref.getBoolean(KEY_BASIC_AUTH, false);
-        zoomEnabled = pref.getBoolean(KEY_ZOOM_ENABLED, false);
-        jsEnabled = pref.getBoolean(KEY_JS_ENABLED, false);
-        imgBlockEnabled = pref.getBoolean(KEY_IMG_BLOCK_ENABLED, false);
-        uaEnabled = pref.getBoolean(KEY_UA_ENABLED, false);
-        deskuaEnabled = pref.getBoolean(KEY_DESKUA_ENABLED, false);
-        ct3uaEnabled = pref.getBoolean(KEY_CT3UA_ENABLED, false);
+        prefObj = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        darkModeEnabled = prefObj.getBoolean(KEY_DARK_MODE, false);
+        basicAuthEnabled = prefObj.getBoolean(KEY_BASIC_AUTH, false);
+        zoomEnabled = prefObj.getBoolean(KEY_ZOOM_ENABLED, false);
+        jsEnabled = prefObj.getBoolean(KEY_JS_ENABLED, false);
+        imgBlockEnabled = prefObj.getBoolean(KEY_IMG_BLOCK_ENABLED, false);
+        uaEnabled = prefObj.getBoolean(KEY_UA_ENABLED, false);
+        deskuaEnabled = prefObj.getBoolean(KEY_DESKUA_ENABLED, false);
+        ct3uaEnabled = prefObj.getBoolean(KEY_CT3UA_ENABLED, false);
+
+        pref = prefObj;
 
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         final int cacheSize = maxMemory / 8;
@@ -439,20 +445,6 @@ public class MainActivity extends AppCompatActivity {
         if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
             WebSettingsCompat.setForceDark(settings,
                     darkModeEnabled ? WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
-        }
-        // 各ユーザー設定の反映
-        settings.setJavaScriptEnabled(jsEnabled);
-        if (zoomEnabled) {
-            settings.setBuiltInZoomControls(true);
-            settings.setSupportZoom(true);
-        } else {
-            settings.setBuiltInZoomControls(false);
-            settings.setSupportZoom(false);
-        }
-        if (imgBlockEnabled) {
-            settings.setLoadsImagesAutomatically(false);
-        } else {
-            settings.setLoadsImagesAutomatically(defaultLoadsImagesAutomatically);
         }
     }
 
@@ -857,7 +849,6 @@ public class MainActivity extends AppCompatActivity {
         if (!downloadDir.exists()) {
             downloadDir.mkdirs();
         }
-
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         final File file;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
@@ -865,7 +856,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             file = new File(downloadDir, timeStamp + "-bookmark.json");
         }
-
         backgroundExecutor.execute(() -> {
             try (FileOutputStream fos = new FileOutputStream(file)) {
                 fos.write(bookmarksJson.getBytes("UTF-8"));
@@ -931,18 +921,18 @@ public class MainActivity extends AppCompatActivity {
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem darkModeItem = menu.findItem(R.id.action_dark_mode);
         darkModeItem.setVisible(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q);
-        MenuItem zoomItem = menu.findItem(R.id.action_zoom_toggle);
-        if (zoomItem != null) zoomItem.setChecked(zoomEnabled);
-        MenuItem jsItem = menu.findItem(R.id.action_js);
-        if (jsItem != null) jsItem.setChecked(jsEnabled);
-        MenuItem imgItem = menu.findItem(R.id.action_img);
-        if (imgItem != null) imgItem.setChecked(imgBlockEnabled);
         MenuItem uaItem = menu.findItem(R.id.action_ua);
         if (uaItem != null) uaItem.setChecked(uaEnabled);
         MenuItem deskuaItem = menu.findItem(R.id.action_deskua);
         if (deskuaItem != null) deskuaItem.setChecked(deskuaEnabled);
         MenuItem ct3uaItem = menu.findItem(R.id.action_ct3ua);
         if (ct3uaItem != null) ct3uaItem.setChecked(ct3uaEnabled);
+        MenuItem zoomItem = menu.findItem(R.id.action_zoom_toggle);
+        if (zoomItem != null) zoomItem.setChecked(zoomEnabled);
+        MenuItem jsItem = menu.findItem(R.id.action_js);
+        if (jsItem != null) jsItem.setChecked(jsEnabled);
+        MenuItem imgItem = menu.findItem(R.id.action_img);
+        if (imgItem != null) imgItem.setChecked(imgBlockEnabled);
         MenuItem basicAuthItem = menu.findItem(R.id.action_basic_auth);
         if (basicAuthItem != null) basicAuthItem.setChecked(basicAuthEnabled);
         return super.onPrepareOptionsMenu(menu);
@@ -1014,7 +1004,6 @@ public class MainActivity extends AppCompatActivity {
             pref.edit().putBoolean(KEY_IMG_BLOCK_ENABLED, imgBlockEnabled).apply();
         } else if (id == R.id.action_ua) {
             if (!uaEnabled) {
-                // _uaをONにする際、他の_ua系をOFFにする
                 if (deskuaEnabled) {
                     disabledeskUA();
                     deskuaEnabled = false;
@@ -1914,6 +1903,7 @@ public class MainActivity extends AppCompatActivity {
             return Integer.toString(url.hashCode()) + ".png";
         }
     }
+
     private void saveFaviconToFile(String url, Bitmap bitmap) {
         File faviconsDir = new File(getFilesDir(), "favicons");
         if (!faviconsDir.exists()) {
@@ -1926,6 +1916,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
     private void loadFaviconFromDisk(String url) {
         File faviconsDir = new File(getFilesDir(), "favicons");
         File file = new File(faviconsDir, getFaviconFilename(url));
@@ -1936,6 +1927,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
     private void initializePersistentFavicons() {
         for (Bookmark bm : bookmarks) {
             final String url = bm.getUrl();
