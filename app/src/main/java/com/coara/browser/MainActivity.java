@@ -161,7 +161,6 @@ public class MainActivity extends AppCompatActivity {
     private View customView = null;
     private WebChromeClient.CustomViewCallback customViewCallback = null;
 
-    
     public static class Bookmark {
         private final String title;
         private final String url;
@@ -225,7 +224,6 @@ public class MainActivity extends AppCompatActivity {
         }
         initializePersistentFavicons();
 
-        
         urlEditText = findViewById(R.id.urlEditText);
         urlEditText.setImeOptions(EditorInfo.IME_ACTION_GO);
         faviconImageView = findViewById(R.id.favicon);
@@ -235,7 +233,6 @@ public class MainActivity extends AppCompatActivity {
         webViewContainer = findViewById(R.id.webViewContainer);
         tabCountTextView = findViewById(R.id.tabCountTextView);
         tabCountTextView.setOnClickListener(v -> showTabsDialog());
-
 
         if (pref.contains(KEY_TABS)) {
             loadTabsState();
@@ -334,6 +331,9 @@ public class MainActivity extends AppCompatActivity {
         btnNewTab.setOnClickListener(v -> createNewTab());
 
         handleIntent(getIntent());
+        
+        applyPersistentSettings();
+    
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -444,6 +444,8 @@ public class MainActivity extends AppCompatActivity {
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
+        settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
@@ -1245,7 +1247,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    
     private void enableCT3UA() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setUserAgentString("Mozilla/5.0 (Linux; Android 7.0; TAB-A03-BR3 Build/02.05.000; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/83.0.4103.106 Safari/537.36");
@@ -1308,7 +1309,6 @@ public class MainActivity extends AppCompatActivity {
         reloadCurrentPage();
     }
 
-    
     private void enablejs() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setJavaScriptEnabled(true);
@@ -1320,7 +1320,6 @@ public class MainActivity extends AppCompatActivity {
         settings.setJavaScriptEnabled(false);
         Toast.makeText(MainActivity.this, "JavaScript無効", Toast.LENGTH_SHORT).show();
     }
-
 
     private void enableZoom() {
         WebSettings settings = getCurrentWebView().getSettings();
@@ -1337,7 +1336,6 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, "ズームを無効にしました", Toast.LENGTH_SHORT).show();
     }
 
-    
     private void enableimgblock() {
         WebSettings settings = getCurrentWebView().getSettings();
         settings.setLoadsImagesAutomatically(false);
@@ -1352,7 +1350,6 @@ public class MainActivity extends AppCompatActivity {
         webView.reload();
         Toast.makeText(MainActivity.this, "画像ブロック無効", Toast.LENGTH_SHORT).show();
     }
-
 
     private void showHistoryDialog() {
         RecyclerView recyclerView = new RecyclerView(this);
@@ -1438,27 +1435,6 @@ public class MainActivity extends AppCompatActivity {
         if (!jsonStr.isEmpty()) {
             parseAndAddBookmarks(jsonStr);
         }
-    }
-
-    private void parseAndImportBookmarks(String jsonStr) throws JSONException {
-        JSONArray array = new JSONArray(jsonStr);
-        bookmarks.clear();
-        for (int i = 0; i < array.length(); i++) {
-            JSONObject obj = array.getJSONObject(i);
-            String title = obj.optString("title", "Untitled");
-            String url = obj.optString("url", "");
-            if (!url.isEmpty()) {
-                bookmarks.add(new Bookmark(title, url));
-                backgroundExecutor.execute(() -> {
-                    Bitmap favicon = fetchFavicon(url);
-                    if (favicon != null) {
-                        runOnUiThread(() -> faviconCache.put(url, favicon));
-                        saveFaviconToFile(url, favicon);
-                    }
-                });
-            }
-        }
-        saveBookmarks();
     }
 
     private void parseAndAddBookmarks(String jsonStr) {
@@ -1570,6 +1546,33 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
     }
 
+    
+    private void applyPersistentSettings() {
+        WebView current = getCurrentWebView();
+        if (current == null) return;
+        
+        if (!jsEnabled) {
+            disablejs();
+        }
+        if (zoomEnabled) {
+            enableZoom();
+        } else {
+            disableZoom();
+        }
+        if (imgBlockEnabled) {
+            enableimgblock();
+        } else {
+            disableimgunlock();
+        }
+        if (uaEnabled) {
+            enableUA();
+        } else if (deskuaEnabled) {
+            enabledeskUA();
+        } else if (ct3uaEnabled) {
+            enableCT3UA();
+        } else {
+            disableUA();
+        }
     
 
     private class TabAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
