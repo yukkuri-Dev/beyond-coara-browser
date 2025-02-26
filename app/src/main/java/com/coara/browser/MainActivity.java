@@ -477,6 +477,29 @@ public class MainActivity extends AppCompatActivity {
         String defaultUA = settings.getUserAgentString();
         originalUserAgents.put(webView, defaultUA);
         applyOptimizedSettings(settings);
+        
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            try {
+                Method setSaveFormData = settings.getClass().getMethod("setSaveFormData", boolean.class);
+                setSaveFormData.invoke(settings, false);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                Method setDatabaseEnabled = settings.getClass().getMethod("setDatabaseEnabled", boolean.class);
+                setDatabaseEnabled.invoke(settings, true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                Method setAppCacheEnabled = settings.getClass().getMethod("setAppCacheEnabled", boolean.class);
+                setAppCacheEnabled.invoke(settings, true);
+                Method setAppCachePath = settings.getClass().getMethod("setAppCachePath", String.class);
+                setAppCachePath.invoke(settings, getCacheDir().getAbsolutePath());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
         if (zoomEnabled) {
             settings.setBuiltInZoomControls(true);
