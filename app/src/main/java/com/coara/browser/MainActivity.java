@@ -336,31 +336,6 @@ public class MainActivity extends AppCompatActivity {
 
         handleIntent(getIntent());
 
-        if (zoomEnabled) {
-            enableZoom();
-        } else {
-            disableZoom();
-        }
-        if (jsEnabled) {
-            enablejs();
-        } else {
-            disablejs();
-        }
-        if (imgBlockEnabled) {
-            enableimgblock();
-        } else {
-            disableimgunlock();
-        }
-        if (uaEnabled) {
-            enableUA();
-        } else if (deskuaEnabled) {
-            enabledeskUA();
-        } else if (ct3uaEnabled) {
-            enableCT3UA();
-        } else {
-            disableUA();
-        }
-
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
