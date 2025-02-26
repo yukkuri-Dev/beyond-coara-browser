@@ -443,6 +443,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true); 
+        settings.setSupportMultipleWindows(true);
         settings.setAllowFileAccess(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
         settings.setAllowFileAccessFromFileURLs(true);
