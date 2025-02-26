@@ -1606,6 +1606,16 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+    private void loadFaviconFromDisk(String url) {
+        File faviconsDir = new File(getFilesDir(), "favicons");
+        File file = new File(faviconsDir, getFaviconFilename(url));
+        if (file.exists()) {
+            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+            if (bitmap != null) {
+                faviconCache.put(url, bitmap);
+            }
+        }
+    }
 
     private Bitmap fetchFavicon(String bookmarkUrl) {
         try {
@@ -1897,31 +1907,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-    private void saveFaviconToFile(String url, Bitmap bitmap) {
-        File faviconsDir = new File(getFilesDir(), "favicons");
-        if (!faviconsDir.exists()) {
-            faviconsDir.mkdirs();
-        }
-        File faviconFile = new File(faviconsDir, getFaviconFilename(url));
-        try (FileOutputStream fos = new FileOutputStream(faviconFile)) {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-            fos.flush();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-    private void loadFaviconFromDisk(String url) {
-        File faviconsDir = new File(getFilesDir(), "favicons");
-        File file = new File(faviconsDir, getFaviconFilename(url));
-        if (file.exists()) {
-            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
-            if (bitmap != null) {
-                faviconCache.put(url, bitmap);
-            }
-        }
-    }
-private void initializePersistentFavicons() {
+   private void initializePersistentFavicons() {
         for (Bookmark bm : bookmarks) {
             final String url = bm.getUrl();
             backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
