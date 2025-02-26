@@ -1896,7 +1896,16 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-
+    private void initializePersistentFavicons() {
+        for (Bookmark bm : bookmarks) {
+            final String url = bm.getUrl();
+            backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
+        }
+        for (HistoryItem hi : historyItems) {
+            final String url = hi.getUrl();
+            backgroundExecutor.execute(() -> loadFaviconFromDisk(url));
+        }
+    }
     private void updateDarkMode() {
         for (WebView webView : webViews) {
             WebSettings settings = webView.getSettings();
