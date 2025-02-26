@@ -605,6 +605,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return false;
             }
+            
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url.startsWith("tel:")) {
@@ -711,7 +712,6 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onReceivedIcon(WebView view, Bitmap icon) {
-                // favicon を現在の WebView に表示
                 if (view == getCurrentWebView()) {
                     faviconImageView.setImageBitmap(icon);
                 }
@@ -1373,6 +1373,20 @@ public class MainActivity extends AppCompatActivity {
         settings.setSupportZoom(false);
         reloadCurrentPage();
         Toast.makeText(MainActivity.this, "ズームを無効にしました", Toast.LENGTH_SHORT).show();
+    }
+    private void enableimgblock() {
+        WebSettings settings = getCurrentWebView().getSettings();
+        settings.setLoadsImagesAutomatically(false);
+        reloadCurrentPage();
+        Toast.makeText(MainActivity.this, "画像ブロック有効", Toast.LENGTH_SHORT).show();
+    }
+
+    private void disableimgunlock() {
+        WebView webView = getCurrentWebView();
+        webView.getSettings().setLoadsImagesAutomatically(defaultLoadsImagesAutomatically);
+        webView.clearCache(true);
+        webView.reload();
+        Toast.makeText(MainActivity.this, "画像ブロック無効", Toast.LENGTH_SHORT).show();
     }
 
     private void showHistoryDialog() {
