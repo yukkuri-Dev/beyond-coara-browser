@@ -104,7 +104,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public class MainActivity extends AppCompatActivity {
-
+    private WebView webView
     private static final String PREF_NAME = "AdvancedBrowserPrefs";
     private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_BASIC_AUTH = "basic_auth";
