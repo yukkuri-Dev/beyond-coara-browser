@@ -293,38 +293,8 @@ protected void onCreate(@Nullable Bundle savedInstanceState) {
         WebView current = getCurrentWebView();
         if (current != null) current.reload();
     });
-
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-        permissionLauncher = registerForActivityResult(
-            new ActivityResultContracts.RequestPermission(),
-            isGranted -> {
-                if (!isGranted) {
-                    Toast.makeText(this, "ストレージ権限が必要です。アプリを終了します", Toast.LENGTH_LONG).show();
-                    finish();
-                }
-            });
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        }
-    }
-
-    private final ActivityResultLauncher<Intent> fileChooserLauncher =
-    registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-        result -> {
-            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
-                Uri dataUri = result.getData().getData();
-                if (filePathCallback != null) {
-                    filePathCallback.onReceiveValue(
-                        dataUri != null ? new Uri[]{dataUri} : null);
-                }
-            } else if (filePathCallback != null) {
-                filePathCallback.onReceiveValue(null);
-            }
-            filePathCallback = null;
-        });
-
-private final ActivityResultLauncher<Intent> filePickerLauncher =
+        
+    private final ActivityResultLauncher<Intent> filePickerLauncher =
     registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
         result -> {
             if (result.getResultCode() == Activity.RESULT_OK &&
@@ -341,6 +311,35 @@ private final ActivityResultLauncher<Intent> filePickerLauncher =
                     "ファイル選択がキャンセルされました", Toast.LENGTH_SHORT).show();
             }
         });
+        
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        permissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (!isGranted) {
+                    Toast.makeText(this, "ストレージ権限が必要です。アプリを終了します", Toast.LENGTH_LONG).show();
+                    finish();
+                }
+            });
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+    }
+
+    fileChooserLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri dataUri = result.getData().getData();
+                    if (filePathCallback != null) {
+                        filePathCallback.onReceiveValue(dataUri != null ? new Uri[]{dataUri} : null);
+                    }
+                } else if (filePathCallback != null) {
+                    filePathCallback.onReceiveValue(null);
+                }
+                filePathCallback = null;
+            });
 
     urlEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
         if (actionId == EditorInfo.IME_ACTION_GO ||
