@@ -443,9 +443,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(true); 
-        settings.setSupportMultipleWindows(true);
         settings.setAllowFileAccess(true);
+        settings.setAllowUniversalAccessFromFileURLs(true);
+        settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
@@ -489,19 +489,13 @@ public class MainActivity extends AppCompatActivity {
         webView.setBackgroundColor(Color.WHITE);
         webView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        webView.setWebChromeClient(new WebChromeClient());
-        
+
         WebSettings settings = webView.getSettings();
         final String defaultUA = settings.getUserAgentString();
         originalUserAgents.put(webView, defaultUA);
-        settings.setUserAgentString(defaultUA);
+        settings.setUserAgentString(defaultUA + APPEND_STR);
         applyOptimizedSettings(settings);
-        
-        CookieManager cookieManager = CookieManager.getInstance(); 
-        cookieManager.setAcceptCookie(true); 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) { 
-            cookieManager.setAcceptThirdPartyCookies(webView, true);
-        }
+
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             try {
                 Method setSaveFormData = settings.getClass().getMethod("setSaveFormData", boolean.class);
