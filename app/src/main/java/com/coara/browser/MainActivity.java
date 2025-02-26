@@ -508,7 +508,7 @@ public class MainActivity extends AppCompatActivity {
             settings.setBuiltInZoomControls(false);
             settings.setSupportZoom(false);
         }
-        settings.setJavaScriptEnabled(jsEnabled);
+        settings.setJavaScriptEnabled(!jsEnabled);
         settings.setLoadsImagesAutomatically(!imgBlockEnabled);
 
         if (uaEnabled) {
