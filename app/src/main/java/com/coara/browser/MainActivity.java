@@ -802,9 +802,10 @@ private WebView createNewWebView() {
         } else {
             handleDownload(url, userAgent, contentDisposition, mimeType, contentLength);
         }
-        
-    });
-
+        if ("external".equals(getCurrentWebView().getTag())) {
+            closeTab(getCurrentWebView());
+    }
+});
     return webView;
 }
 
