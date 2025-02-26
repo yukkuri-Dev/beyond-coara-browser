@@ -444,8 +444,6 @@ public class MainActivity extends AppCompatActivity {
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(true);
-        settings.setAllowUniversalAccessFromFileURLs(true);
-        settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
