@@ -1882,7 +1882,6 @@ public class MainActivity extends AppCompatActivity {
             return Integer.toString(url.hashCode()) + ".png";
         }
     }
-
     private void saveFaviconToFile(String url, Bitmap bitmap) {
         File faviconsDir = new File(getFilesDir(), "favicons");
         if (!faviconsDir.exists()) {
@@ -1894,6 +1893,16 @@ public class MainActivity extends AppCompatActivity {
             fos.flush();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    private void loadFaviconFromDisk(String url) {
+        File faviconsDir = new File(getFilesDir(), "favicons");
+        File file = new File(faviconsDir, getFaviconFilename(url));
+        if (file.exists()) {
+            Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+            if (bitmap != null) {
+                faviconCache.put(url, bitmap);
+            }
         }
     }
     private void initializePersistentFavicons() {
