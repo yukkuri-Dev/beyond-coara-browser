@@ -294,24 +294,6 @@ protected void onCreate(@Nullable Bundle savedInstanceState) {
         if (current != null) current.reload();
     });
         
-    private final ActivityResultLauncher<Intent> filePickerLauncher =
-    registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-        result -> {
-            if (result.getResultCode() == Activity.RESULT_OK &&
-                result.getData() != null) {
-                Uri uri = result.getData().getData();
-                if (uri != null) {
-                    handleFileImport(uri);
-                } else {
-                    Toast.makeText(MainActivity.this,
-                        "ファイルが選択されませんでした", Toast.LENGTH_SHORT).show();
-                }
-            } else {
-                Toast.makeText(MainActivity.this,
-                    "ファイル選択がキャンセルされました", Toast.LENGTH_SHORT).show();
-            }
-        });
-        
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
         permissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(),
@@ -1980,7 +1962,24 @@ private class BookmarkAdapter extends RecyclerView.Adapter<BookmarkAdapter.Bookm
             url = itemView.findViewById(R.id.bookmarkUrl);
         }
     }
-}
+} 
+private final ActivityResultLauncher<Intent> filePickerLauncher =
+    registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+        result -> {
+            if (result.getResultCode() == Activity.RESULT_OK &&
+                result.getData() != null) {
+                Uri uri = result.getData().getData();
+                if (uri != null) {
+                    handleFileImport(uri);
+                } else {
+                    Toast.makeText(MainActivity.this,
+                        "ファイルが選択されませんでした", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this,
+                    "ファイル選択がキャンセルされました", Toast.LENGTH_SHORT).show();
+            }
+        });
 
 private void importBookmarksFromFile() {
     Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
