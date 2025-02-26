@@ -309,21 +309,23 @@ protected void onCreate(@Nullable Bundle savedInstanceState) {
         }
     }
 
-    fileChooserLauncher = registerForActivityResult(
-        new ActivityResultContracts.StartActivityForResult(),
+    private final ActivityResultLauncher<Intent> fileChooserLauncher =
+    registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
         result -> {
-            if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+            if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                 Uri dataUri = result.getData().getData();
                 if (filePathCallback != null) {
-                    filePathCallback.onReceiveValue(dataUri != null ? new Uri[]{dataUri} : null);
+                    filePathCallback.onReceiveValue(
+                        dataUri != null ? new Uri[]{dataUri} : null);
                 }
             } else if (filePathCallback != null) {
                 filePathCallback.onReceiveValue(null);
             }
             filePathCallback = null;
         });
-      private final ActivityResultLauncher<Intent> filePickerLauncher =
-      registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+
+private final ActivityResultLauncher<Intent> filePickerLauncher =
+    registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
         result -> {
             if (result.getResultCode() == Activity.RESULT_OK &&
                 result.getData() != null) {
@@ -339,7 +341,6 @@ protected void onCreate(@Nullable Bundle savedInstanceState) {
                     "ファイル選択がキャンセルされました", Toast.LENGTH_SHORT).show();
             }
         });
-
 
     urlEditText.setOnEditorActionListener((textView, actionId, keyEvent) -> {
         if (actionId == EditorInfo.IME_ACTION_GO ||
