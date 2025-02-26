@@ -1605,6 +1605,28 @@ public class MainActivity extends AppCompatActivity {
         clipboard.setPrimaryClip(clip);
         Toast.makeText(MainActivity.this, "リンクをコピーしました", Toast.LENGTH_SHORT).show();
     }
+    private Bitmap fetchFavicon(String bookmarkUrl) {
+        try {
+            URL urlObj = new URL(bookmarkUrl);
+            String protocol = urlObj.getProtocol();
+            String host = urlObj.getHost();
+            String faviconUrl = protocol + "://" + host + "/favicon.ico";
+            HttpURLConnection connection = (HttpURLConnection) new URL(faviconUrl).openConnection();
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
+            connection.setRequestMethod("GET");
+            connection.connect();
+            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                try (InputStream is = connection.getInputStream()) {
+                    Bitmap bitmap = BitmapFactory.decodeStream(is);
+                    return bitmap;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     private String getFaviconFilename(String url) {
         try {
