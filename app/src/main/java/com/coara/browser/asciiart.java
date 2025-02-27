@@ -1,38 +1,30 @@
 package com.coara.browser;
 
-import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.widget.Button;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class asciiart extends Activity {
 
-    private static final int STORAGE_PERMISSION_REQUEST_CODE = 100;
     private static final int REQUEST_CODE_PICK_IMAGE = 200;
-
     private Button convertButton;
     private TextView asciiTextView;
     private TextView selectedFilePath;
     private TextView savedFilePath;
-    private String selectedImagePath = null;
-
+    private Uri selectedImageUri = null;
     private static final String FILE_PREFIX = "_ascii_art.txt";
 
     @Override
@@ -46,60 +38,33 @@ public class asciiart extends Activity {
         selectedFilePath = findViewById(R.id.selectedFilePath);
         savedFilePath = findViewById(R.id.savedFilePath);
 
-        if (!hasStoragePermission()) {
-            requestStoragePermission();
-        }
-
-        selectImageButton.setOnClickListener(v -> {
-            if (hasStoragePermission()) {
-                pickImageFromStorage();
-            } else {
-                Toast.makeText(this, getString(R.string.need_storage_permission), Toast.LENGTH_SHORT).show();
-                finish();
-            }
-        });
+        selectImageButton.setOnClickListener(v -> pickImageFromStorage());
 
         convertButton.setOnClickListener(v -> {
-            if (!selectedImagePath.isEmpty()) {
-                Bitmap bitmap = BitmapFactory.decodeFile(selectedImagePath);
-                if (bitmap != null) {
-                    String asciiArt = convertToAscii(bitmap);
-                    asciiTextView.setText(asciiArt);
-                    if (((Switch) findViewById(R.id.saveText)).isChecked()) {
-                        saveAsciiArt(asciiArt, bitmap);
+            if (selectedImageUri != null) {
+                try (InputStream imageStream = getContentResolver().openInputStream(selectedImageUri)) {
+                    if (imageStream != null) {
+                        Bitmap bitmap = BitmapFactory.decodeStream(imageStream);
+                        String asciiArt = convertToAscii(bitmap);
+                        asciiTextView.setText(asciiArt);
+                        if (((Switch) findViewById(R.id.saveText)).isChecked()) {
+                            saveAsciiArt(asciiArt, bitmap);
+                        }
+                    } else {
+                        Toast.makeText(this, R.string.cannot_load_image, Toast.LENGTH_SHORT).show();
                     }
-                } else {
-                    Toast.makeText(this, getString(R.string.cannot_load_image), Toast.LENGTH_SHORT).show();
+                } catch (IOException e) {
+                    Toast.makeText(this, R.string.cannot_load_image, Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
                 }
             }
         });
     }
 
-
-    private boolean hasStoragePermission() {
-        return checkSelfPermission(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? Manifest.permission.READ_MEDIA_IMAGES : Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void requestStoragePermission() {
-        requestPermissions(
-                new String[]{Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? Manifest.permission.READ_MEDIA_IMAGES : Manifest.permission.READ_EXTERNAL_STORAGE},
-                STORAGE_PERMISSION_REQUEST_CODE
-        );
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == STORAGE_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED)
-                Toast.makeText(this, getString(R.string.need_storage_permission), Toast.LENGTH_SHORT).show();
-        }
-    }
-
     private void pickImageFromStorage() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.setType("image/*");
-        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
         startActivityForResult(intent, REQUEST_CODE_PICK_IMAGE);
     }
 
@@ -107,56 +72,44 @@ public class asciiart extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == REQUEST_CODE_PICK_IMAGE) {
-            if (resultCode == Activity.RESULT_OK && data != null) {
-                Uri selectedImageUri = data.getData();
-                selectedImagePath = getRealPathFromURI(selectedImageUri);
-                selectedFilePath.setText(selectedImagePath != null ? selectedImagePath : getString(R.string.cannot_get_image_path));
-
-                if (selectedImagePath != null) {
-                    convertButton.setEnabled(true);
-                } else {
-                    convertButton.setEnabled(false);
-                    savedFilePath.setText("");
-                    Toast.makeText(this, getString(R.string.cannot_get_image_path), Toast.LENGTH_SHORT).show();
-                }
+        if (requestCode == REQUEST_CODE_PICK_IMAGE && resultCode == Activity.RESULT_OK && data != null) {
+            selectedImageUri = data.getData();
+            if (selectedImageUri != null) {
+                selectedFilePath.setText(getFileName(selectedImageUri));
+                convertButton.setEnabled(true);
+            } else {
+                selectedFilePath.setText(R.string.cannot_get_image_path);
+                convertButton.setEnabled(false);
+                savedFilePath.setText("");
+                Toast.makeText(this, R.string.cannot_get_image_path, Toast.LENGTH_SHORT).show();
             }
         }
     }
 
-    private String getRealPathFromURI(Uri contentUri) {
-        String[] proj = {MediaStore.Images.Media.DATA};
-        try (Cursor cursor = getContentResolver().query(contentUri, proj, null, null, null)) {
+    private String getFileName(Uri uri) {
+        try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
             if (cursor != null && cursor.moveToFirst()) {
-                int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-                return cursor.getString(column_index);
+                return cursor.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME));
             }
         }
-        return null;
+        return getString(R.string.unknown_file);
     }
 
-    // アスキーアートに変換
     private String convertToAscii(Bitmap bitmap) {
         StringBuilder asciiArt = new StringBuilder();
-        int targetWidth = 200; 
-        int targetHeight = (int) ((double) bitmap.getHeight() / bitmap.getWidth() * targetWidth);
-
+        int targetWidth = 200;
+        int targetHeight = bitmap.getHeight() * targetWidth / bitmap.getWidth();
         Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, targetWidth, targetHeight, false);
+        int[] pixels = new int[targetWidth * targetHeight];
+        resizedBitmap.getPixels(pixels, 0, targetWidth, 0, 0, targetWidth, targetHeight);
+
         String asciiChars = "@#S%?*+;:,. ";
 
-        // ピクセルごとに輝度を計算して文字にマッピング
-        for (int y = 0; y < resizedBitmap.getHeight(); y++) {
-            for (int x = 0; x < resizedBitmap.getWidth(); x++) {
-                int pixel = resizedBitmap.getPixel(x, y);
-                int red = (pixel >> 16) & 0xFF;
-                int green = (pixel >> 8) & 0xFF;
-                int blue = pixel & 0xFF;
-
-                // 輝度値の計算
-                int gray = (int) (0.2989 * red + 0.5870 * green + 0.1140 * blue);
-                int charIndex = gray * (asciiChars.length() - 1) / 255;
-
-                asciiArt.append(asciiChars.charAt(charIndex));
+        for (int y = 0; y < targetHeight; y++) {
+            for (int x = 0; x < targetWidth; x++) {
+                int pixel = pixels[y * targetWidth + x];
+                int gray = (int) (0.2989 * ((pixel >> 16) & 0xFF) + 0.5870 * ((pixel >> 8) & 0xFF) + 0.1140 * (pixel & 0xFF));
+                asciiArt.append(asciiChars.charAt(gray * (asciiChars.length() - 1) / 255));
             }
             asciiArt.append("\n");
         }
@@ -167,61 +120,43 @@ public class asciiart extends Activity {
     private void saveAsciiArt(String asciiArt, Bitmap bitmap) {
         File dir = getExternalFilesDir(null);
         if (dir != null) {
+            String fileName = new SimpleDateFormat("MMddHHmmss").format(new Date()) + FILE_PREFIX;
+            File asciiFile = new File(dir, fileName);
+            File colorFile = new File(dir, fileName.replace(".txt", ".dat"));
 
-            
-            SimpleDateFormat sdf = new SimpleDateFormat("MMddHHmmss");
-            String currentDateTime = sdf.format(new Date());
-            String baseFileName = currentDateTime + "_ascii_art.txt"; 
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(asciiFile), StandardCharsets.UTF_8))) {
+                writer.write(asciiArt);
+                Toast.makeText(this, R.string.file_save_success, Toast.LENGTH_SHORT).show();
+                savedFilePath.setText(getString(R.string.file_saved_path) + asciiFile.getAbsolutePath());
 
-            File asciiFile = new File(dir, baseFileName);
-            File colorFile = new File(dir, baseFileName.replace(".txt", ".dat"));
-
-            try (FileOutputStream fos = new FileOutputStream(asciiFile)) {
-                fos.write(asciiArt.getBytes());
-                fos.flush();
-
-                
-                Switch saveColorSwitch = findViewById(R.id.saveColorSwitch); // Switchの参照取得
-                if (saveColorSwitch.isChecked()) {
+                if (((Switch) findViewById(R.id.saveColorSwitch)).isChecked()) {
                     saveColorData(colorFile, bitmap);
                     Toast.makeText(this, "カラー情報の保存先: " + colorFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
                 }
-
-                Toast.makeText(this, getString(R.string.file_save_success), Toast.LENGTH_SHORT).show();
-                savedFilePath.setText(getString(R.string.file_saved_path) + asciiFile.getAbsolutePath());
-
             } catch (IOException e) {
-                Toast.makeText(this, getString(R.string.file_save_failed), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.file_save_failed, Toast.LENGTH_SHORT).show();
                 savedFilePath.setText("");
                 e.printStackTrace();
             }
         }
     }
 
-
     private void saveColorData(File file, Bitmap bitmap) {
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            StringBuilder colorData = new StringBuilder();
+        try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            int[] pixels = new int[width * height];
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
 
-            for (int y = 0; y < bitmap.getHeight(); y++) {
-                for (int x = 0; x < bitmap.getWidth(); x++) {
-                    int pixel = bitmap.getPixel(x, y);
-                    int red = (pixel >> 16) & 0xFF;
-                    int green = (pixel >> 8) & 0xFF;
-                    int blue = pixel & 0xFF;
-
-                
-                    colorData.append(x).append(",").append(y).append(":")
-                            .append(red).append(",")
-                            .append(green).append(",")
-                            .append(blue).append("\n");
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    int pixel = pixels[y * width + x];
+                    writer.write(String.format("%d,%d:%d,%d,%d%n", x, y, (pixel >> 16) & 0xFF, (pixel >> 8) & 0xFF, pixel & 0xFF));
                 }
             }
-
-            fos.write(colorData.toString().getBytes());
-            fos.flush();
+            writer.flush();
         } catch (IOException e) {
-            Toast.makeText(this, getString(R.string.file_save_failed), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.file_save_failed, Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
     }
