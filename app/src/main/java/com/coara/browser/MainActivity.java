@@ -1087,7 +1087,7 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(MainActivity.this, pagedl.class));
         } else if (id == R.id.action_txtphoto) {
             startActivity(new Intent(MainActivity.this, txtphoto.class));
-         } else if (id == R.id.action_txtphoto) {
+         } else if (id == R.id.action_asciiart) {
             startActivity(new Intent(MainActivity.this, asciiart.class));
         } else if (id == R.id.action_bookmark_management) {
             showBookmarksManagementDialog();
