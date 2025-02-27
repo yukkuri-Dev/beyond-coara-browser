@@ -80,7 +80,6 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -128,7 +127,6 @@ private ImageView faviconImageView;
 private MaterialButton btnGo;
 private MaterialButton btnNewTab;
 private MaterialToolbar toolbar;
-private Map<String, Attachment> cidMapping = new HashMap<>();
 private SwipeRefreshLayout swipeRefreshLayout;
 private FrameLayout webViewContainer;
 private TextView tabCountTextView;
@@ -184,14 +182,6 @@ public static class HistoryItem {
     }
     public String getTitle() { return title; }
     public String getUrl() { return url; }
-}
-private static class Attachment {
-    String mimeType;
-    byte[] data;
-    Attachment(String mimeType, byte[] data) {
-        this.mimeType = mimeType;
-        this.data = data;
-    }
 }
 
 @Override
@@ -505,6 +495,7 @@ private WebView createNewWebView() {
 
     WebSettings settings = webView.getSettings();
     String defaultUA = settings.getUserAgentString();
+    originalUserAgents.put(webView, defaultUA);
     applyOptimizedSettings(settings);
     
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
@@ -623,24 +614,12 @@ private WebView createNewWebView() {
         }
         return false;
     });
-    
+
     webView.setWebViewClient(new WebViewClient() {
-    @Override
-    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-        String url = request.getUrl().toString();
-        if (url.startsWith("cid:")) {
-            String cid = url.substring("cid:".length());
-            Attachment attachment = cidMapping.get(cid);
-            if (attachment != null) {
-                InputStream is = new ByteArrayInputStream(attachment.data);
-                return new WebResourceResponse(attachment.mimeType, "UTF-8", is);
-            } else {
-                return new WebResourceResponse("text/plain", "UTF-8",
-                        new ByteArrayInputStream("".getBytes()));
-            }
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            return super.shouldInterceptRequest(view, request);
         }
-        return super.shouldInterceptRequest(view, request);
-    }
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             String url = request.getUrl().toString();
@@ -882,7 +861,7 @@ private void handleDownload(String url, String userAgent, String contentDisposit
         Toast.makeText(MainActivity.this, "ダウンロードに失敗しました", Toast.LENGTH_SHORT).show();
     }
 }
-        
+
 private void handleBlobDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
     String js = "javascript:(function() {" +
             "fetch('" + url + "').then(function(response) {" +
