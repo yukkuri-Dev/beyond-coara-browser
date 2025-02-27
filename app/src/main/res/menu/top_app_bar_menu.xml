@@ -28,7 +28,10 @@
         android:checkable="true" />
     <item
         android:id="@+id/action_txtphoto"
-        android:title="TXT to PHOTO" />
+        android:title="TXTを画像に変換" />
+    <item
+        android:id="@+id/action_asciiart"
+        android:title="画像をTXTに変換" />
     <item
         android:id="@+id/action_pgdl"
         android:title="ページ保存ツール" />
