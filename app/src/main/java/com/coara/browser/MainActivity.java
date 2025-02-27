@@ -236,7 +236,6 @@ public class MainActivity extends AppCompatActivity {
         tabCountTextView = findViewById(R.id.tabCountTextView);
         tabCountTextView.setOnClickListener(v -> showTabsDialog());
 
-        // タブ状態の復元（存在しなければ初期タブを生成）
         if (pref.contains(KEY_TABS)) {
             loadTabsState();
             if (webViews.isEmpty()) {
@@ -1603,7 +1602,17 @@ public class MainActivity extends AppCompatActivity {
         e.printStackTrace();
       }
     }
-
+    private String readTextFromUri(Uri uri) throws IOException {
+    StringBuilder builder = new StringBuilder();
+    try (InputStream inputStream = getContentResolver().openInputStream(uri);
+         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            builder.append(line);
+          }
+       }
+       return builder.toString();
+      }
     private void parseAndImportBookmarks(String jsonStr) throws JSONException {
         JSONArray array = new JSONArray(jsonStr);
         bookmarks.clear();
@@ -1989,17 +1998,6 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }
-    private String readTextFromUri(Uri uri) throws IOException {
-    StringBuilder builder = new StringBuilder();
-    try (InputStream inputStream = getContentResolver().openInputStream(uri);
-         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-        String line;
-        while ((line = reader.readLine()) != null) {
-            builder.append(line);
-          }
-       }
-       return builder.toString();
-      }
         @Override
         public int getItemCount() { return items.size(); }
         class BookmarkViewHolder extends RecyclerView.ViewHolder {
