@@ -1,4 +1,4 @@
-package com.coara.image2ascii;
+package com.coara.browser;
 
 import android.Manifest;
 import android.app.Activity;
