@@ -449,7 +449,7 @@ private void applyOptimizedSettings(WebSettings settings) {
     settings.setAllowContentAccess(true);
     settings.setLoadWithOverviewMode(true);
     settings.setUseWideViewPort(true);
-    settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+    settings.setCacheMode(WebSettings.LOAD_DEFAULT);
     settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
     settings.setDomStorageEnabled(true);
     settings.setGeolocationEnabled(false);
