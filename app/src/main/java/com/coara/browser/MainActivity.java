@@ -680,11 +680,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 String lowerUrl = url.toLowerCase();
-                if (lowerUrl.contains("cloud") || lowerUrl.contains("auth") || lowerUrl.contains("login")) {
+                if (lowerUrl.contains("cloud") || lowerUrl.contains("auth") || lowerUrl.contains("login") || lowerUrl.contains("disk")) {
                     view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-                } else {
+                      } else {
                     view.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-                }
+                  }
                 urlEditText.setText(url);
                 super.onPageStarted(view, url, favicon);
             }
