@@ -3,20 +3,15 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
     <path
-        android:fillColor="#EC407A" 
+        android:fillColor="#EC407A"
         android:pathData="
             M 54,14
-            A 40,40 0 0 1 14,54
-            A 40,40 0 0 1 54,94
-            C 74,94 82,82 82,82
-            L 82,72
-            C 82,72 72,84 54,84
-            A 30,30 0 0 1 24,54
-            A 30,30 0 0 1 54,24
-            C 72,24 82,36 82,36
-            L 82,26
-            C 82,26 74,14 54,14
-            Z
+            A 40,40 0 0 1 54,94  
+            L 54,74              
+            A 20,20 0 0 1 54,34   
+            L 54,14               
+            Z                     
         " />
 </vector>
