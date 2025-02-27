@@ -1992,12 +1992,26 @@ public class MainActivity extends AppCompatActivity {
                 dialog.dismiss();
             });
             if (managementMode) {
-                holder.itemView.setOnLongClickListener(v -> {
-                    showEditBookmarkDialog(position, this);
-                    return true;
-                });
-            }
+            holder.itemView.setOnLongClickListener(v -> {
+                int currentPosition = holder.getAdapterPosition();
+                if (currentPosition == RecyclerView.NO_POSITION) return true;
+                String[] options = {"編集", "削除"};
+                new MaterialAlertDialogBuilder(MainActivity.this)
+                        .setTitle("操作を選択")
+                        .setItems(options, (dialogInterface, which) -> {
+                            if (which == 0) {
+                                showEditBookmarkDialog(currentPosition, this);
+                            } else if (which == 1) {
+                                items.remove(currentPosition);
+                                notifyItemRemoved(currentPosition);
+                                saveBookmarks();
+                                Toast.makeText(MainActivity.this, "削除しました", Toast.LENGTH_SHORT).show();
+                            }
+                        }).show();
+                return true;
+            });
         }
+    }
         @Override
         public int getItemCount() { return items.size(); }
         class BookmarkViewHolder extends RecyclerView.ViewHolder {
