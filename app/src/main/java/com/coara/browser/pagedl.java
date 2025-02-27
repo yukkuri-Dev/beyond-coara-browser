@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 
 public class pagedl extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE = 1;
-    private static final String TAG = "WebSaver";
+    private static final String TAG = "pagedl";
     private EditText urlInput;
     private Switch jsSwitch;
     private Switch localPathSwitch;
