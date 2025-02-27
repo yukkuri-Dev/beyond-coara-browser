@@ -47,6 +47,11 @@
             android:name=".pagedl"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true" />
+        
+        <activity
+            android:name=".txtphoto"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
