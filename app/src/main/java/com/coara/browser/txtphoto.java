@@ -34,6 +34,8 @@ public class txtphoto extends Activity {
     private TextView filePathView;
     private String selectedFilePath;
     private Button convertButton, revertButton;
+    private Button resize25Button, resize50Button;
+    private float scaleFactor = 1.0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +47,20 @@ public class txtphoto extends Activity {
         revertButton = findViewById(R.id.revertButton);
         filePathView = findViewById(R.id.filePathView);
 
+    
+        resize25Button = findViewById(R.id.resize25Button);
+        resize50Button = findViewById(R.id.resize50Button);
+
         selectFileButton.setOnClickListener(v -> selectFile());
+
+        resize25Button.setOnClickListener(v -> {
+            scaleFactor = 0.25f;
+            Toast.makeText(this, "25% リサイズが選択されました", Toast.LENGTH_SHORT).show();
+        });
+        resize50Button.setOnClickListener(v -> {
+            scaleFactor = 0.5f;
+            Toast.makeText(this, "50% リサイズが選択されました", Toast.LENGTH_SHORT).show();
+        });
 
         convertButton.setOnClickListener(v -> {
             if (selectedFilePath != null) {
@@ -114,7 +129,7 @@ public class txtphoto extends Activity {
             int height = lineCount * charHeight + 20;
 
             Bitmap bitmap = createBitmapFromAscii(asciiArt.toString(), width, height, paint, charHeight);
-            saveBitmapAsPng(bitmap);
+            processAndSaveBitmap(bitmap);
 
         } catch (IOException e) {
             Toast.makeText(this, "変換中にエラーが発生しました", Toast.LENGTH_SHORT).show();
@@ -147,7 +162,7 @@ public class txtphoto extends Activity {
             height += 1;
 
             Bitmap bitmap = createBitmapFromDat(pixelData, width, height);
-            saveBitmapAsPng(bitmap);
+            processAndSaveBitmap(bitmap);
 
         } catch (IOException e) {
             Toast.makeText(this, "変換中にエラーが発生しました", Toast.LENGTH_SHORT).show();
@@ -180,6 +195,16 @@ public class txtphoto extends Activity {
             bitmap.setPixel(x, y, Color.rgb(r, g, b));
         }
         return bitmap;
+    }
+
+    private void processAndSaveBitmap(Bitmap bitmap) {
+        if (scaleFactor != 1.0f) {
+            int newWidth = (int) (bitmap.getWidth() * scaleFactor);
+            int newHeight = (int) (bitmap.getHeight() * scaleFactor);
+            bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+            scaleFactor = 1.0f;
+        }
+        saveBitmapAsPng(bitmap);
     }
 
     private void saveBitmapAsPng(Bitmap bitmap) {
