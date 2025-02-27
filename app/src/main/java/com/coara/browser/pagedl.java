@@ -1,6 +1,5 @@
 package com.coara.browser;
 
-import android.Manifest;
 import android.os.Bundle;
 import android.os.Environment;
 import android.webkit.WebSettings;
@@ -12,9 +11,6 @@ import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.util.Log;
 import android.util.Base64;
@@ -37,7 +33,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class pagedl extends AppCompatActivity {
-    private static final int PERMISSION_REQUEST_CODE = 1;
     private static final String TAG = "pagedl";
     private EditText urlInput;
     private Switch jsSwitch;
@@ -51,20 +46,19 @@ public class pagedl extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pgdl);
+
         urlInput = findViewById(R.id.urlInput);
         jsSwitch = findViewById(R.id.jsSwitch);
         localPathSwitch = findViewById(R.id.localPathSwitch);
         saveButton = findViewById(R.id.saveButton);
         webView = findViewById(R.id.webView);
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
-            }
-        }
+
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(jsSwitch.isChecked());
-        jsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> webSettings.setJavaScriptEnabled(isChecked));
+        jsSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
+                webSettings.setJavaScriptEnabled(isChecked));
+
         saveButton.setOnClickListener(v -> {
             final String urlString = urlInput.getText().toString().trim();
             if (urlString.isEmpty()) {
@@ -104,7 +98,8 @@ public class pagedl extends AppCompatActivity {
                                     File archiveFile = (value != null) ? new File(value) : null;
                                     if (value == null || archiveFile == null || !archiveFile.exists()) {
                                         Log.e(TAG, "saveWebArchive 失敗。返り値: " + value);
-                                        runOnUiThread(() -> Toast.makeText(pagedl.this, "Web Archive 保存失敗", Toast.LENGTH_LONG).show());
+                                        runOnUiThread(() ->
+                                                Toast.makeText(pagedl.this, "Web Archive 保存失敗", Toast.LENGTH_LONG).show());
                                     } else {
                                         if (localPathSwitch.isChecked()) {
                                             try {
@@ -118,7 +113,8 @@ public class pagedl extends AppCompatActivity {
                                                 });
                                             } catch (Exception e) {
                                                 Log.e(TAG, "MIME書換エラー", e);
-                                                runOnUiThread(() -> Toast.makeText(pagedl.this, "MIME書換エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
+                                                runOnUiThread(() ->
+                                                        Toast.makeText(pagedl.this, "MIME書換エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
                                             }
                                         } else {
                                             runOnUiThread(() -> {
@@ -150,7 +146,8 @@ public class pagedl extends AppCompatActivity {
                         int responseCode = conn.getResponseCode();
                         if (responseCode != HttpURLConnection.HTTP_OK) {
                             Log.e(TAG, "HTTP error code: " + responseCode);
-                            runOnUiThread(() -> Toast.makeText(pagedl.this, "HTTP error code: " + responseCode, Toast.LENGTH_LONG).show());
+                            runOnUiThread(() ->
+                                    Toast.makeText(pagedl.this, "HTTP error code: " + responseCode, Toast.LENGTH_LONG).show());
                             return;
                         }
                         StringBuilder html = new StringBuilder();
@@ -180,11 +177,13 @@ public class pagedl extends AppCompatActivity {
                                 clearCacheAndCookies();
                             });
                         } else {
-                            runOnUiThread(() -> Toast.makeText(pagedl.this, "HTML ファイルが存在しません", Toast.LENGTH_LONG).show());
+                            runOnUiThread(() ->
+                                    Toast.makeText(pagedl.this, "HTML ファイルが存在しません", Toast.LENGTH_LONG).show());
                         }
                     } catch (Exception e) {
                         Log.e(TAG, "HTML保存エラー", e);
-                        runOnUiThread(() -> Toast.makeText(pagedl.this, "エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
+                        runOnUiThread(() ->
+                                Toast.makeText(pagedl.this, "エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
                     } finally {
                         if (conn != null) {
                             conn.disconnect();
@@ -220,7 +219,9 @@ public class pagedl extends AppCompatActivity {
             String attr = matcher.group(1);
             String originalUrl = matcher.group(2);
             try {
-                URL resourceUrl = originalUrl.startsWith("http://") || originalUrl.startsWith("https://") ? new URL(originalUrl) : new URL(new URL(baseUrl), originalUrl);
+                URL resourceUrl = originalUrl.startsWith("http://") || originalUrl.startsWith("https://")
+                        ? new URL(originalUrl)
+                        : new URL(new URL(baseUrl), originalUrl);
                 String fileName = new File(resourceUrl.getPath()).getName();
                 if (fileName.isEmpty()) {
                     fileName = "index.html";
@@ -248,7 +249,8 @@ public class pagedl extends AppCompatActivity {
             conn.setInstanceFollowRedirects(true);
             conn.setConnectTimeout(15000);
             conn.setReadTimeout(15000);
-            try (InputStream in = conn.getInputStream(); FileOutputStream out = new FileOutputStream(destination)) {
+            try (InputStream in = conn.getInputStream(); 
+                 FileOutputStream out = new FileOutputStream(destination)) {
                 byte[] buffer = new byte[4096];
                 int bytesRead;
                 while ((bytesRead = in.read(buffer)) != -1) {
@@ -314,7 +316,7 @@ public class pagedl extends AppCompatActivity {
             String extension = getExtensionForMimeType(mimeType);
             String fileName = baseName + extension;
             File outFile = new File(outputDir, fileName);
-            byte[] data = android.util.Base64.decode(base64Data, Base64.DEFAULT);
+            byte[] data = Base64.decode(base64Data, Base64.DEFAULT);
             try (FileOutputStream fos = new FileOutputStream(outFile)) {
                 fos.write(data);
             }
@@ -324,7 +326,8 @@ public class pagedl extends AppCompatActivity {
             });
         } catch (Exception e) {
             Log.e(TAG, "Data URL 保存エラー", e);
-            runOnUiThread(() -> Toast.makeText(pagedl.this, "Data URL 保存エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
+            runOnUiThread(() ->
+                    Toast.makeText(pagedl.this, "Data URL 保存エラー：" + e.getMessage(), Toast.LENGTH_LONG).show());
         } finally {
             isSaving = false;
         }
@@ -335,7 +338,8 @@ public class pagedl extends AppCompatActivity {
         File outputDir = new File(baseDir, siteName + "(" + safePageTitle + ")/データ保存");
         if (!outputDir.exists() && !outputDir.mkdirs()) {
             Log.e(TAG, "フォルダ作成失敗: " + outputDir.getAbsolutePath());
-            runOnUiThread(() -> Toast.makeText(pagedl.this, "フォルダ作成失敗: " + outputDir.getAbsolutePath(), Toast.LENGTH_LONG).show());
+            runOnUiThread(() ->
+                    Toast.makeText(pagedl.this, "フォルダ作成失敗: " + outputDir.getAbsolutePath(), Toast.LENGTH_LONG).show());
             return null;
         }
         return outputDir;
