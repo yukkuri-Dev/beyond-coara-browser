@@ -450,7 +450,6 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
-        // 初期はキャッシュ優先。※動的切替は onPageStarted 内で行う
         settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setDomStorageEnabled(true);
@@ -681,7 +680,6 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                // 動的キャッシュ切替: URL に "cloud", "auth", "login" のいずれかが含まれる場合は最新データ取得
                 String lowerUrl = url.toLowerCase();
                 if (lowerUrl.contains("cloud") || lowerUrl.contains("auth") || lowerUrl.contains("login")) {
                     view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
@@ -993,8 +991,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-    // 新規タブ作成。MAX_TABS 超過時は先頭のタブを削除してから追加する
     private void createNewTab() {
         if (webViews.size() >= MAX_TABS) {
             WebView removed = webViews.remove(0);
@@ -1566,6 +1562,47 @@ public class MainActivity extends AppCompatActivity {
             parseAndAddBookmarks(jsonStr);
         }
     }
+    private final ActivityResultLauncher<Intent> filePickerLauncher =
+    registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+        result -> {
+            if (result.getResultCode() == Activity.RESULT_OK &&
+                result.getData() != null) {
+                Uri uri = result.getData().getData();
+                if (uri != null) {
+                    handleFileImport(uri);
+                } else {
+                    Toast.makeText(MainActivity.this,
+                        "ファイルが選択されませんでした", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(MainActivity.this,
+                    "ファイル選択がキャンセルされました", Toast.LENGTH_SHORT).show();
+            }
+        });
+    private void importBookmarksFromFile() {
+    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        intent.setType("*/*");
+    } else {
+        intent.setType("application/json");
+    }
+    intent.addCategory(Intent.CATEGORY_OPENABLE);
+    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    filePickerLauncher.launch(intent);
+    }
+    private void handleFileImport(Uri uri) {
+    try {
+        String json = readTextFromUri(uri);
+        parseAndImportBookmarks(json);
+        Toast.makeText(MainActivity.this, "ブックマークをインポートしました", Toast.LENGTH_SHORT).show();
+    } catch (IOException e) {
+        Toast.makeText(MainActivity.this, "ファイルの読み取りに失敗しました: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        e.printStackTrace();
+    } catch (JSONException e) {
+        Toast.makeText(MainActivity.this, "JSON解析エラー: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        e.printStackTrace();
+      }
+    }
 
     private void parseAndImportBookmarks(String jsonStr) throws JSONException {
         JSONArray array = new JSONArray(jsonStr);
@@ -1618,7 +1655,6 @@ public class MainActivity extends AppCompatActivity {
         }
         pref.edit().putString(KEY_BOOKMARKS, array.toString()).apply();
     }
-
     private void loadHistory() {
         historyItems.clear();
         String jsonStr = pref.getString(KEY_HISTORY, "[]");
@@ -1953,6 +1989,17 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }
+    private String readTextFromUri(Uri uri) throws IOException {
+    StringBuilder builder = new StringBuilder();
+    try (InputStream inputStream = getContentResolver().openInputStream(uri);
+         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            builder.append(line);
+          }
+       }
+       return builder.toString();
+      }
         @Override
         public int getItemCount() { return items.size(); }
         class BookmarkViewHolder extends RecyclerView.ViewHolder {
