@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name"coara-browser</string>
-
     <string name="cannot_get_image_path">画像のパスを取得できません</string>
     <string name="cannot_load_image">画像を読み込めません</string>
     <string name="convert_ascii_art">アスキーアートに変換</string>
