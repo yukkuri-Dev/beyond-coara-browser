@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -12,6 +13,7 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,8 +48,6 @@ public class txtphoto extends Activity {
         convertButton = findViewById(R.id.convertButton);
         revertButton = findViewById(R.id.revertButton);
         filePathView = findViewById(R.id.filePathView);
-
-    
         resize25Button = findViewById(R.id.resize25Button);
         resize50Button = findViewById(R.id.resize50Button);
 
@@ -90,19 +90,54 @@ public class txtphoto extends Activity {
         if (requestCode == REQUEST_CODE_SELECT_FILE && resultCode == RESULT_OK) {
             Uri uri = data.getData();
             if (uri != null) {
-                selectedFilePath = uri.toString();
-                filePathView.setText(selectedFilePath);
+                String fileName = getFileName(uri);
+                if (fileName != null) {
+                    selectedFilePath = uri.toString();
+                    filePathView.setText(fileName);
 
-                String fileType = getContentResolver().getType(uri);
-                if ("text/plain".equals(fileType)) {
-                    convertButton.setEnabled(true);
-                    revertButton.setEnabled(false);
-                } else if ("application/octet-stream".equals(fileType)) {
-                    convertButton.setEnabled(false);
-                    revertButton.setEnabled(true);
+                    String extension = "";
+                    int dotIndex = fileName.lastIndexOf('.');
+                    if (dotIndex >= 0) {
+                        extension = fileName.substring(dotIndex).toLowerCase();
+                    }
+                    if (".txt".equals(extension)) {
+                        convertButton.setEnabled(true);
+                        revertButton.setEnabled(false);
+                    } else if (".dat".equals(extension)) {
+                        convertButton.setEnabled(false);
+                        revertButton.setEnabled(true);
+                    } else {
+                        Toast.makeText(this, "サポートされていないファイル形式です", Toast.LENGTH_SHORT).show();
+                        convertButton.setEnabled(false);
+                        revertButton.setEnabled(false);
+                    }
                 }
             }
         }
+    }
+
+    private String getFileName(Uri uri) {
+        String result = null;
+        if ("content".equals(uri.getScheme())) {
+            Cursor cursor = null;
+            try {
+                cursor = getContentResolver().query(uri, null, null, null, null);
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index != -1) {
+                        result = cursor.getString(index);
+                    }
+                }
+            } finally {
+                if (cursor != null) {
+                    cursor.close();
+                }
+            }
+        }
+        if (result == null) {
+            result = uri.getLastPathSegment();
+        }
+        return result;
     }
 
     private void convertAsciiToImage(Uri uri) {
