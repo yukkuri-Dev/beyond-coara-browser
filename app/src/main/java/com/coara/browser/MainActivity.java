@@ -504,8 +504,6 @@ private WebView createNewWebView() {
     webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
     WebSettings settings = webView.getSettings();
-    String defaultUA = settings.getUserAgentString();
-    originalUserAgents.put(webView, defaultUA);
     applyOptimizedSettings(settings);
     
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
