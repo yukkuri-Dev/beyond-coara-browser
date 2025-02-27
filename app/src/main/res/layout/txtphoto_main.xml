@@ -45,14 +45,14 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="25%縮小" />
+            android:text="25%に縮小" />
 
         <Button
             android:id="@+id/resize50Button"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="50%縮小" />
+            android:text="50%に縮小" />
     </LinearLayout>
 
 </LinearLayout>
