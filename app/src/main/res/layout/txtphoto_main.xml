@@ -5,21 +5,18 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-
     <Button
         android:id="@+id/selectFileButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="ファイルを選択" />
 
-
     <TextView
         android:id="@+id/filePathView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="選択されたファイル: なし"
-        android:paddingTop="8dp"/>
-
+        android:paddingTop="8dp" />
 
     <Button
         android:id="@+id/convertButton"
@@ -27,8 +24,7 @@
         android:layout_height="wrap_content"
         android:text="画像に変換"
         android:enabled="false"
-        android:paddingTop="16dp"/>
-
+        android:paddingTop="16dp" />
 
     <Button
         android:id="@+id/revertButton"
@@ -36,5 +32,27 @@
         android:layout_height="wrap_content"
         android:text="DATを画像に復元"
         android:enabled="false"
-        android:paddingTop="8dp"/>
+        android:paddingTop="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="8dp">
+
+        <Button
+            android:id="@+id/resize25Button"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="25%縮小" />
+
+        <Button
+            android:id="@+id/resize50Button"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="50%縮小" />
+    </LinearLayout>
+
 </LinearLayout>
