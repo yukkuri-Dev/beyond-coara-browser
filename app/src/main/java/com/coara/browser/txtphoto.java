@@ -1,5 +1,8 @@
 package com.coara.browser;
 
+import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -8,27 +11,23 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.provider.MediaStore;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
-public class txtphoto extends Fragment {
+public class txtphoto extends Activity {
 
     private static final int REQUEST_CODE_SELECT_FILE = 1;
 
@@ -36,57 +35,54 @@ public class txtphoto extends Fragment {
     private String selectedFilePath;
     private Button convertButton, revertButton;
 
-    public txtphoto() {
-    }
-
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, 
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.txtphoto_main, container, false);
-    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.txtphoto_main);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        Button selectFileButton = view.findViewById(R.id.selectFileButton);
-        convertButton = view.findViewById(R.id.convertButton);
-        revertButton = view.findViewById(R.id.revertButton);
-        filePathView = view.findViewById(R.id.filePathView);
+        Button selectFileButton = findViewById(R.id.selectFileButton);
+        convertButton = findViewById(R.id.convertButton);
+        revertButton = findViewById(R.id.revertButton);
+        filePathView = findViewById(R.id.filePathView);
 
-        selectFileButton.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            intent.setType("*/*");
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            startActivityForResult(intent, REQUEST_CODE_SELECT_FILE);
-        });
+        selectFileButton.setOnClickListener(v -> selectFile());
 
         convertButton.setOnClickListener(v -> {
-            if (selectedFilePath != null && selectedFilePath.endsWith(".txt")) {
-                convertAsciiToImage(selectedFilePath);
+            if (selectedFilePath != null) {
+                convertAsciiToImage(Uri.parse(selectedFilePath));
             }
         });
 
         revertButton.setOnClickListener(v -> {
-            if (selectedFilePath != null && selectedFilePath.endsWith(".dat")) {
-                convertDatToImage(selectedFilePath);
+            if (selectedFilePath != null) {
+                convertDatToImage(Uri.parse(selectedFilePath));
             }
         });
     }
 
+    private void selectFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        String[] mimeTypes = {"text/plain", "application/octet-stream"};
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+        startActivityForResult(intent, REQUEST_CODE_SELECT_FILE);
+    }
+
     @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_SELECT_FILE && resultCode == getActivity().RESULT_OK && data != null) {
+        if (requestCode == REQUEST_CODE_SELECT_FILE && resultCode == RESULT_OK) {
             Uri uri = data.getData();
             if (uri != null) {
                 selectedFilePath = uri.toString();
                 filePathView.setText(selectedFilePath);
 
-                if (selectedFilePath.endsWith(".txt")) {
+                String fileType = getContentResolver().getType(uri);
+                if ("text/plain".equals(fileType)) {
                     convertButton.setEnabled(true);
                     revertButton.setEnabled(false);
-                } else if (selectedFilePath.endsWith(".dat")) {
+                } else if ("application/octet-stream".equals(fileType)) {
                     convertButton.setEnabled(false);
                     revertButton.setEnabled(true);
                 }
@@ -94,11 +90,10 @@ public class txtphoto extends Fragment {
         }
     }
 
-    private void convertAsciiToImage(String filePath) {
-        try {
-            Uri uri = Uri.parse(filePath);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    requireActivity().getContentResolver().openInputStream(uri)));
+    private void convertAsciiToImage(Uri uri) {
+        try (InputStream inputStream = getContentResolver().openInputStream(uri);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+
             StringBuilder asciiArt = new StringBuilder();
             String line;
             int maxWidth = 0;
@@ -113,7 +108,6 @@ public class txtphoto extends Fragment {
                 maxWidth = Math.max(maxWidth, (int) paint.measureText(line));
                 lineCount++;
             }
-            reader.close();
 
             int charHeight = (int) (paint.getTextSize() + 10);
             int width = maxWidth + 20;
@@ -122,21 +116,18 @@ public class txtphoto extends Fragment {
             Bitmap bitmap = createBitmapFromAscii(asciiArt.toString(), width, height, paint, charHeight);
             saveBitmapAsPng(bitmap);
 
-            Toast.makeText(requireContext(), "変換と保存が完了しました", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "変換中にエラーが発生しました", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            Toast.makeText(this, "変換中にエラーが発生しました", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void convertDatToImage(String filePath) {
-        try {
-            Uri uri = Uri.parse(filePath);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    requireActivity().getContentResolver().openInputStream(uri)));
+    private void convertDatToImage(Uri uri) {
+        try (InputStream inputStream = getContentResolver().openInputStream(uri);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+
             String line;
             List<int[]> pixelData = new ArrayList<>();
-            int width = 0;
-            int height = 0;
+            int width = 0, height = 0;
 
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(":");
@@ -151,7 +142,6 @@ public class txtphoto extends Fragment {
                 width = Math.max(width, x);
                 height = Math.max(height, y);
             }
-            reader.close();
 
             width += 1;
             height += 1;
@@ -159,9 +149,8 @@ public class txtphoto extends Fragment {
             Bitmap bitmap = createBitmapFromDat(pixelData, width, height);
             saveBitmapAsPng(bitmap);
 
-            Toast.makeText(requireContext(), "変換と保存が完了しました", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "変換中にエラーが発生しました", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            Toast.makeText(this, "変換中にエラーが発生しました", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -176,6 +165,7 @@ public class txtphoto extends Fragment {
             canvas.drawText(line, 10, y, paint);
             y += charHeight;
         }
+
         return bitmap;
     }
 
@@ -187,31 +177,29 @@ public class txtphoto extends Fragment {
             int r = pixel[2];
             int g = pixel[3];
             int b = pixel[4];
-            int color = Color.rgb(r, g, b);
-            bitmap.setPixel(x, y, color);
+            bitmap.setPixel(x, y, Color.rgb(r, g, b));
         }
         return bitmap;
     }
 
     private void saveBitmapAsPng(Bitmap bitmap) {
-        try {
-            String fileName = generateFileName();
-            File outputDir = requireActivity().getExternalFilesDir(null);
-            if (outputDir != null) {
-                File outputFile = new File(outputDir, fileName + ".png");
-                FileOutputStream out = new FileOutputStream(outputFile);
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.DISPLAY_NAME, generateFileName() + ".png");
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+        values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/TxtPhoto");
+
+        Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        if (uri != null) {
+            try (OutputStream out = getContentResolver().openOutputStream(uri)) {
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-                out.close();
-                Toast.makeText(requireContext(), "画像が保存されました: " + outputFile.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "画像が保存されました", Toast.LENGTH_LONG).show();
+            } catch (IOException e) {
+                Toast.makeText(this, "保存中にエラーが発生しました", Toast.LENGTH_SHORT).show();
             }
-        } catch (Exception e) {
-            Toast.makeText(requireContext(), "画像の保存中にエラーが発生しました", Toast.LENGTH_SHORT).show();
         }
     }
 
     private String generateFileName() {
-        SimpleDateFormat sdf = new SimpleDateFormat("MMdd_HHmmss");
-        Date now = new Date();
-        return sdf.format(now);
+        return new SimpleDateFormat("MMdd_HHmmss", Locale.getDefault()).format(new Date());
     }
 }
