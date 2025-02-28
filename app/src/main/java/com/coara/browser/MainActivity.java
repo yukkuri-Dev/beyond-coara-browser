@@ -1041,12 +1041,12 @@ public class MainActivity extends AppCompatActivity {
                 fileName += ".png";
             } else if (mimeType.equalsIgnoreCase("image/jpeg")) {
                 fileName += ".jpg";
-            } else {
-                fileName += ".img";
-            } else {
+            } else if (mimeType.equalsIgnoreCase("image/bmp")) {
                 fileName += ".bmp";
-            } else {
+            } else if (mimeType.equalsIgnoreCase("image/gif")) {
                 fileName += ".gif";
+            } else if (mimeType.equalsIgnoreCase("image/img")) {
+                fileName += ".img";
             }
             File picturesDir = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES);
