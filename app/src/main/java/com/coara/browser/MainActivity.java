@@ -1209,11 +1209,13 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (id == R.id.action_downloads) {
             startActivity(new Intent(MainActivity.this, DownloadHistoryActivity.class));
+        } else if (id == R.id.action_qr) {
+            startActivity(new Intent(MainActivity.this, QrCodeActivity.class));
         } else if (id == R.id.action_pgdl) {
             startActivity(new Intent(MainActivity.this, pagedl.class));
         } else if (id == R.id.action_txtphoto) {
             startActivity(new Intent(MainActivity.this, txtphoto.class));
-         } else if (id == R.id.action_asciiart) {
+        } else if (id == R.id.action_asciiart) {
             startActivity(new Intent(MainActivity.this, asciiart.class));
         } else if (id == R.id.action_bookmark_management) {
             showBookmarksManagementDialog();
