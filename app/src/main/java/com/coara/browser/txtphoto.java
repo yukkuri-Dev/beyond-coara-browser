@@ -55,11 +55,11 @@ public class txtphoto extends Activity {
 
         resize25Button.setOnClickListener(v -> {
             scaleFactor = 0.25f;
-            Toast.makeText(this, "25% リサイズが選択されました", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "25% に縮小が選択されました", Toast.LENGTH_SHORT).show();
         });
         resize50Button.setOnClickListener(v -> {
             scaleFactor = 0.5f;
-            Toast.makeText(this, "50% リサイズが選択されました", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "50% に縮小が選択されました", Toast.LENGTH_SHORT).show();
         });
 
         convertButton.setOnClickListener(v -> {
