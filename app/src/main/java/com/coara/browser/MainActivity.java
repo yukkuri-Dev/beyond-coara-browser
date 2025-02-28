@@ -1043,6 +1043,10 @@ public class MainActivity extends AppCompatActivity {
                 fileName += ".jpg";
             } else {
                 fileName += ".img";
+            } else {
+                fileName += ".bmp";
+            } else {
+                fileName += ".gif";
             }
             File picturesDir = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES);
@@ -1052,7 +1056,8 @@ public class MainActivity extends AppCompatActivity {
                 fos.flush();
             }
             Toast.makeText(MainActivity.this,
-                "画像の保存を開始しました", Toast.LENGTH_SHORT).show();
+                "画像の保存が完了しました\n保存先: " + file.getAbsolutePath(),
+                Toast.LENGTH_LONG).show();
             return;
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
@@ -1082,9 +1087,7 @@ public class MainActivity extends AppCompatActivity {
             "画像の保存に失敗しました", Toast.LENGTH_SHORT).show();
         e.printStackTrace();
     }
- 
- 
-    }
+}
     private void exportBookmarksToFile() {
         final String bookmarksJson = pref.getString(KEY_BOOKMARKS, "[]");
         File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
