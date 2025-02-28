@@ -550,34 +550,61 @@ public class MainActivity extends AppCompatActivity {
     if (result != null) {
         final int type = result.getType();
         final String extra = result.getExtra();
+        boolean isDataUrl = extra != null && extra.startsWith("data:");
         if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
-            boolean isFavicon = extra != null && extra.toLowerCase().contains("favicon");
-            String saveOptionText = isFavicon ? "faviconを保存" : "画像を保存";
-            final String[] options = {
-                "リンクをコピー",
-                "リンクをダウンロード",
-                "リンク先を新しいタブで開く",
-                saveOptionText
-            };
+            final String[] options;
+            if (isDataUrl) {
+                options = new String[] {
+                    "リンクをコピー",
+                    "リンク先を新しいタブで開く",
+                    "画像を保存"
+                };
+            } else {
+                options = new String[] {
+                    "リンクをコピー",
+                    "リンクをダウンロード",
+                    "リンク先を新しいタブで開く",
+                    "画像を保存"
+                };
+            }
             new MaterialAlertDialogBuilder(MainActivity.this)
                 .setTitle("オプションを選択")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         copyLink(extra);
                     } else if (which == 1) {
-                        handleDownload(extra, null, null, null, 0);
-                    } else if (which == 2) {
-                        if (webViews.size() >= MAX_TABS) {
-                            Toast.makeText(MainActivity.this,
-                                "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                        if (isDataUrl) {
+                            if (webViews.size() >= MAX_TABS) {
+                                Toast.makeText(MainActivity.this,
+                                    "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                            } else {
+                                WebView newWebView = createNewWebView();
+                                webViews.add(newWebView);
+                                updateTabCount();
+                                switchToTab(webViews.size() - 1);
+                                newWebView.loadUrl(extra);
+                            }
                         } else {
-                            WebView newWebView = createNewWebView();
-                            webViews.add(newWebView);
-                            updateTabCount();
-                            switchToTab(webViews.size() - 1);
-                            newWebView.loadUrl(extra);
+                            handleDownload(extra, null, null, null, 0);
                         }
-                    } else if (which == 3) {
+                    } else if (which == 2) {
+                        if (isDataUrl) {
+                            if (extra != null && !extra.isEmpty()) {
+                                saveImage(extra);
+                            }
+                        } else {
+                            if (webViews.size() >= MAX_TABS) {
+                                Toast.makeText(MainActivity.this,
+                                    "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                            } else {
+                                WebView newWebView = createNewWebView();
+                                webViews.add(newWebView);
+                                updateTabCount();
+                                switchToTab(webViews.size() - 1);
+                                newWebView.loadUrl(extra);
+                            }
+                        }
+                    } else if (which == 3 && !isDataUrl) {
                         if (extra != null && !extra.isEmpty()) {
                             saveImage(extra);
                         }
@@ -612,19 +639,49 @@ public class MainActivity extends AppCompatActivity {
                 }).show();
             return true;
         } else if (type == WebView.HitTestResult.IMAGE_TYPE) {
-            boolean isFavicon = extra != null && extra.toLowerCase().contains("favicon");
-            String saveOptionText = isFavicon ? "faviconを保存" : "画像を保存";
-            final String[] options = {
-                "リンクをコピー",
-                saveOptionText
-            };
+            final String[] options;
+            boolean isDataUrlLocal = extra != null && extra.startsWith("data:");
+            if (isDataUrlLocal) {
+                options = new String[] {
+                    "リンクをコピー",
+                    "画像を保存"
+                };
+            } else {
+                options = new String[] {
+                    "リンクをコピー",
+                    "リンクをダウンロード",
+                    "リンク先を新しいタブで開く",
+                    "画像を保存"
+                };
+            }
             new MaterialAlertDialogBuilder(MainActivity.this)
                 .setTitle("オプションを選択")
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) {
                         copyLink(extra);
-                    } else if (which == 1 && extra != null && !extra.isEmpty()) {
-                        saveImage(extra);
+                    } else if (which == 1) {
+                        if (isDataUrlLocal) {
+                            if (extra != null && !extra.isEmpty()) {
+                                saveImage(extra);
+                            }
+                        } else {
+                            handleDownload(extra, null, null, null, 0);
+                        }
+                    } else if (which == 2 && !isDataUrlLocal) {
+                        if (webViews.size() >= MAX_TABS) {
+                            Toast.makeText(MainActivity.this,
+                                "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                        } else {
+                            WebView newWebView = createNewWebView();
+                            webViews.add(newWebView);
+                            updateTabCount();
+                            switchToTab(webViews.size() - 1);
+                            newWebView.loadUrl(extra);
+                        }
+                    } else if (which == 3 && !isDataUrlLocal) {
+                        if (extra != null && !extra.isEmpty()) {
+                            saveImage(extra);
+                        }
                     }
                 }).show();
             return true;
@@ -632,6 +689,7 @@ public class MainActivity extends AppCompatActivity {
     }
     return false;
 });
+
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -957,29 +1015,76 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveImage(String imageUrl) {
-        try {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-                ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(MainActivity.this, "ストレージ権限が必要です", Toast.LENGTH_SHORT).show();
+    try {
+        if (imageUrl != null && imageUrl.startsWith("data:")) {
+            int commaIndex = imageUrl.indexOf(',');
+            if (commaIndex == -1) {
+                Toast.makeText(MainActivity.this, "無効なデータURL", Toast.LENGTH_SHORT).show();
                 return;
             }
-            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(imageUrl));
-            request.setMimeType("image/*");
-            String fileName = URLUtil.guessFileName(imageUrl, null, "image/*");
-            request.setTitle(fileName);
-            request.setDescription("画像を保存中...");
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, fileName);
-            dm.enqueue(request);
-            Toast.makeText(MainActivity.this, "画像の保存を開始しました", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(MainActivity.this, "画像の保存に失敗しました", Toast.LENGTH_SHORT).show();
-            e.printStackTrace();
+            String metadata = imageUrl.substring(5, commaIndex); 
+            boolean isBase64 = metadata.contains("base64");
+            String mimeType = "image/*";
+            if (metadata.contains(";")) {
+                mimeType = metadata.split(";")[0];
+            }
+            byte[] imageData;
+            if (isBase64) {
+                String base64Data = imageUrl.substring(commaIndex + 1);
+                imageData = Base64.decode(base64Data, Base64.DEFAULT);
+            } else {
+                String dataPart = imageUrl.substring(commaIndex + 1);
+                imageData = dataPart.getBytes("UTF-8");
+            }
+            String fileName = "saved_image_" + System.currentTimeMillis();
+            if (mimeType.equalsIgnoreCase("image/png")) {
+                fileName += ".png";
+            } else if (mimeType.equalsIgnoreCase("image/jpeg")) {
+                fileName += ".jpg";
+            } else {
+                fileName += ".img";
+            }
+            File picturesDir = Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES);
+            File file = new File(picturesDir, fileName);
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(imageData);
+                fos.flush();
+            }
+            Toast.makeText(MainActivity.this,
+                "画像の保存を開始しました", Toast.LENGTH_SHORT).show();
+            return;
         }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ContextCompat.checkSelfPermission(MainActivity.this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(MainActivity.this,
+                "ストレージ権限が必要です", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        DownloadManager.Request request =
+            new DownloadManager.Request(Uri.parse(imageUrl));
+        request.setMimeType("image/*");
+        String fileName = URLUtil.guessFileName(imageUrl, null, "image/*");
+        request.setTitle(fileName);
+        request.setDescription("画像を保存中...");
+        request.setNotificationVisibility(
+            DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        request.setDestinationInExternalPublicDir(
+            Environment.DIRECTORY_PICTURES, fileName);
+        dm.enqueue(request);
+        Toast.makeText(MainActivity.this,
+            "画像の保存を開始しました", Toast.LENGTH_SHORT).show();
+    } catch (Exception e) {
+        Toast.makeText(MainActivity.this,
+            "画像の保存に失敗しました", Toast.LENGTH_SHORT).show();
+        e.printStackTrace();
     }
-
+ 
+ 
+    }
     private void exportBookmarksToFile() {
         final String bookmarksJson = pref.getString(KEY_BOOKMARKS, "[]");
         File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
