@@ -35,6 +35,9 @@
     <item
         android:id="@+id/action_pgdl"
         android:title="ページ保存ツール" />
+    <item
+        android:id="@+id/action_qr"
+        android:title="QRコード化" />
         </menu>
     </item>
     <item
