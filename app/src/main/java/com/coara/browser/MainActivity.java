@@ -546,74 +546,92 @@ public class MainActivity extends AppCompatActivity {
         webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
 
         webView.setOnLongClickListener(v -> {
-            WebView.HitTestResult result = webView.getHitTestResult();
-            if (result != null) {
-                final int type = result.getType();
-                final String extra = result.getExtra();
-                if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
-                    final String[] options = {"リンクをコピー", "リンクをダウンロード", "リンク先を新しいタブで開く", "画像を保存"};
-                    new MaterialAlertDialogBuilder(MainActivity.this)
-                        .setTitle("オプションを選択")
-                        .setItems(options, (dialog, which) -> {
-                            if (which == 0) {
-                                copyLink(extra);
-                            } else if (which == 1) {
-                                handleDownload(extra, null, null, null, 0);
-                            } else if (which == 2) {
-                                if (webViews.size() >= MAX_TABS) {
-                                    Toast.makeText(MainActivity.this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
-                                } else {
-                                    WebView newWebView = createNewWebView();
-                                    webViews.add(newWebView);
-                                    updateTabCount();
-                                    switchToTab(webViews.size() - 1);
-                                    newWebView.loadUrl(extra);
-                                }
-                            } else if (which == 3) {
-                                if (extra != null && !extra.isEmpty()) {
-                                    saveImage(extra);
-                                }
-                            }
-                        }).show();
-                    return true;
-                } else if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
-                    final String[] options = {"リンクをコピー", "リンクをダウンロード", "リンク先を新しいタブで開く"};
-                    new MaterialAlertDialogBuilder(MainActivity.this)
-                        .setTitle("オプションを選択")
-                        .setItems(options, (dialog, which) -> {
-                            if (which == 0) {
-                                copyLink(extra);
-                            } else if (which == 1) {
-                                handleDownload(extra, null, null, null, 0);
-                            } else if (which == 2) {
-                                if (webViews.size() >= MAX_TABS) {
-                                    Toast.makeText(MainActivity.this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
-                                } else {
-                                    WebView newWebView = createNewWebView();
-                                    webViews.add(newWebView);
-                                    updateTabCount();
-                                    switchToTab(webViews.size() - 1);
-                                    newWebView.loadUrl(extra);
-                                }
-                            }
-                        }).show();
-                    return true;
-                } else if (type == WebView.HitTestResult.IMAGE_TYPE) {
-                    final String[] options = {"リンクをコピー", "画像を保存"};
-                    new MaterialAlertDialogBuilder(MainActivity.this)
-                        .setTitle("オプションを選択")
-                        .setItems(options, (dialog, which) -> {
-                            if (which == 0) {
-                                copyLink(extra);
-                            } else if (which == 1 && extra != null && !extra.isEmpty()) {
-                                saveImage(extra);
-                            }
-                        }).show();
-                    return true;
-                }
-            }
-            return false;
-        });
+    WebView.HitTestResult result = webView.getHitTestResult();
+    if (result != null) {
+        final int type = result.getType();
+        final String extra = result.getExtra();
+        if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+            boolean isFavicon = extra != null && extra.toLowerCase().contains("favicon");
+            String saveOptionText = isFavicon ? "faviconを保存" : "画像を保存";
+            final String[] options = {
+                "リンクをコピー",
+                "リンクをダウンロード",
+                "リンク先を新しいタブで開く",
+                saveOptionText
+            };
+            new MaterialAlertDialogBuilder(MainActivity.this)
+                .setTitle("オプションを選択")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        copyLink(extra);
+                    } else if (which == 1) {
+                        handleDownload(extra, null, null, null, 0);
+                    } else if (which == 2) {
+                        if (webViews.size() >= MAX_TABS) {
+                            Toast.makeText(MainActivity.this,
+                                "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                        } else {
+                            WebView newWebView = createNewWebView();
+                            webViews.add(newWebView);
+                            updateTabCount();
+                            switchToTab(webViews.size() - 1);
+                            newWebView.loadUrl(extra);
+                        }
+                    } else if (which == 3) {
+                        if (extra != null && !extra.isEmpty()) {
+                            saveImage(extra);
+                        }
+                    }
+                }).show();
+            return true;
+        } else if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
+            final String[] options = {
+                "リンクをコピー",
+                "リンクをダウンロード",
+                "リンク先を新しいタブで開く"
+            };
+            new MaterialAlertDialogBuilder(MainActivity.this)
+                .setTitle("オプションを選択")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        copyLink(extra);
+                    } else if (which == 1) {
+                        handleDownload(extra, null, null, null, 0);
+                    } else if (which == 2) {
+                        if (webViews.size() >= MAX_TABS) {
+                            Toast.makeText(MainActivity.this,
+                                "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                        } else {
+                            WebView newWebView = createNewWebView();
+                            webViews.add(newWebView);
+                            updateTabCount();
+                            switchToTab(webViews.size() - 1);
+                            newWebView.loadUrl(extra);
+                        }
+                    }
+                }).show();
+            return true;
+        } else if (type == WebView.HitTestResult.IMAGE_TYPE) {
+            boolean isFavicon = extra != null && extra.toLowerCase().contains("favicon");
+            String saveOptionText = isFavicon ? "faviconを保存" : "画像を保存";
+            final String[] options = {
+                "リンクをコピー",
+                saveOptionText
+            };
+            new MaterialAlertDialogBuilder(MainActivity.this)
+                .setTitle("オプションを選択")
+                .setItems(options, (dialog, which) -> {
+                    if (which == 0) {
+                        copyLink(extra);
+                    } else if (which == 1 && extra != null && !extra.isEmpty()) {
+                        saveImage(extra);
+                    }
+                }).show();
+            return true;
+        }
+    }
+    return false;
+});
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
