@@ -852,8 +852,34 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onPermissionRequest(final PermissionRequest request) {
-            request.grant(request.getResources());
-            }
+            final String[] requestedResources = request.getResources();
+            List<String> permissionsToRequest = new ArrayList<>();
+
+           for (String resource : requestedResources) {
+           if (resource.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)
+                && ContextCompat.checkSelfPermission(
+                    MainActivity.this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.CAMERA);
+        }
+        if (resource.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)
+                && ContextCompat.checkSelfPermission(
+                    MainActivity.this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.RECORD_AUDIO);
+        }
+    }
+
+    if (!permissionsToRequest.isEmpty()) {
+        ActivityCompat.requestPermissions(
+            MainActivity.this,
+            permissionsToRequest.toArray(new String[0]),
+            YOUR_REQUEST_CODE
+        );
+    } else {
+        request.grant(requestedResources);
+    }
+}
             @Override
             public void onReceivedIcon(WebView view, Bitmap icon) {
                 if (view == getCurrentWebView()) {
