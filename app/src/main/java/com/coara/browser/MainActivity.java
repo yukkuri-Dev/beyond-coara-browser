@@ -127,7 +127,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText etFindQuery;
     private TextView tvFindCount;
     private Button btnFindPrev, btnFindNext, btnFindClose;
-    
+    private PermissionRequest pendingPermissionRequest = null;
+    private ActivityResultLauncher<String[]> permissionRequestLauncher;
 
     private WebView webView;
     private TextInputEditText urlEditText;
@@ -318,7 +319,29 @@ public class MainActivity extends AppCompatActivity {
                 permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             }
         }
-
+        permissionRequestLauncher = registerForActivityResult(
+        new ActivityResultContracts.RequestMultiplePermissions(),
+        result -> {
+            if (pendingPermissionRequest == null) return;
+            boolean allGranted = true;
+            for (Boolean granted : result.values()) {
+                if (!granted) {
+                    allGranted = false;
+                    break;
+                }
+            }
+            try {
+                if (allGranted) {
+                    pendingPermissionRequest.grant(pendingPermissionRequest.getResources());
+                } else {
+                    pendingPermissionRequest.deny();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            pendingPermissionRequest = null;
+        }
+    );
         fileChooserLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
