@@ -46,6 +46,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebStorage;
 import android.webkit.WebViewDatabase;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -120,6 +121,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_SELECT_CODE = 1001;
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
+    private View findInPageBarView;
+    private EditText etFindQuery;
+    private TextView tvFindCount;
+    private Button btnFindPrev, btnFindNext, btnFindClose;
+    
 
     private WebView webView;
     private TextInputEditText urlEditText;
@@ -140,6 +146,8 @@ public class MainActivity extends AppCompatActivity {
     private final ArrayList<WebView> webViews = new ArrayList<>();
     private int currentTabIndex = 0;
     private int currentHistoryIndex = -1;
+    private int currentMatchIndex = 0;
+    private int totalMatches = 0;
     private boolean isBackNavigation = false;
     private final List<Bookmark> bookmarks = new ArrayList<>();
     private final List<HistoryItem> historyItems = new ArrayList<>();
@@ -1219,6 +1227,9 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(MainActivity.this, asciiart.class));
         } else if (id == R.id.action_bookmark_management) {
             showBookmarksManagementDialog();
+        } else if (id == R.id.action_find_in_page) {
+            showFindInPageBar();
+            return true;
         } else if (id == R.id.action_add_bookmark) {
             addBookmark();
         } else if (id == R.id.action_history) {
@@ -1607,7 +1618,119 @@ public class MainActivity extends AppCompatActivity {
         webView.reload();
         Toast.makeText(MainActivity.this, "画像ブロック無効", Toast.LENGTH_SHORT).show();
     }
+    private void showFindInPageBar() {
+    if (findInPageBarView == null) {
+        LayoutInflater inflater = LayoutInflater.from(this);
+        findInPageBarView = inflater.inflate(R.layout.find_in_page_bar, null);
+        etFindQuery = findInPageBarView.findViewById(R.id.etFindQuery);
+        tvFindCount = findInPageBarView.findViewById(R.id.tvFindCount);
+        btnFindPrev = findInPageBarView.findViewById(R.id.btnFindPrev);
+        btnFindNext = findInPageBarView.findViewById(R.id.btnFindNext);
+        btnFindClose = findInPageBarView.findViewById(R.id.btnFindClose);
 
+        etFindQuery.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        etFindQuery.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    performFindInPage();
+                    return true;
+                }
+                return false;
+            }
+        });
+        
+        etFindQuery.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
+                    performFindInPage();
+                    return true;
+                }
+                return false;
+            }
+        });
+
+    
+        btnFindNext.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (totalMatches > 0) {
+                    getCurrentWebView().findNext(true);
+                }
+            }
+        });
+    
+        btnFindPrev.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (totalMatches > 0) {
+                    getCurrentWebView().findNext(false);
+                }
+            }
+        });
+    
+        btnFindClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                etFindQuery.setText("");
+                hideFindInPageBar();
+            }
+        });
+
+        
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP);
+        addContentView(findInPageBarView, params);
+    }
+    findInPageBarView.setVisibility(View.VISIBLE);
+    etFindQuery.requestFocus();
+}
+
+
+private void performFindInPage() {
+    String query = etFindQuery.getText().toString().trim();
+    if (query.isEmpty()) {
+        getCurrentWebView().clearMatches();
+        tvFindCount.setText("0/0");
+        totalMatches = 0;
+        return;
+    }
+    
+    getCurrentWebView().clearMatches();
+    currentMatchIndex = 0;
+    getCurrentWebView().findAllAsync(query);
+    getCurrentWebView().setFindListener(new WebView.FindListener() {
+        @Override
+        public void onFindResultReceived(int activeMatchOrdinal, int numberOfMatches, boolean isDoneCounting) {
+            currentMatchIndex = activeMatchOrdinal;
+            totalMatches = numberOfMatches;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (totalMatches > 0) {
+                
+                        tvFindCount.setText((activeMatchOrdinal + 1) + "/" + totalMatches);
+                    } else {
+                        tvFindCount.setText("0/0");
+                    }
+                }
+            });
+        }
+    });
+}
+
+private void hideFindInPageBar() {
+    if (findInPageBarView != null) {
+        findInPageBarView.setVisibility(View.GONE);
+        getCurrentWebView().clearMatches();
+        if (tvFindCount != null) {
+            tvFindCount.setText("0/0");
+        }
+    }
+}
     private void showHistoryDialog() {
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
