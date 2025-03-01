@@ -14,6 +14,7 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.util.Base64;
+import android.util.Base64OutputStream;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -283,8 +284,6 @@ public class QrCodeActivity extends AppCompatActivity {
             }).start();
         }
     }
-
-
     private String createDataUri(Uri fileUri) {
         String base64Data = convertFileToBase64(fileUri);
         if (base64Data == null) {
@@ -292,7 +291,6 @@ public class QrCodeActivity extends AppCompatActivity {
         }
         return "data:application/octet-stream;base64," + base64Data;
     }
-
     private String convertFileToBase64(Uri fileUri) {
         InputStream inputStream = null;
         ByteArrayOutputStream byteArrayOutputStream = null;
@@ -301,12 +299,15 @@ public class QrCodeActivity extends AppCompatActivity {
             if (inputStream == null) return null;
             BufferedInputStream bis = new BufferedInputStream(inputStream);
             byteArrayOutputStream = new ByteArrayOutputStream();
+            Base64OutputStream base64OutputStream = new Base64OutputStream(byteArrayOutputStream, Base64.NO_WRAP);
             byte[] buffer = new byte[8192];
             int bytesRead;
             while ((bytesRead = bis.read(buffer)) != -1) {
-                byteArrayOutputStream.write(buffer, 0, bytesRead);
+                base64OutputStream.write(buffer, 0, bytesRead);
             }
-            return Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.NO_WRAP);
+            base64OutputStream.flush();
+            base64OutputStream.close();
+            return byteArrayOutputStream.toString("UTF-8");
         } catch (IOException e) {
             e.printStackTrace();
             return null;
