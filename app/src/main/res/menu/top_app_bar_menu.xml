@@ -27,6 +27,9 @@
         android:title="basicモード"
         android:checkable="true" />
     <item
+        android:id="@+id/action_find_in_page"
+        android:title="ページ内検索" />
+    <item
         android:id="@+id/action_txtphoto"
         android:title="TXTを画像に変換" />
     <item
