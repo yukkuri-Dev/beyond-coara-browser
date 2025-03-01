@@ -1637,7 +1637,6 @@ public class MainActivity extends AppCompatActivity {
 
         LinearLayout container = findViewById(R.id.urlContainer);
         if (container == null) {
-            Log.e("SearchBar", "urlContainer is NULL! activity_main.xml を確認してください");
             return;
         }
 
