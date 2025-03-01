@@ -1639,7 +1639,6 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
-        
         etFindQuery.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
@@ -1651,7 +1650,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-    
         btnFindNext.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1660,7 +1658,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-    
         btnFindPrev.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1669,7 +1666,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-    
         btnFindClose.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1678,7 +1674,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -1687,9 +1682,11 @@ public class MainActivity extends AppCompatActivity {
     }
     findInPageBarView.setVisibility(View.VISIBLE);
     etFindQuery.requestFocus();
+    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+    if (imm != null) {
+        imm.showSoftInput(etFindQuery, InputMethodManager.SHOW_IMPLICIT);
+    }
 }
-
-
 private void performFindInPage() {
     String query = etFindQuery.getText().toString().trim();
     if (query.isEmpty()) {
@@ -1728,6 +1725,10 @@ private void hideFindInPageBar() {
         getCurrentWebView().clearMatches();
         if (tvFindCount != null) {
             tvFindCount.setText("0/0");
+        }
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(etFindQuery.getWindowToken(), 0);
         }
     }
 }
