@@ -850,6 +850,10 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
             @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+            request.grant(request.getResources());
+            }
+            @Override
             public void onReceivedIcon(WebView view, Bitmap icon) {
                 if (view == getCurrentWebView()) {
                     faviconImageView.setImageBitmap(icon);
