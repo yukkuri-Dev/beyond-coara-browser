@@ -46,6 +46,7 @@ public class QrCodeActivity extends AppCompatActivity {
 
     private static final int FILE_SELECT_REQUEST = 1;
     private static final int PERMISSION_REQUEST_CODE = 100;
+    private static final int MAX_QR_DATA_LENGTH = 2953;
 
     private Button selectFileButton;
     private Button generateTextQrButton;
@@ -284,13 +285,33 @@ public class QrCodeActivity extends AppCompatActivity {
             }).start();
         }
     }
+
     private String createDataUri(Uri fileUri) {
+        String mimeType = getContentResolver().getType(fileUri);
+        if (mimeType == null) {
+            mimeType = "application/octet-stream";
+        }
         String base64Data = convertFileToBase64(fileUri);
         if (base64Data == null) {
             return null;
         }
-        return "data:application/octet-stream;base64," + base64Data;
+        String dataUriPrefix;
+        if (mimeType.startsWith("image/")) {
+            dataUriPrefix = "data:" + mimeType + ";base64,";
+        } else if (mimeType.equals("text/plain")) {
+            dataUriPrefix = "data:" + mimeType + ";charset=utf-8;base64,";
+        } else {
+            dataUriPrefix = "data:" + mimeType + ";base64,";
+        }
+        String dataUri = dataUriPrefix + base64Data;
+        if (dataUri.length() > MAX_QR_DATA_LENGTH) {
+            Toast.makeText(QrCodeActivity.this,
+                    "ファイル容量がQRコードのサイズを超えています", Toast.LENGTH_LONG).show();
+            return null;
+        }
+        return dataUri;
     }
+
     private String convertFileToBase64(Uri fileUri) {
         InputStream inputStream = null;
         ByteArrayOutputStream byteArrayOutputStream = null;
