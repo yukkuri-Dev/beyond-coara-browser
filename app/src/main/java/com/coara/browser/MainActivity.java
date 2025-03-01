@@ -57,7 +57,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityCompat;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -66,7 +65,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -125,8 +123,6 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_SELECT_CODE = 1001;
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
-    private static final int PERMISSION_REQUEST_CODE = 1002;
-    private PermissionRequest pendingPermissionRequest;
     private View findInPageBarView;
     private EditText etFindQuery;
     private TextView tvFindCount;
@@ -352,26 +348,6 @@ public class MainActivity extends AppCompatActivity {
         handleIntent(getIntent());
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-        @Override
-        public void onRequestPermissionsResult(int requestCode,
-                            @NonNull String[] permissions,
-                            @NonNull int[] grantResults) {
-        if (requestCode == PERMISSION_REQUEST_CODE && pendingPermissionRequest != null) {
-        boolean allGranted = true;
-        for (int result : grantResults) {
-            if (result != PackageManager.PERMISSION_GRANTED) {
-                allGranted = false;
-                break;
-            }
-        }
-        if (allGranted) {
-            pendingPermissionRequest.grant(pendingPermissionRequest.getResources());
-        } else {
-            pendingPermissionRequest.deny();
-        }
-        pendingPermissionRequest = null;
-       }
-     }
             @Override
             public void handleOnBackPressed() {
                 if (customView != null) {
@@ -874,36 +850,10 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return true;
             }
-    @Override
-    public void onPermissionRequest(final PermissionRequest request) {
-    final String[] requestedResources = request.getResources();
-    List<String> permissionsToRequest = new ArrayList<>();
-
-    for (String resource : requestedResources) {
-        if (resource.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE) &&
-            ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.CAMERA);
-        }
-        if (resource.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE) &&
-            ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO)
-            != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.RECORD_AUDIO);
-        }
-    }
-
-    if (!permissionsToRequest.isEmpty()) {
-        pendingPermissionRequest = request;
-        ActivityCompat.requestPermissions(
-            MainActivity.this,
-            permissionsToRequest.toArray(new String[0]),
-            PERMISSION_REQUEST_CODE
-        );
-    } else {
-        request.grant(requestedResources);
-    }
-}
-
+            @Override
+            public void onPermissionRequest(final PermissionRequest request) {
+            request.grant(request.getResources());
+            }
             @Override
             public void onReceivedIcon(WebView view, Bitmap icon) {
                 if (view == getCurrentWebView()) {
