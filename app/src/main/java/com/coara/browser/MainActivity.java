@@ -1632,7 +1632,7 @@ public class MainActivity extends AppCompatActivity {
         searchCloseButton.setOnClickListener(v -> {
             hideSearchBar();
         });
-        FrameLayout container = findViewById(R.id.searchBarContainer);
+        FrameLayout container = findViewById(R.id.urlContainer);
         container.addView(searchBarView);
     }
     searchBarView.setVisibility(View.VISIBLE);
