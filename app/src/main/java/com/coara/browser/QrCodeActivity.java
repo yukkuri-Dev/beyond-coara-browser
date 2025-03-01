@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.provider.OpenableColumns;
+import android.util.Base64;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -29,9 +30,12 @@ import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -59,13 +63,11 @@ public class QrCodeActivity extends AppCompatActivity {
             }
         }
 
-      
         LinearLayoutCompat layout = new LinearLayoutCompat(this);
         layout.setOrientation(LinearLayoutCompat.VERTICAL);
         int padding = (int) (16 * getResources().getDisplayMetrics().density);
         layout.setPadding(padding, padding, padding, padding);
 
-      
         selectFileButton = new Button(this);
         selectFileButton.setText("ファイルを選択してQR生成");
         selectFileButton.setOnClickListener(new View.OnClickListener() {
@@ -76,12 +78,10 @@ public class QrCodeActivity extends AppCompatActivity {
         });
         layout.addView(selectFileButton);
 
-      
         inputEditText = new EditText(this);
         inputEditText.setHint("文字列やURLを入力");
         layout.addView(inputEditText);
 
-    
         generateTextQrButton = new Button(this);
         generateTextQrButton.setText("QRコード保存");
         generateTextQrButton.setVisibility(View.GONE);
@@ -93,7 +93,6 @@ public class QrCodeActivity extends AppCompatActivity {
         });
         layout.addView(generateTextQrButton);
 
-    
         inputEditText.addTextChangedListener(new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
@@ -107,7 +106,6 @@ public class QrCodeActivity extends AppCompatActivity {
             }
         });
 
-  
         setContentView(layout);
     }
 
@@ -123,9 +121,11 @@ public class QrCodeActivity extends AppCompatActivity {
             Uri fileUri = data.getData();
             if (fileUri != null) {
                 final String originalFileName = getFileName(fileUri);
-                final String qrContent = "data://" + fileUri.toString();
-
-            
+                final String qrContent = createDataUri(fileUri);
+                if (qrContent == null) {
+                    Toast.makeText(QrCodeActivity.this, "ファイルの変換に失敗しました", Toast.LENGTH_LONG).show();
+                    return;
+                }
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -214,7 +214,6 @@ public class QrCodeActivity extends AppCompatActivity {
         OutputStream out = null;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Android Q以降はMediaStore経由で保存
                 ContentValues values = new ContentValues();
                 values.put(MediaStore.Images.Media.DISPLAY_NAME, fileName);
                 values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
@@ -223,7 +222,6 @@ public class QrCodeActivity extends AppCompatActivity {
                 if (uri == null) return false;
                 out = getContentResolver().openOutputStream(uri);
             } else {
-                // それ以前は外部ストレージパスへ直接保存
                 File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
                 File file = new File(picturesDir, fileName);
                 out = new FileOutputStream(file);
@@ -286,7 +284,50 @@ public class QrCodeActivity extends AppCompatActivity {
         }
     }
 
-    // 変換処理中はバックキーを無効にする
+
+    private String createDataUri(Uri fileUri) {
+        String base64Data = convertFileToBase64(fileUri);
+        if (base64Data == null) {
+            return null;
+        }
+        return "data:application/octet-stream;base64," + base64Data;
+    }
+
+    private String convertFileToBase64(Uri fileUri) {
+        InputStream inputStream = null;
+        ByteArrayOutputStream byteArrayOutputStream = null;
+        try {
+            inputStream = getContentResolver().openInputStream(fileUri);
+            if (inputStream == null) return null;
+            BufferedInputStream bis = new BufferedInputStream(inputStream);
+            byteArrayOutputStream = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = bis.read(buffer)) != -1) {
+                byteArrayOutputStream.write(buffer, 0, bytesRead);
+            }
+            return Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.NO_WRAP);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        } finally {
+            if (byteArrayOutputStream != null) {
+                try {
+                    byteArrayOutputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     @Override
     public void onBackPressed() {
         if (isProcessing) {
@@ -302,7 +343,7 @@ public class QrCodeActivity extends AppCompatActivity {
                                            @NonNull int[] grantResults) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 &&
-                grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this,
                         "外部ストレージへの書き込み権限が必要です", Toast.LENGTH_LONG).show();
             }
