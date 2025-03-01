@@ -23,6 +23,7 @@ import android.widget.ProgressBar;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -344,18 +345,11 @@ public class DownloadHistoryActivity extends AppCompatActivity {
             }
             if (showOpenButton) {
                 holder.btnOpenFile.setVisibility(View.VISIBLE);
-                holder.btnOpenFile.setOnClickListener(v -> {
-                    try {
-                        Intent intent = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(intent);
-                    } catch (ActivityNotFoundException e) {
-                        Toast.makeText(context, "ダウンロード一覧を開けません", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                holder.btnOpenFile.setOnClickListener(v -> openDownloadItem(item));
             } else {
                 holder.btnOpenFile.setVisibility(View.GONE);
             }
+            holder.itemView.setOnClickListener(v -> openDownloadItem(item));
 
             holder.itemView.setOnLongClickListener(v -> {
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -460,6 +454,39 @@ public class DownloadHistoryActivity extends AppCompatActivity {
             final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
             int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
             return String.format("%.1f %s", size / Math.pow(1024, digitGroups), units[digitGroups]);
+        }
+
+        private void openDownloadItem(DownloadItem item) {
+            File openFile = new File(item.filePath);
+            if (!openFile.exists()) {
+                Toast.makeText(context, "ファイルが存在しません", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (openFile.getName().toLowerCase().endsWith(".apk")) {
+                Uri apkUri;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    apkUri = FileProvider.getUriForFile(context,
+                            context.getPackageName() + ".provider", openFile);
+                } else {
+                    apkUri = Uri.fromFile(openFile);
+                }
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                try {
+                    context.startActivity(intent);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(context, "APKのインストールを開始できません", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                try {
+                    Intent intent = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(intent);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(context, "ダウンロード一覧を開けません", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 }
