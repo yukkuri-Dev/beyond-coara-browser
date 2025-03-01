@@ -1620,27 +1620,44 @@ public class MainActivity extends AppCompatActivity {
     if (searchBarView == null) {
         LayoutInflater inflater = LayoutInflater.from(this);
         searchBarView = inflater.inflate(R.layout.search_bar_layout, null);
+
         searchEditText = searchBarView.findViewById(R.id.searchEditText);
         searchExecuteButton = searchBarView.findViewById(R.id.searchExecuteButton);
         searchCloseButton = searchBarView.findViewById(R.id.searchCloseButton);
         searchCountTextView = searchBarView.findViewById(R.id.searchCountTextView);
-        
+
         searchExecuteButton.setOnClickListener(v -> {
             String query = searchEditText.getText().toString().trim();
             performPageSearch(query);
         });
+
         searchCloseButton.setOnClickListener(v -> {
             hideSearchBar();
         });
-        FrameLayout container = findViewById(R.id.urlContainer);
-        container.addView(searchBarView);
+
+        LinearLayout container = findViewById(R.id.urlContainer);
+        if (container == null) {
+            Log.e("SearchBar", "urlContainer is NULL! activity_main.xml を確認してください");
+            return;
+        }
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        searchBarView.setLayoutParams(params);
+        if (searchBarView.getParent() == null) {
+            container.addView(searchBarView);
+        }
     }
+
     searchBarView.setVisibility(View.VISIBLE);
-    
     if (searchResultsOverlay == null) {
         searchResultsOverlay = new SearchResultsOverlay(this);
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(50, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.END);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                50, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.END);
         addContentView(searchResultsOverlay, params);
+
         searchResultsOverlay.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
                 float tappedY = event.getY();
