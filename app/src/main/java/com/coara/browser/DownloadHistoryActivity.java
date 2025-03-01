@@ -465,8 +465,7 @@ public class DownloadHistoryActivity extends AppCompatActivity {
             if (openFile.getName().toLowerCase().endsWith(".apk")) {
                 Uri apkUri;
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                    apkUri = FileProvider.getUriForFile(context,
-                            context.getPackageName() + ".provider", openFile);
+                    apkUri = FileProvider.getUriForFile(context, "com.coara.browser.fileprovider", openFile);
                 } else {
                     apkUri = Uri.fromFile(openFile);
                 }
