@@ -33,7 +33,6 @@ import android.view.PixelCopy;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.view.MotionEvent;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.HttpAuthHandler;
@@ -47,7 +46,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebStorage;
 import android.webkit.WebViewDatabase;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -122,12 +120,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_SELECT_CODE = 1001;
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
-    private View searchBarView;
-    private EditText searchEditText;
-    private Button searchExecuteButton;
-    private Button searchCloseButton;
-    private TextView searchCountTextView;
-    private SearchResultsOverlay searchResultsOverlay;
+
     private WebView webView;
     private TextInputEditText urlEditText;
     private ImageView faviconImageView;
@@ -1228,8 +1221,6 @@ public class MainActivity extends AppCompatActivity {
             showBookmarksManagementDialog();
         } else if (id == R.id.action_add_bookmark) {
             addBookmark();
-        } else if (id == R.id.action_Search_show) {
-            showSearchBar();
         } else if (id == R.id.action_history) {
             showHistoryDialog();
         } else if (id == R.id.action_export) {
@@ -1616,173 +1607,7 @@ public class MainActivity extends AppCompatActivity {
         webView.reload();
         Toast.makeText(MainActivity.this, "画像ブロック無効", Toast.LENGTH_SHORT).show();
     }
-    private void showSearchBar() {
-    if (searchBarView == null) {
-        LayoutInflater inflater = LayoutInflater.from(this);
-        searchBarView = inflater.inflate(R.layout.search_bar_layout, null);
 
-        searchEditText = searchBarView.findViewById(R.id.searchEditText);
-        searchExecuteButton = searchBarView.findViewById(R.id.searchExecuteButton);
-        searchCloseButton = searchBarView.findViewById(R.id.searchCloseButton);
-        searchCountTextView = searchBarView.findViewById(R.id.searchCountTextView);
-
-        searchExecuteButton.setOnClickListener(v -> {
-            String query = searchEditText.getText().toString().trim();
-            performPageSearch(query);
-        });
-
-        searchCloseButton.setOnClickListener(v -> {
-            hideSearchBar();
-        });
-
-        LinearLayout container = findViewById(R.id.urlContainer);
-        if (container == null) {
-            return;
-        }
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        searchBarView.setLayoutParams(params);
-        if (searchBarView.getParent() == null) {
-            container.addView(searchBarView);
-        }
-    }
-
-    searchBarView.setVisibility(View.VISIBLE);
-    if (searchResultsOverlay == null) {
-        searchResultsOverlay = new SearchResultsOverlay(this);
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                50, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.END);
-        addContentView(searchResultsOverlay, params);
-
-        searchResultsOverlay.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                float tappedY = event.getY();
-                float percent = tappedY / searchResultsOverlay.getHeight();
-                scrollToSearchResult(percent);
-                return true;
-            }
-            return false;
-        });
-    }
-    searchResultsOverlay.setVisibility(View.VISIBLE);
-}
-
-private void performPageSearch(String query) {
-    WebView currentWebView = getCurrentWebView();
-    if (currentWebView == null || query.isEmpty()) return;
-    getSearchResultPositions(query);
-}
-
-private void getSearchResultPositions(String query) {
-    String clearHighlightsJS =
-            "function removeHighlights() {" +
-            "  var highlights = document.querySelectorAll('span.mySearchHighlight');" +
-            "  for(var i=0;i<highlights.length;i++) {" +
-            "    var parent = highlights[i].parentNode;" +
-            "    parent.replaceChild(document.createTextNode(highlights[i].textContent), highlights[i]);" +
-            "  }" +
-            "}" +
-            "removeHighlights();";
-    getCurrentWebView().evaluateJavascript(clearHighlightsJS, null);
-    String js =
-        "function highlightAndGetPositions(query) {" +
-        "  if(query === '') return [];" +
-        "  var regex = new RegExp(query, 'gi');" +
-        "  function highlightText(node) {" +
-        "    if (node.nodeType === 3) {" + 
-        "      var match = node.data.match(regex);" +
-        "      if(match) {" +
-        "        var frag = document.createDocumentFragment();" +
-        "        var text = node.data;" +
-        "        var lastIndex = 0;" +
-        "        text.replace(regex, function(m, index) {" +
-        "          var before = text.substring(lastIndex, index);" +
-        "          if(before) {" +
-        "            frag.appendChild(document.createTextNode(before));" +
-        "          }" +
-        "          var highlighted = document.createElement('span');" +
-        "          highlighted.className = 'mySearchHighlight';" +
-        "          highlighted.appendChild(document.createTextNode(m));" +
-        "          frag.appendChild(highlighted);" +
-        "          lastIndex = index + m.length;" +
-        "          return m;" +
-        "        });" +
-        "        var after = text.substring(lastIndex);" +
-        "        if(after) {" +
-        "          frag.appendChild(document.createTextNode(after));" +
-        "        }" +
-        "        node.parentNode.replaceChild(frag, node);" +
-        "      }" +
-        "    } else if (node.nodeType === 1 && node.childNodes && !/(script|style)/i.test(node.tagName)) {" +
-        "      for(var i=0; i < node.childNodes.length; i++) {" +
-        "        highlightText(node.childNodes[i]);" +
-        "      }" +
-        "    }" +
-        "  }" +
-        "  highlightText(document.body);" +
-        "  var elements = document.querySelectorAll('span.mySearchHighlight');" +
-        "  var positions = [];" +
-        "  for(var i=0; i<elements.length; i++) {" +
-        "    var rect = elements[i].getBoundingClientRect();" +
-        "    var pos = rect.top / document.documentElement.scrollHeight;" +
-        "    positions.push(pos);" +
-        "  }" +
-        "  return JSON.stringify(positions);" +
-        "}" +
-        "highlightAndGetPositions(" + JSONObject.quote(query) + ");";
-    getCurrentWebView().evaluateJavascript(js, value -> {
-        try {
-            JSONArray arr = new JSONArray(value);
-            List<Float> markers = new ArrayList<>();
-            for (int i = 0; i < arr.length(); i++) {
-                markers.add((float) arr.getDouble(i));
-            }
-            if (searchCountTextView != null) {
-                searchCountTextView.setText(String.valueOf(markers.size()));
-            }
-            if (searchResultsOverlay != null) {
-                searchResultsOverlay.setMarkers(markers);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            if (searchCountTextView != null) {
-                searchCountTextView.setText("0");
-            }
-        }
-    });
-}
-private void scrollToSearchResult(float percent) {
-    WebView currentWebView = getCurrentWebView();
-    if (currentWebView != null) {
-        int contentHeight = currentWebView.getContentHeight();
-        int scrollY = (int) (percent * contentHeight);
-        currentWebView.scrollTo(0, scrollY);
-    }
-}
-private void hideSearchBar() {
-    if (searchBarView != null) {
-        searchBarView.setVisibility(View.GONE);
-    }
-    if (searchResultsOverlay != null) {
-        searchResultsOverlay.setVisibility(View.GONE);
-    }
-    String removeJS =
-            "function removeHighlights() {" +
-            "  var highlights = document.querySelectorAll('span.mySearchHighlight');" +
-            "  for(var i=0;i<highlights.length;i++) {" +
-            "    var parent = highlights[i].parentNode;" +
-            "    parent.replaceChild(document.createTextNode(highlights[i].textContent), highlights[i]);" +
-            "  }" +
-            "}" +
-            "removeHighlights();";
-    getCurrentWebView().evaluateJavascript(removeJS, null);
-    if (searchCountTextView != null) {
-        searchCountTextView.setText("0");
-    }
-}
     private void showHistoryDialog() {
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
