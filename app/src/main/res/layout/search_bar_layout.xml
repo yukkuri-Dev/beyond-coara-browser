@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/searchBarLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#EEEEEE"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <EditText
+        android:id="@+id/searchEditText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:hint="ページ内検索"
+        android:inputType="text"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/searchExecuteButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="実行" />
+
+    <Button
+        android:id="@+id/searchCloseButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="終了" />
+
+    <TextView
+        android:id="@+id/searchCountTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingStart="8dp"
+        android:text="0"
+        android:textColor="#000000"
+        android:textSize="16sp"
+        android:gravity="center" />
+
+</LinearLayout>
