@@ -1227,6 +1227,8 @@ public class MainActivity extends AppCompatActivity {
             showBookmarksManagementDialog();
         } else if (id == R.id.action_add_bookmark) {
             addBookmark();
+        } else if (id == R.id.action_Search_show) {
+            showSearchBar();
         } else if (id == R.id.action_history) {
             showHistoryDialog();
         } else if (id == R.id.action_export) {
