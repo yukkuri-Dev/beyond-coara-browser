@@ -10,8 +10,8 @@ android {
     defaultConfig {
         minSdk = 24
         targetSdk = 34
-        versionCode = 123
-        versionName = "4.0.5"
+        versionCode = 128
+        versionName = "4.0.8"
         multiDexEnabled = true
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
     }
@@ -64,5 +64,5 @@ dependencies {
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'androidx.webkit:webkit:1.12.1'
     implementation 'androidx.activity:activity:1.9.3'
-    implementation 'com.google.zxing:core:3.3.3'
+    implementation 'com.google.zxing:core:3.5.3'
 }
