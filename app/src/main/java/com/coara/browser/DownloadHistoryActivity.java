@@ -23,7 +23,6 @@ import android.widget.ProgressBar;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -346,31 +345,12 @@ public class DownloadHistoryActivity extends AppCompatActivity {
             if (showOpenButton) {
                 holder.btnOpenFile.setVisibility(View.VISIBLE);
                 holder.btnOpenFile.setOnClickListener(v -> {
-                    File openFile = new File(item.filePath);
-                    if (openFile.getName().toLowerCase().endsWith(".apk")) {
-                        Uri apkUri;
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                            apkUri = FileProvider.getUriForFile(context,
-                                    context.getPackageName() + ".provider", openFile);
-                        } else {
-                            apkUri = Uri.fromFile(openFile);
-                        }
-                        Intent intent = new Intent(Intent.ACTION_VIEW);
-                        intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        try {
-                            context.startActivity(intent);
-                        } catch (ActivityNotFoundException e) {
-                            Toast.makeText(context, "APKのインストールを開始できません", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        try {
-                            Intent intent = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            context.startActivity(intent);
-                        } catch (ActivityNotFoundException e) {
-                            Toast.makeText(context, "ダウンロード一覧を開けません", Toast.LENGTH_SHORT).show();
-                        }
+                    try {
+                        Intent intent = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(intent);
+                    } catch (ActivityNotFoundException e) {
+                        Toast.makeText(context, "ダウンロード一覧を開けません", Toast.LENGTH_SHORT).show();
                     }
                 });
             } else {
