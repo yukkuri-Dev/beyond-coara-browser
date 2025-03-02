@@ -788,15 +788,21 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                String lowerUrl = url.toLowerCase();
-                if (lowerUrl.contains("cloud") || lowerUrl.contains("auth") || lowerUrl.contains("login") || lowerUrl.contains("disk")) {
-                    view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-                      } else {
-                    view.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-                  }
-                urlEditText.setText(url);
-                super.onPageStarted(view, url, favicon);
+            String lowerUrl = url.toLowerCase();
+             boolean isMatched = java.util.regex.Pattern
+            .compile("(^|[/.])(?:(chatx2|chatx|chat|auth|login|disk|cgi|session|cloud))($|[/.])")
+            .matcher(lowerUrl)
+            .find();
+    
+             if (isMatched) {
+                 view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+            } else {
+                view.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
             }
+    
+                 urlEditText.setText(url);
+                super.onPageStarted(view, url, favicon);
+              }
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
