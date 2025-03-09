@@ -1,13 +1,13 @@
 <resources>
     <string name="app_name">coara-browser</string>
     <string name="qrcode_short_label">QRコード</string>
-    <string name="qrcode_long_label">QRコードを変換</string>
+    <string name="qrcode_long_label">QRコードに変換</string>
     <string name="pagedl_short_label">ページDL</string>
     <string name="pagedl_long_label">ページをダウンロード</string>
     <string name="asciiart_short_label">ASCIIアート</string>
-    <string name="asciiart_long_label">ASCIIアートを変換</string>
-    <string name="txtphoto_short_label">テキスト画像</string>
-    <string name="txtphoto_long_label">テキスト画像を変換</string>
+    <string name="asciiart_long_label">画像をASCIIアートに変換</string>
+    <string name="txtphoto_short_label">TXT画像</string>
+    <string name="txtphoto_long_label">TXTを画像に変換</string>
     <string name="cannot_get_image_path">画像のパスを取得できません</string>
     <string name="cannot_load_image">画像を読み込めません</string>
     <string name="convert_ascii_art">アスキーアートに変換</string>
