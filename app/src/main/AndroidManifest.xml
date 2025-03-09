@@ -39,10 +39,6 @@
             android:name="android.theme.customization.icon"
             android:resource="@xml/icon_palette" />
 
-        <meta-data
-            android:name="android.app.shortcuts"
-            android:resource="@xml/shortcuts" />
-
         <activity
             android:name=".MainActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
@@ -61,6 +57,9 @@
                 <data android:scheme="http" />
                 <data android:scheme="https" />
             </intent-filter>
+            <meta-data
+            android:name="android.app.shortcuts"
+            android:resource="@xml/shortcuts" />
         </activity>
 
         <activity
