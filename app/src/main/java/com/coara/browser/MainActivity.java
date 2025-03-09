@@ -475,7 +475,46 @@ public class MainActivity extends AppCompatActivity {
             tabCountTextView.setText(String.valueOf(webViews.size()));
         }
     }
-
+    private void optimizeDOMUpdates(WebView webView) {
+    String js = "javascript:(function() {" +
+                "   var body = document.body;" +
+                "   var newElement = document.createElement('div');" +
+                "   newElement.innerHTML = '<p>高速なDOM操作</p>';" +
+                "   var fragment = document.createDocumentFragment();" +
+                "   fragment.appendChild(newElement);" +
+                "   body.appendChild(fragment);" +
+                "})();";
+    webView.evaluateJavascript(js, null);
+    }
+    private void batchStyleUpdates(WebView webView) {
+    String js = "javascript:(function() {" +
+                "   var styles = document.createElement('style');" +
+                "   styles.innerHTML = '* { transition: none !important; }';" +
+                "   document.head.appendChild(styles);" +
+                "})();";
+    webView.evaluateJavascript(js, null);
+    }
+    private void removeUnusedElements(WebView webView) {
+    String js = "javascript:(function() {" +
+                "   var elements = document.querySelectorAll('.ads, .popup, .tracking');" +
+                "   for (var i = 0; i < elements.length; i++) {" +
+                "       elements[i].parentNode.removeChild(elements[i]);" +
+                "   }" +
+                "})();";
+    webView.evaluateJavascript(js, null);
+    }
+    private void delayDOMUpdatesOnScroll(WebView webView) {
+    String js = "javascript:(function() {" +
+                "   var timeout;" +
+                "   window.addEventListener('scroll', function() {" +
+                "       clearTimeout(timeout);" +
+                "       timeout = setTimeout(function() {" +
+                "           console.log('スクロール後に処理を実行');" +
+                "       }, 200);" +
+                "   });" +
+                "})();";
+    webView.evaluateJavascript(js, null);
+    }
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(true);
@@ -807,6 +846,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                optimizeDOMUpdates(view);
+                batchStyleUpdates(view);
+                removeUnusedElements(view);
+                delayDOMUpdatesOnScroll(view);
                 view.getSettings().setBlockNetworkImage(false);
                 if (view == getCurrentWebView()) {
                     urlEditText.setText(url);
