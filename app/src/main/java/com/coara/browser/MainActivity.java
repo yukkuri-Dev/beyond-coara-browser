@@ -479,7 +479,6 @@ public class MainActivity extends AppCompatActivity {
     String js = "javascript:(function() {" +
                 "   var body = document.body;" +
                 "   var newElement = document.createElement('div');" +
-                "   newElement.innerHTML = '<p>高速なDOM操作</p>';" +
                 "   var fragment = document.createDocumentFragment();" +
                 "   fragment.appendChild(newElement);" +
                 "   body.appendChild(fragment);" +
@@ -509,7 +508,6 @@ public class MainActivity extends AppCompatActivity {
                 "   window.addEventListener('scroll', function() {" +
                 "       clearTimeout(timeout);" +
                 "       timeout = setTimeout(function() {" +
-                "           console.log('スクロール後に処理を実行');" +
                 "       }, 200);" +
                 "   });" +
                 "})();";
