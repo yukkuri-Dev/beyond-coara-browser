@@ -774,13 +774,13 @@ public class MainActivity extends AppCompatActivity {
                     url = url.replaceFirst("^(https?://)(?:www\\.)?youtube\\.com", "$1m.youtube.com");
                     view.loadUrl(url);
                     return true;
-    }
-    Uri uri = Uri.parse(url);
-    if ("m.youtube.com".equals(uri.getHost()) &&
-        "desktop".equals(uri.getQueryParameter("app"))) {
-        Uri.Builder builder = uri.buildUpon();
-        builder.clearQuery();
-        for (String param : uri.getQueryParameterNames()) {
+                     }
+                      Uri uri = Uri.parse(url);
+               if ("m.youtube.com".equals(uri.getHost()) &&
+                   "desktop".equals(uri.getQueryParameter("app"))) {
+                    Uri.Builder builder = uri.buildUpon();
+                    builder.clearQuery();
+                    for (String param : uri.getQueryParameterNames()) {
             if ("app".equals(param) && "desktop".equals(uri.getQueryParameter(param))) {
                 continue;
             }
@@ -789,7 +789,6 @@ public class MainActivity extends AppCompatActivity {
         url = builder.build().toString();
         view.loadUrl(url);
         return true;
-    }
     }
                 if (url.startsWith("tel:")) {
                     startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
