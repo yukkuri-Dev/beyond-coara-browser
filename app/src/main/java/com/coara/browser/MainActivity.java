@@ -770,26 +770,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (url.matches("https?://(?:www\\.)?youtube\\.com.*")) {
-                    url = url.replaceFirst("^(https?://)(?:www\\.)?youtube\\.com", "$1m.youtube.com");
-                    view.loadUrl(url);
-                    return true;
-                     }
-                      Uri uri = Uri.parse(url);
-               if ("m.youtube.com".equals(uri.getHost()) &&
-                   "desktop".equals(uri.getQueryParameter("app"))) {
-                    Uri.Builder builder = uri.buildUpon();
-                    builder.clearQuery();
-                    for (String param : uri.getQueryParameterNames()) {
-            if ("app".equals(param) && "desktop".equals(uri.getQueryParameter(param))) {
-                continue;
-            }
-            builder.appendQueryParameter(param, uri.getQueryParameter(param));
-        }
-        url = builder.build().toString();
-        view.loadUrl(url);
-        return true;
-    }
                 if (url.startsWith("tel:")) {
                     startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
                     return true;
@@ -818,27 +798,6 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.matches("https?://(?:www\\.)?youtube\\.com.*")) {
-                    url = url.replaceFirst("^(https?://)(?:www\\.)?youtube\\.com", "$1m.youtube.com");
-                    view.loadUrl(url);
-                    return true;
-                }
-
-    Uri uri = Uri.parse(url);
-    if ("m.youtube.com".equals(uri.getHost()) &&
-        "desktop".equals(uri.getQueryParameter("app"))) {
-        Uri.Builder builder = uri.buildUpon();
-        builder.clearQuery();
-        for (String param : uri.getQueryParameterNames()) {
-            if ("app".equals(param) && "desktop".equals(uri.getQueryParameter(param))) {
-                continue;
-            }
-            builder.appendQueryParameter(param, uri.getQueryParameter(param));
-        }
-        url = builder.build().toString();
-        view.loadUrl(url);
-        return true;
-    }
                 if (url.startsWith("tel:")) {
                     startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
                     return true;
