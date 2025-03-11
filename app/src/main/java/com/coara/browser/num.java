@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 
-public class MainActivity extends AppCompatActivity {
+public class num extends AppCompatActivity {
 
   
     private EditText editText;
@@ -27,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
         calcButton = findViewById(R.id.buttonCheck);
         resultView = findViewById(R.id.textViewResult);
 
-        // ボタン押下時に入力された式を計算して結果を表示
         calcButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
