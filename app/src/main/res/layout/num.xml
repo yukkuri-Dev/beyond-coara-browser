@@ -12,13 +12,13 @@
         android:padding="16dp">
 
         <EditText
-    　     android:id="@+id/editTextNumber"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:hint="数式を入力"
-          android:inputType="text|textNoSuggestions"
-          android:textAlignment="center"
-          android:textSize="24sp" />
+    android:id="@+id/editTextNumber"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:hint="数式を入力"
+    android:inputType="text|textNoSuggestions"
+    android:textAlignment="center"
+    android:textSize="24sp" />
 
         <Button
             android:id="@+id/buttonCheck"
