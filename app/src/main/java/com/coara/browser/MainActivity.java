@@ -1562,13 +1562,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void takeScreenshot() {
-        View rootView = getWindow().getDecorView().getRootView();
-        int width = rootView.getWidth();
-        int height = rootView.getHeight();
-        if (width <= 0 || height <= 0) {
-            Toast.makeText(MainActivity.this, "スクリーンショット取得エラー: ビューサイズが無効", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    View rootView = getWindow().getDecorView().getRootView();
+    int width = rootView.getWidth();
+    int height = rootView.getHeight();
+    if (width <= 0 || height <= 0) {
+        Toast.makeText(MainActivity.this, "スクリーンショット取得エラー: ビューサイズが無効", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Handler handler = new Handler(Looper.getMainLooper());
         PixelCopy.request(getWindow(), bitmap, copyResult -> {
@@ -1578,32 +1580,38 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "スクリーンショットの取得に失敗しました", Toast.LENGTH_SHORT).show();
             }
         }, handler);
+    } else {
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        rootView.draw(canvas);
+        saveScreenshot(bitmap);
     }
+}
 
-    private void saveScreenshot(Bitmap bitmap) {
-        backgroundExecutor.execute(() -> {
-            try {
-                File screenshotDir = new File(Environment.getExternalStorageDirectory(), "DCIM/Screenshot");
-                if (!screenshotDir.exists()) {
-                    screenshotDir.mkdirs();
-                }
-                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-                String fileName = timeStamp + ".png";
-                File screenshotFile = new File(screenshotDir, fileName);
-                try (FileOutputStream fos = new FileOutputStream(screenshotFile)) {
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                    fos.flush();
-                }
-                runOnUiThread(() ->
-                    Toast.makeText(MainActivity.this, "スクリーンショットを保存しました: " + screenshotFile.getAbsolutePath(), Toast.LENGTH_LONG).show()
-                );
-            } catch (Exception e) {
-                runOnUiThread(() ->
-                    Toast.makeText(MainActivity.this, "スクリーンショット保存中にエラー: " + e.getMessage(), Toast.LENGTH_LONG).show()
-                );
+private void saveScreenshot(Bitmap bitmap) {
+    backgroundExecutor.execute(() -> {
+        try {
+            File screenshotDir = new File(Environment.getExternalStorageDirectory(), "DCIM/Screenshot");
+            if (!screenshotDir.exists()) {
+                screenshotDir.mkdirs();
             }
-        });
-    }
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+            String fileName = timeStamp + ".png";
+            File screenshotFile = new File(screenshotDir, fileName);
+            try (FileOutputStream fos = new FileOutputStream(screenshotFile)) {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                fos.flush();
+            }
+            runOnUiThread(() ->
+                Toast.makeText(MainActivity.this, "スクリーンショットを保存しました: " + screenshotFile.getAbsolutePath(), Toast.LENGTH_LONG).show()
+            );
+        } catch (Exception e) {
+            runOnUiThread(() ->
+                Toast.makeText(MainActivity.this, "スクリーンショット保存中にエラー: " + e.getMessage(), Toast.LENGTH_LONG).show()
+            );
+        }
+    });
+}
 
     private void updateDarkMode() {
         for (WebView webView : webViews) {
