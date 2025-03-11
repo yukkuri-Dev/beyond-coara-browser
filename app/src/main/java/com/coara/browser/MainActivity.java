@@ -770,12 +770,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (url.contains("youtube.com") && !url.contains("m.youtube.com")) {
-                    url = url.replace("www.youtube.com", "m.youtube.com")
-                           .replace("youtube.com", "m.youtube.com");
-                      view.loadUrl(url);
-                     return true;
-                    }
+                if (url.matches("https?://(?:www\\.)?youtube\\.com.*")) {
+                    url = url.replaceFirst("^(https?://)(?:www\\.)?youtube\\.com", "$1m.youtube.com");
+                    view.loadUrl(url);
+                    return true;
+    }
                 if (url.startsWith("tel:")) {
                     startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
                     return true;
@@ -804,9 +803,8 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.contains("youtube.com") && !url.contains("m.youtube.com")) {
-                    url = url.replace("www.youtube.com", "m.youtube.com")
-                              .replace("youtube.com", "m.youtube.com");
+                if (url.matches("https?://(?:www\\.)?youtube\\.com.*")) {
+                    url = url.replaceFirst("^(https?://)(?:www\\.)?youtube\\.com", "$1m.youtube.com");
                     view.loadUrl(url);
                     return true;
                 }
