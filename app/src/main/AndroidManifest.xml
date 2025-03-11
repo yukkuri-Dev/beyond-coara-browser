@@ -74,6 +74,11 @@
             android:exported="true" />
         
         <activity
+            android:name=".num"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true" />
+        
+        <activity
             android:name=".txtphoto"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true" />
