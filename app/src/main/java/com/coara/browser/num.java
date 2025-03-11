@@ -12,7 +12,6 @@ import java.math.MathContext;
 
 public class num extends AppCompatActivity {
 
-  
     private EditText editText;
     private Button calcButton;
     private TextView resultView;
@@ -21,7 +20,6 @@ public class num extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.num);
-
 
         editText = findViewById(R.id.editTextNumber);
         calcButton = findViewById(R.id.buttonCheck);
@@ -35,14 +33,19 @@ public class num extends AppCompatActivity {
                     // 式の解析と計算
                     BigDecimal result = new ExpressionEvaluator().parse(input);
                     String output;
-                    // 小数点以下がない（整数）場合は奇数／偶数を判定
+                    
+                    // stripTrailingZerosで桁の余計なゼロを除去し、整数かどうかをチェック
                     BigDecimal stripped = result.stripTrailingZeros();
+                    // 整数ならscaleが0以下になる
                     if (stripped.scale() <= 0) {
                         BigInteger intResult = stripped.toBigIntegerExact();
                         String parity = intResult.mod(BigInteger.valueOf(2)).equals(BigInteger.ONE) ? "奇数" : "偶数";
-                        output = "結果: " + result.toPlainString() + " (" + parity + ")";
+                        output = "結果: " + result.toPlainString() + " (整数 " + parity + ")";
                     } else {
-                        output = "結果: " + result.toPlainString() + " (小数)";
+                        // 小数の場合は、整数部分の奇数／偶数をチェック（切り捨て）
+                        BigInteger intPart = result.toBigInteger();
+                        String parity = intPart.mod(BigInteger.valueOf(2)).equals(BigInteger.ONE) ? "奇数" : "偶数";
+                        output = "結果: " + result.toPlainString() + " (小数 " + parity + ")";
                     }
                     resultView.setText(output);
                 } catch (Exception e) {
@@ -53,9 +56,9 @@ public class num extends AppCompatActivity {
     }
 
     /**
-     * 内部クラス ExpressionEvaluato
+     * 内部クラス ExpressionEvaluator
      * 四則演算および括弧を含む式を解析・計算します。
-     * BigDecimal（MathContext.DECIMAL128）を利用して無限に近い精度で動作します。
+     * BigDecimal（MathContext.DECIMAL128）を利用して、非常に高い精度で動作します。
      */
     private class ExpressionEvaluator {
         private String str;
@@ -73,14 +76,11 @@ public class num extends AppCompatActivity {
             }
             return x;
         }
-
-        // 次の文字を読み込みます
         private void nextChar() {
             pos++;
             ch = pos < str.length() ? str.charAt(pos) : -1;
         }
 
-  
         private boolean eat(int charToEat) {
             while (ch == ' ') nextChar();
             if (ch == charToEat) {
@@ -124,7 +124,7 @@ public class num extends AppCompatActivity {
 
         // factor = ['+' | '-'] ( number | '(' expression ')' )
         private BigDecimal parseFactor() {
-            if (eat('+')) return parseFactor(); 
+            if (eat('+')) return parseFactor(); // 正符号の省略
             if (eat('-')) return parseFactor().negate();
 
             BigDecimal x;
