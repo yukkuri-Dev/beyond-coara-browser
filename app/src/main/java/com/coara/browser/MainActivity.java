@@ -49,6 +49,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebStorage;
 import android.webkit.WebViewDatabase;
+import android.webkit.JavascriptInterface;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -562,6 +563,7 @@ public class MainActivity extends AppCompatActivity {
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
         webView.setBackgroundColor(Color.WHITE);
+        webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
         webView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
