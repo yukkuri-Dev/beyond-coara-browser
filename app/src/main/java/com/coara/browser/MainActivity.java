@@ -871,10 +871,38 @@ public class MainActivity extends AppCompatActivity {
                 if (swipeRefreshLayout.isRefreshing()) {
                     swipeRefreshLayout.setRefreshing(false);
                }
-               if (url.startsWith("https://m.youtube.com/watch") || url.startsWith("http://m.youtube.com/watch")) {
+               String jsOverrideHistory = "javascript:(function() {" +
+                        "function notifyUrlChange() {" +
+                        "   AndroidBridge.onUrlChange(location.href);" +
+                        "}" +
+                        "var pushState = history.pushState;" +
+                        "history.pushState = function() {" +
+                        "   pushState.apply(history, arguments);" +
+                        "   notifyUrlChange();" +
+                        "};" +
+                        "var replaceState = history.replaceState;" +
+                        "history.replaceState = function() {" +
+                        "   replaceState.apply(history, arguments);" +
+                        "   notifyUrlChange();" +
+                        "};" +
+                        "window.addEventListener('popstate', function() {" +
+                        "   notifyUrlChange();" +
+                        "});" +
+                        "notifyUrlChange();" +
+                        "})()";
+                view.loadUrl(jsOverrideHistory);
+              }
+              });
+               private class AndroidBridge {
+               @JavascriptInterface
+               public void onUrlChange(final String url) {
+               runOnUiThread(() -> {
+                if (url.startsWith("https://m.youtube.com/watch") || url.startsWith("http://m.youtube.com/watch")) {
                 swipeRefreshLayout.setEnabled(false);
-               } else {
+                 } else {
                 swipeRefreshLayout.setEnabled(true);
+                  }
+                });
                }
             }
             @Override
