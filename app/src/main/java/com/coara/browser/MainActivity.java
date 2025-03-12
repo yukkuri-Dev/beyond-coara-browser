@@ -515,6 +515,30 @@ public class MainActivity extends AppCompatActivity {
                 "})();";
     webView.evaluateJavascript(js, null);
     }
+    private void injectLazyLoading(WebView webView) {
+    String js = "javascript:(function() {" +
+                "\n   var images = document.getElementsByTagName('img');" +
+                "\n   for (var i = 0; i < images.length; i++) {" +
+                "\n       if (images[i].hasAttribute('src')) {" +
+                "\n           images[i].setAttribute('data-src', images[i].src);" +
+                "\n           images[i].src = 'about:blank';" +
+                "\n       }" +
+                "\n   }" +
+                "\n   function lazyLoad() {" +
+                "\n       var windowHeight = window.innerHeight;" +
+                "\n       for (var i = 0; i < images.length; i++) {" +
+                "\n           var rect = images[i].getBoundingClientRect();" +
+                "\n           if (images[i].hasAttribute('data-src') && rect.top < windowHeight) {" +
+                "\n               images[i].src = images[i].getAttribute('data-src');" +
+                "\n               images[i].removeAttribute('data-src');" +
+                "\n           }" +
+                "\n       }" +
+                "\n   }" +
+                "\n   window.addEventListener('scroll', lazyLoad);" +
+                "\n   lazyLoad();" +
+                "\n})();";
+    webView.evaluateJavascript(js, null);
+    }
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
         settings.setAllowFileAccess(true);
