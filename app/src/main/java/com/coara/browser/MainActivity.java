@@ -891,6 +891,7 @@ public class MainActivity extends AppCompatActivity {
                         "notifyUrlChange();" +
                         "})()";
                 view.loadUrl(jsOverrideHistory);
+                super.onPageFinished(view, url);
               }
               });
                private class AndroidBridge {
