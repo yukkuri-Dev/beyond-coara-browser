@@ -1067,23 +1067,6 @@ public class MainActivity extends AppCompatActivity {
         }
         request.setDescription("Downloading file...");
         String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
-        String lowerFileName = fileName.toLowerCase();
-        if (!(lowerFileName.endsWith(".xapk") || lowerFileName.endsWith(".apkm") ||
-              lowerFileName.endsWith(".apks") || lowerFileName.endsWith(".iso") ||
-              lowerFileName.endsWith(".webp"))) {
-        String lowerUrl = url.toLowerCase();
-        if (lowerUrl.contains(".xapk") && !lowerFileName.endsWith(".xapk")) {
-            fileName += ".xapk";
-        } else if (lowerUrl.contains(".apkm") && !lowerFileName.endsWith(".apkm")) {
-            fileName += ".apkm";
-        } else if (lowerUrl.contains(".apks") && !lowerFileName.endsWith(".apks")) {
-            fileName += ".apks";
-        } else if (lowerUrl.contains(".iso") && !lowerFileName.endsWith(".iso")) {
-            fileName += ".iso";
-        } else if (lowerUrl.contains(".webp") && !lowerFileName.endsWith(".webp")) {
-            fileName += ".webp";
-           }
-        }
         request.setTitle(fileName);
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
