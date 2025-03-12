@@ -875,7 +875,6 @@ public class MainActivity extends AppCompatActivity {
                 batchStyleUpdates(view);
                 removeUnusedElements(view);
                 delayDOMUpdatesOnScroll(view);
-                injectLazyLoading(view);
                 view.getSettings().setBlockNetworkImage(false);
                 if (view == getCurrentWebView()) {
                     urlEditText.setText(url);
