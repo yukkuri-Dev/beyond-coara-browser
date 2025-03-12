@@ -423,7 +423,52 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         backgroundExecutor.shutdown();
     }
-
+    private String getFileName(String url, String mimeType) {
+        String contentDisposition = "";
+      try {
+        URL urlObj = new URL(url);
+        HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
+        connection.setRequestMethod("HEAD");
+        connection.connect();
+        contentDisposition = connection.getHeaderField("Content-Disposition");
+        connection.disconnect();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    String fileName = parseFileNameFromContentDisposition(contentDisposition);
+    if (fileName == null || fileName.isEmpty()) {
+        fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
+    }
+    if (fileName.endsWith(".bin") && mimeType != null) {
+        String ext = android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+        if (ext != null && !ext.isEmpty()) {
+            fileName = fileName.substring(0, fileName.length() - 4) + "." + ext;
+        }
+    }
+    return fileName;
+    }
+    private String parseFileNameFromContentDisposition(String contentDisposition) {
+        if (contentDisposition == null) {
+        return "";
+    }
+    String fileName = "";
+    try {
+        Pattern pattern = Pattern.compile("filename\\*?=([^;]+)");
+        Matcher matcher = pattern.matcher(contentDisposition);
+        if (matcher.find()) {
+            fileName = matcher.group(1).trim();
+            if (fileName.toLowerCase().startsWith("utf-8''")) {
+                fileName = fileName.substring(7);
+            }
+            if (fileName.startsWith("\"") && fileName.endsWith("\"")) {
+                fileName = fileName.substring(1, fileName.length() - 1);
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return fileName;
+    }
     private void saveTabsState() {
         JSONArray tabsArray = new JSONArray();
         for (WebView webView : webViews) {
@@ -1048,14 +1093,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
-             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-                 ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                 != PackageManager.PERMISSION_GRANTED) {
-             if (permissionLauncher != null) {
-                 permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-           }
-            return;
-      }
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+        ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        != PackageManager.PERMISSION_GRANTED) {
+        if (permissionLauncher != null) {
+            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+        return;
+    }
     DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
     if (mimeType != null) {
         request.setMimeType(mimeType);
@@ -1066,35 +1111,13 @@ public class MainActivity extends AppCompatActivity {
         request.addRequestHeader("User-Agent", userAgent);
     }
     request.setDescription("Downloading file...");
-    String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
-    if (!fileName.contains(".")) {
-        if (mimeType != null) {
-            String ext = android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
-            if (ext != null) {
-                fileName = fileName + "." + ext;
-            }
-        }
-    }
-    String lowerFileName = fileName.toLowerCase();
-    if (!(lowerFileName.endsWith(".xapk") || lowerFileName.endsWith(".apkm") ||
-          lowerFileName.endsWith(".apks") || lowerFileName.endsWith(".iso") ||
-          lowerFileName.endsWith(".webp"))) {
-        String lowerUrl = url.toLowerCase();
-        if (lowerUrl.contains(".xapk") && !lowerFileName.endsWith(".xapk")) {
-            fileName += ".xapk";
-        } else if (lowerUrl.contains(".apkm") && !lowerFileName.endsWith(".apkm")) {
-            fileName += ".apkm";
-        } else if (lowerUrl.contains(".apks") && !lowerFileName.endsWith(".apks")) {
-            fileName += ".apks";
-        } else if (lowerUrl.contains(".iso") && !lowerFileName.endsWith(".iso")) {
-            fileName += ".iso";
-        } else if (lowerUrl.contains(".webp") && !lowerFileName.endsWith(".webp")) {
-            fileName += ".webp";
-        }
-    }
+    
+    String fileName = getFileName(url, mimeType);
+    
     request.setTitle(fileName);
     request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
     request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+    
     DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
     try {
         long downloadId = dm.enqueue(request);
@@ -1105,8 +1128,8 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(MainActivity.this, "ダウンロードを開始しました", Toast.LENGTH_LONG).show();
     } catch (Exception e) {
         Toast.makeText(MainActivity.this, "ダウンロードに失敗しました", Toast.LENGTH_SHORT).show();
+      }
     }
-}
     private void handleBlobDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
         String js = "javascript:(function() {" +
                 "fetch('" + url + "').then(function(response) {" +
