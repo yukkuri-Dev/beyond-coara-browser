@@ -891,10 +891,7 @@ public class MainActivity extends AppCompatActivity {
                         "notifyUrlChange();" +
                         "})()";
                 view.loadUrl(jsOverrideHistory);
-                super.onPageFinished(view, url);
-                  }
-                });
-              }
+                }
                private class AndroidBridge {
                @JavascriptInterface
                public void onUrlChange(final String url) {
@@ -942,7 +939,6 @@ public class MainActivity extends AppCompatActivity {
                     .show();
             }
         });
-}
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback,
