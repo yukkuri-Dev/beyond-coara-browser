@@ -894,18 +894,6 @@ public class MainActivity extends AppCompatActivity {
                         "})()";
                 view.loadUrl(jsOverrideHistory);
                 }
-               private class AndroidBridge {
-               @JavascriptInterface
-               public void onUrlChange(final String url) {
-               runOnUiThread(() -> {
-                if (url.startsWith("https://m.youtube.com/watch") || url.startsWith("http://m.youtube.com/watch")) {
-                swipeRefreshLayout.setEnabled(false);
-                 } else {
-                swipeRefreshLayout.setEnabled(true);
-                  }
-                });
-               }
-            }
             @Override
             public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
                 if (!basicAuthEnabled) {
@@ -1315,7 +1303,6 @@ public class MainActivity extends AppCompatActivity {
     private WebView getCurrentWebView() {
         return webViews.get(currentTabIndex);
     }
-
     private void loadUrl() {
         String url = urlEditText.getText().toString().trim();
         if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("intent:")) {
@@ -1326,7 +1313,18 @@ public class MainActivity extends AppCompatActivity {
             current.loadUrl(url);
         }
     }
-
+        private class AndroidBridge {
+               @JavascriptInterface
+               public void onUrlChange(final String url) {
+               runOnUiThread(() -> {
+                if (url.startsWith("https://m.youtube.com/watch") || url.startsWith("http://m.youtube.com/watch")) {
+                swipeRefreshLayout.setEnabled(false);
+                 } else {
+                swipeRefreshLayout.setEnabled(true);
+                  }
+                });
+               }
+            }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.top_app_bar_menu, menu);
