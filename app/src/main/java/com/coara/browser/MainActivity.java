@@ -876,7 +876,7 @@ public class MainActivity extends AppCompatActivity {
                 removeUnusedElements(view);
                 delayDOMUpdatesOnScroll(view);
                 view.getSettings().setBlockNetworkImage(false);
-                if (url.contains("https://m.youtube.com")) {
+                if (url.startsWith("https://m.youtube.com")) {
                         injectLazyLoading(view);
                 }
                 if (view == getCurrentWebView()) {
