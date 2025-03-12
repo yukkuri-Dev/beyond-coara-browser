@@ -1300,7 +1300,7 @@ public class MainActivity extends AppCompatActivity {
                @JavascriptInterface
                public void onUrlChange(final String url) {
                runOnUiThread(() -> {
-                if (url.startsWith("https://m.youtube.com/watch") || url.startsWith("http://m.youtube.com/watch")) {
+                if (url.startsWith("https://m.youtube.com/watch") || url.startsWith("http://m.youtube.com/watch") || url.startsWith("https://m.youtube.com/shorts/")) {
                 swipeRefreshLayout.setEnabled(false);
                  } else {
                 swipeRefreshLayout.setEnabled(true);
