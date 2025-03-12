@@ -829,7 +829,7 @@ public class MainActivity extends AppCompatActivity {
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
             String lowerUrl = url.toLowerCase();
              boolean isMatched = java.util.regex.Pattern
-            .compile("(^|[/.])(?:(chatx2|chatx|chat|auth|login|disk|cgi|session|cloud))($|[/.])")
+            .compile("(^|[/.])(?:(chatx2|chatx|chat|auth|login|disk|cgi|session|m.youtube.com|cloud))($|[/.])")
             .matcher(lowerUrl)
             .find();
     
