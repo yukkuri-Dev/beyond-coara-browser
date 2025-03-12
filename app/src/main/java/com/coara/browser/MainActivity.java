@@ -870,7 +870,12 @@ public class MainActivity extends AppCompatActivity {
                 }
                 if (swipeRefreshLayout.isRefreshing()) {
                     swipeRefreshLayout.setRefreshing(false);
-                }
+               }
+               if (url.startsWith("https://m.youtube.com/watch") || url.startsWith("http://m.youtube.com/watch")) {
+                swipeRefreshLayout.setEnabled(false);
+               } else {
+                swipeRefreshLayout.setEnabled(true);
+               }
             }
             @Override
             public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
@@ -1046,6 +1051,23 @@ public class MainActivity extends AppCompatActivity {
         }
         request.setDescription("Downloading file...");
         String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
+        String lowerFileName = fileName.toLowerCase();
+        if (!(lowerFileName.endsWith(".xapk") || lowerFileName.endsWith(".apkm") ||
+              lowerFileName.endsWith(".apks") || lowerFileName.endsWith(".iso") ||
+              lowerFileName.endsWith(".webp"))) {
+        String lowerUrl = url.toLowerCase();
+        if (lowerUrl.contains(".xapk") && !lowerFileName.endsWith(".xapk")) {
+            fileName += ".xapk";
+        } else if (lowerUrl.contains(".apkm") && !lowerFileName.endsWith(".apkm")) {
+            fileName += ".apkm";
+        } else if (lowerUrl.contains(".apks") && !lowerFileName.endsWith(".apks")) {
+            fileName += ".apks";
+        } else if (lowerUrl.contains(".iso") && !lowerFileName.endsWith(".iso")) {
+            fileName += ".iso";
+        } else if (lowerUrl.contains(".webp") && !lowerFileName.endsWith(".webp")) {
+            fileName += ".webp";
+           }
+        }
         request.setTitle(fileName);
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
@@ -1061,7 +1083,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "ダウンロードに失敗しました", Toast.LENGTH_SHORT).show();
         }
     }
-
     private void handleBlobDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
         String js = "javascript:(function() {" +
                 "fetch('" + url + "').then(function(response) {" +
