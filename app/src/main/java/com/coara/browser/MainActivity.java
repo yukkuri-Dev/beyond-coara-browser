@@ -942,7 +942,7 @@ public class MainActivity extends AppCompatActivity {
                     .show();
             }
         });
-
+}
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback,
