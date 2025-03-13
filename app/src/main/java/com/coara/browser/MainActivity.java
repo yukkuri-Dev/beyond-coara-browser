@@ -1354,6 +1354,10 @@ public class MainActivity extends AppCompatActivity {
             return new WebChromeClient() {
                 };
             }
+    private WebViewClient createCustomWebViewClient() {
+            return new WebViewClient() {
+                };
+            }
     private void createNewTab(String url) {
         if (webViews.size() >= MAX_TABS) {
         Toast.makeText(this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
