@@ -127,6 +127,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_SELECT_CODE = 1001;
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
+    private static final String SENTINEL_FILENAME = "cache_sentinel.txt";
     
     private View findInPageBarView;
     private EditText etFindQuery;
@@ -217,6 +218,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         pref = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        checkSentinelAndClearTabsIfNecessary();
+        ensureCacheSentinelExists();
         darkModeEnabled = pref.getBoolean(KEY_DARK_MODE, false);
         basicAuthEnabled = pref.getBoolean(KEY_BASIC_AUTH, false);
         zoomEnabled = pref.getBoolean(KEY_ZOOM_ENABLED, false);
@@ -479,6 +482,29 @@ public class MainActivity extends AppCompatActivity {
             tabCountTextView.setText(String.valueOf(webViews.size()));
         }
     }
+    private void checkSentinelAndClearTabsIfNecessary() {
+    File cacheDir = getCacheDir();
+    File sentinel = new File(cacheDir, SENTINEL_FILENAME);
+    if (!sentinel.exists()) {
+        SharedPreferences.Editor editor = pref.edit();
+        editor.remove(KEY_TABS);
+        editor.remove(KEY_CURRENT_TAB);
+        editor.apply();
+        webViews.clear();
+        Toast.makeText(this, "キャッシュ削除により自動でタブ情報をクリアしました", Toast.LENGTH_SHORT).show();
+       }
+    }
+    private void ensureCacheSentinelExists() {
+    File cacheDir = getCacheDir();
+    File sentinel = new File(cacheDir, SENTINEL_FILENAME);
+    if (!sentinel.exists()) {
+        try {
+            sentinel.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+          }
+       }
+    }
     private void applyCombinedOptimizations(WebView webView) {
         String js = "javascript:(function() {" +
                     "var body = document.body;" +
@@ -556,7 +582,6 @@ public class MainActivity extends AppCompatActivity {
                     WebSettingsCompat.FORCE_DARK_ON : WebSettingsCompat.FORCE_DARK_OFF);
         }
     }
-
     private void preInitializeWebView() {
         runOnUiThread(() -> {
             WebView webView = new WebView(MainActivity.this);
