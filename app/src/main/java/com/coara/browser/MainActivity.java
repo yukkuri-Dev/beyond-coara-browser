@@ -544,7 +544,6 @@ public class MainActivity extends AppCompatActivity {
         settings.setDomStorageEnabled(true);
         settings.setGeolocationEnabled(false);
         settings.setTextZoom(100);
-        settings.setBlockNetworkImage(true);
         settings.setDisplayZoomControls(false);
         settings.setBuiltInZoomControls(false);
         settings.setSupportZoom(false);
@@ -859,7 +858,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                view.getSettings().setBlockNetworkImage(false);
                 applyCombinedOptimizations(view);
                 if (url.startsWith("https://m.youtube.com")) {
                     new Handler(Looper.getMainLooper()).postDelayed(() -> {
