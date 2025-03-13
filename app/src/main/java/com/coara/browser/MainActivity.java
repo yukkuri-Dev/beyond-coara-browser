@@ -1026,7 +1026,6 @@ public class MainActivity extends AppCompatActivity {
             request.deny();
         }
     }
-
             @Override
             public void onReceivedIcon(WebView view, Bitmap icon) {
                 if (view == getCurrentWebView()) {
@@ -1082,7 +1081,7 @@ public class MainActivity extends AppCompatActivity {
         });
         return webView;
         }
-    }
+       
         private void closeTab(WebView webView) {
         int index = webViews.indexOf(webView);
         if (index != -1) {
