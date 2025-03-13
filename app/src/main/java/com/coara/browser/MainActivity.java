@@ -1330,8 +1330,6 @@ public class MainActivity extends AppCompatActivity {
                webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
                webView.removeJavascriptInterface("BlobDownloader");
                webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
-               webView.setWebViewClient(createCustomWebViewClient());
-               webView.setWebChromeClient(createCustomWebChromeClient());
                webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
                webView.setBackgroundColor(Color.WHITE);
             }
@@ -1347,14 +1345,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             webView.destroy();
                  }
-            }
-    private WebChromeClient createCustomWebChromeClient() {
-            return new WebChromeClient() {
-                };
-            }
-    private WebViewClient createCustomWebViewClient() {
-            return new WebViewClient() {
-                };
             }
     private void createNewTab(String url) {
         if (webViews.size() >= MAX_TABS) {
