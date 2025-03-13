@@ -1078,7 +1078,7 @@ public class MainActivity extends AppCompatActivity {
                 closeTab(getCurrentWebView());
             }
         });
-        return webView;
+        return webView; }
     private void handleDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
            ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
