@@ -139,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
     private PermissionRequest pendingPermissionRequest = null;
     private ActivityResultLauncher<String[]> permissionRequestLauncher;
     private final ArrayList<WebView> webViewPool = new ArrayList<>();
-    private static final int MAX_POOL_SIZE = 20;
+    private static final int MAX_POOL_SIZE = 10;
     
     private WebView webView;
     private TextInputEditText urlEditText;
