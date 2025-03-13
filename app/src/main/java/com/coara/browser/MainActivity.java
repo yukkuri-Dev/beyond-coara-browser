@@ -821,11 +821,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             return false;
-           });
+            });
             private WebChromeClient createCustomWebChromeClient() {
             return new WebChromeClient() {
             }
-
+                };
             webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
