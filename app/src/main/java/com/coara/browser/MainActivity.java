@@ -484,6 +484,7 @@ public class MainActivity extends AppCompatActivity {
                 "    var body = document.body;\n" +
                 "    if (body) {\n" +
                 "        var newElement = document.createElement('div');\n" +
+                "        newElement.style.display = 'none';\n" +
                 "        var fragment = document.createDocumentFragment();\n" +
                 "        fragment.appendChild(newElement);\n" +
                 "        body.appendChild(fragment);\n" +
@@ -491,7 +492,7 @@ public class MainActivity extends AppCompatActivity {
                 "    var style = document.createElement('style');\n" +
                 "    style.innerHTML = '* { transition: none !important; }';\n" +
                 "    document.head.appendChild(style);\n" +
-                "    var elements = document.querySelectorAll('.ads, .popup, .tracking');\n" +
+                "    var elements = document.querySelectorAll('div.ads, div.popup, div.tracking');\n" +
                 "    for (var i = 0; i < elements.length; i++) {\n" +
                 "        if (elements[i] && elements[i].parentNode) {\n" +
                 "            elements[i].parentNode.removeChild(elements[i]);\n" +
