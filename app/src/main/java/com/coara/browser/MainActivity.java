@@ -822,38 +822,6 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-        private void resetWebView(WebView webView) {
-                     if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
-                        ((ViewGroup) webView.getParent()).removeView(webView);
-             }
-               webView.stopLoading();
-               webView.clearHistory();
-               webView.clearCache(true);
-               webView.loadUrl("about:blank");
-               WebSettings settings = webView.getSettings();
-               applyOptimizedSettings(settings);
-               webView.removeJavascriptInterface("AndroidBridge");
-               webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
-               webView.removeJavascriptInterface("BlobDownloader");
-               webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
-               webView.setWebViewClient(createCustomWebViewClient());
-               webView.setWebChromeClient(createCustomWebChromeClient());
-               webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-               webView.setBackgroundColor(Color.WHITE);
-            }
-          private void poolWebView(WebView webView) {
-                       webView.stopLoading();
-                       webView.clearHistory();
-                       webView.clearCache(true);
-        if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
-            ((ViewGroup) webView.getParent()).removeView(webView);
-        }
-        if (webViewPool.size() < MAX_POOL_SIZE) {
-            webViewPool.add(webView);
-        } else {
-            webView.destroy();
-                 }
-            }
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -1351,6 +1319,38 @@ public class MainActivity extends AppCompatActivity {
         switchToTab(webViews.size() - 1);
         getCurrentWebView().loadUrl(START_PAGE);
     }
+    private void resetWebView(WebView webView) {
+                     if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
+                        ((ViewGroup) webView.getParent()).removeView(webView);
+             }
+               webView.stopLoading();
+               webView.clearHistory();
+               webView.clearCache(true);
+               webView.loadUrl("about:blank");
+               WebSettings settings = webView.getSettings();
+               applyOptimizedSettings(settings);
+               webView.removeJavascriptInterface("AndroidBridge");
+               webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
+               webView.removeJavascriptInterface("BlobDownloader");
+               webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
+               webView.setWebViewClient(createCustomWebViewClient());
+               webView.setWebChromeClient(createCustomWebChromeClient());
+               webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+               webView.setBackgroundColor(Color.WHITE);
+            }
+          private void poolWebView(WebView webView) {
+                       webView.stopLoading();
+                       webView.clearHistory();
+                       webView.clearCache(true);
+        if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
+            ((ViewGroup) webView.getParent()).removeView(webView);
+        }
+        if (webViewPool.size() < MAX_POOL_SIZE) {
+            webViewPool.add(webView);
+        } else {
+            webView.destroy();
+                 }
+            }
     private void createNewTab(String url) {
         if (webViews.size() >= MAX_TABS) {
         Toast.makeText(this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
