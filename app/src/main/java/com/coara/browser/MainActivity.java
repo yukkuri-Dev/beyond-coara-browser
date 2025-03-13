@@ -1077,10 +1077,29 @@ public class MainActivity extends AppCompatActivity {
             if ("external".equals(getCurrentWebView().getTag())) {
                 closeTab(getCurrentWebView());
             }
-});
+        });
+        return webView;
+    }
 
-return webView;
+    private void closeTab(WebView webView) {
+        int index = webViews.indexOf(webView);
+        if (index != -1) {
+            if (webViews.size() > 1) {
+                webViews.remove(index);
+                if (currentTabIndex > index) {
+                    currentTabIndex--;
+                } else if (currentTabIndex >= webViews.size()) {
+                    currentTabIndex = webViews.size() - 1;
+                }
+                poolWebView(webView);
+                webViewContainer.removeAllViews();
+                webViewContainer.addView(getCurrentWebView());
+                updateTabCount();
+            } else {
+                webView.loadUrl(START_PAGE);
+            }
         }
+    }
     private void handleDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
            ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -1337,25 +1356,6 @@ return webView;
             return new WebViewClient() {
                 };
             }
-    private void closeTab(WebView webView) {
-        int index = webViews.indexOf(webView);
-        if (index != -1) {
-            if (webViews.size() > 1) {
-                webViews.remove(index);
-                if (currentTabIndex > index) {
-                    currentTabIndex--;
-                } else if (currentTabIndex >= webViews.size()) {
-                    currentTabIndex = webViews.size() - 1;
-                }
-                poolWebView(webView);
-                webViewContainer.removeAllViews();
-                webViewContainer.addView(getCurrentWebView());
-                updateTabCount();
-            } else {
-                webView.loadUrl(START_PAGE);
-            }
-        }
-        }
     private void createNewTab(String url) {
         if (webViews.size() >= MAX_TABS) {
         Toast.makeText(this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
