@@ -1318,10 +1318,6 @@ public class MainActivity extends AppCompatActivity {
         switchToTab(webViews.size() - 1);
         getCurrentWebView().loadUrl(START_PAGE);
     }
-    private WebChromeClient createCustomWebChromeClient() {
-            return new WebChromeClient() {
-                };
-            }
     private void resetWebView(WebView webView) {
                      if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
                         ((ViewGroup) webView.getParent()).removeView(webView);
@@ -1353,6 +1349,10 @@ public class MainActivity extends AppCompatActivity {
         } else {
             webView.destroy();
                  }
+            }
+    private WebChromeClient createCustomWebChromeClient() {
+            return new WebChromeClient() {
+                };
             }
     private void createNewTab(String url) {
         if (webViews.size() >= MAX_TABS) {
