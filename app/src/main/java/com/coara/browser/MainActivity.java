@@ -491,7 +491,6 @@ public class MainActivity extends AppCompatActivity {
         editor.remove(KEY_CURRENT_TAB);
         editor.apply();
         webViews.clear();
-        Toast.makeText(this, "キャッシュ削除により自動でタブ情報をクリアしました", Toast.LENGTH_SHORT).show();
        }
     }
     private void ensureCacheSentinelExists() {
@@ -1533,6 +1532,7 @@ public class MainActivity extends AppCompatActivity {
             saveHistory();
             clearWebStorage();
             clearPageCache();
+            clearTabs();
             WebViewDatabase.getInstance(MainActivity.this).clearFormData();
             CookieManager cookieManager = CookieManager.getInstance();
             cookieManager.removeAllCookies(null);
@@ -1545,7 +1545,7 @@ public class MainActivity extends AppCompatActivity {
             String currentText = urlEditText.getText().toString();
             urlEditText.setText("");
             urlEditText.setText(currentText);
-            Toast.makeText(MainActivity.this, "履歴、フォームデータ、検索候補、及びCookieを消去しました", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, "履歴、フォームデータ、検索候補、及びタブとCookieを消去しました", Toast.LENGTH_SHORT).show();
         } else if (id == R.id.action_negapoji) {
             applyNegapoji();
         } else if (id == R.id.action_translate) {
