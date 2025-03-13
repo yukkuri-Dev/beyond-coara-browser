@@ -497,14 +497,6 @@ public class MainActivity extends AppCompatActivity {
                 "            elements[i].parentNode.removeChild(elements[i]);\n" +
                 "        }\n" +
                 "    }\n" +
-                "    if (!('IntersectionObserver' in window)) {\n" +
-                "        var timeout;\n" +
-                "        window.addEventListener('scroll', function() {\n" +
-                "            clearTimeout(timeout);\n" +
-                "            timeout = setTimeout(function() {\n" +
-                "            }, 200);\n" +
-                "        });\n" +
-                "    }\n" +
                 "})();";
     webView.evaluateJavascript(js, null);
     }
