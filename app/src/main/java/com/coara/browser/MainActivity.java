@@ -1077,8 +1077,9 @@ public class MainActivity extends AppCompatActivity {
             if ("external".equals(getCurrentWebView().getTag())) {
                 closeTab(getCurrentWebView());
             }
-        });
-        return webView;
+});
+
+return webView;
         }
     private void handleDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
