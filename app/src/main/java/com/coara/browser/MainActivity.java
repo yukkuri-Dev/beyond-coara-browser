@@ -31,10 +31,9 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.PixelCopy;
-import android.view.inputmethod.InputMethodManager;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.HttpAuthHandler;
@@ -45,10 +44,9 @@ import android.webkit.WebResourceRequest;
 import android.webkit.PermissionRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
+import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.WebStorage;
-import android.webkit.WebViewDatabase;
 import android.webkit.JavascriptInterface;
 import android.widget.Button;
 import android.widget.EditText;
@@ -103,9 +101,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final Pattern CACHE_MODE_PATTERN = Pattern.compile("(^|[/.])(?:(chatx2|chatx|chat|auth|login|disk|cgi|session|cloud))($|[/.])", Pattern.CASE_INSENSITIVE);
     private static final String PREF_NAME = "AdvancedBrowserPrefs";
     private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_BASIC_AUTH = "basic_auth";
@@ -125,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_SELECT_CODE = 1001;
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
+    
     private View findInPageBarView;
     private EditText etFindQuery;
     private TextView tvFindCount;
@@ -471,79 +472,64 @@ public class MainActivity extends AppCompatActivity {
         }
         updateTabCount();
     }
-
     private void updateTabCount() {
         if (tabCountTextView != null) {
             tabCountTextView.setText(String.valueOf(webViews.size()));
         }
     }
-    private void optimizeDOMUpdates(WebView webView) {
-    String js = "javascript:(function() {" +
-                "   var body = document.body;" +
-                "   var newElement = document.createElement('div');" +
-                "   var fragment = document.createDocumentFragment();" +
-                "   fragment.appendChild(newElement);" +
-                "   body.appendChild(fragment);" +
-                "})();";
-    webView.evaluateJavascript(js, null);
-    }
-    private void batchStyleUpdates(WebView webView) {
-    String js = "javascript:(function() {" +
-                "   var styles = document.createElement('style');" +
-                "   styles.innerHTML = '* { transition: none !important; }';" +
-                "   document.head.appendChild(styles);" +
-                "})();";
-    webView.evaluateJavascript(js, null);
-    }
-    private void removeUnusedElements(WebView webView) {
-    String js = "javascript:(function() {" +
-                "   var elements = document.querySelectorAll('.ads, .popup, .tracking');" +
-                "   for (var i = 0; i < elements.length; i++) {" +
-                "       elements[i].parentNode.removeChild(elements[i]);" +
-                "   }" +
-                "})();";
-    webView.evaluateJavascript(js, null);
-    }
-    private void delayDOMUpdatesOnScroll(WebView webView) {
-    String js = "javascript:(function() {" +
-                "   var timeout;" +
-                "   window.addEventListener('scroll', function() {" +
-                "       clearTimeout(timeout);" +
-                "       timeout = setTimeout(function() {" +
-                "       }, 200);" +
-                "   });" +
-                "})();";
-    webView.evaluateJavascript(js, null);
+    private void applyCombinedOptimizations(WebView webView) {
+        String js = "javascript:(function() {" +
+                    "var body = document.body;" +
+                    "if(body) {" +
+                    "   var newElement = document.createElement('div');" +
+                    "   var fragment = document.createDocumentFragment();" +
+                    "   fragment.appendChild(newElement);" +
+                    "   body.appendChild(fragment);" +
+                    "}" +
+                    "var style = document.createElement('style');" +
+                    "style.innerHTML = '* { transition: none !important; }';" +
+                    "document.head.appendChild(style);" +
+                    "var elements = document.querySelectorAll('.ads, .popup, .tracking');" +
+                    "for(var i=0; i<elements.length; i++) {" +
+                    "   elements[i].parentNode.removeChild(elements[i]);" +
+                    "}" +
+                    "var timeout;" +
+                    "window.addEventListener('scroll', function() {" +
+                    "   clearTimeout(timeout);" +
+                    "   timeout = setTimeout(function() {}, 200);" +
+                    "});" +
+                    "})();";
+        webView.evaluateJavascript(js, null);
     }
     private void injectLazyLoading(WebView webView) {
-    String js = "javascript:(function() {" +
-                "\n   var images = document.querySelectorAll('img');" +
-                "\n   var placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';" +
-                "\n   images.forEach(function(img) {" +
-                "\n       if (img.hasAttribute('src')) {" +
-                "\n           img.setAttribute('data-src', img.src);" +
-                "\n           img.src = placeholder;" +
-                "\n       }" +
-                "\n   });" +
-                "\n   if ('IntersectionObserver' in window) {" +
-                "\n       var observer = new IntersectionObserver(function(entries) {" +
-                "\n           entries.forEach(function(entry) {" +
-                "\n               if (entry.isIntersecting) {" +
-                "\n                   var img = entry.target;" +
-                "\n                   if (img.dataset.src) {" +
-                "\n                       img.src = img.dataset.src;" +
-                "\n                       img.removeAttribute('data-src');" +
-                "\n                   }" +
-                "\n                   observer.unobserve(img);" +
-                "\n               }" +
-                "\n           });" +
-                "\n       });" +
-                "\n       images.forEach(function(img) {" +
-                "\n           observer.observe(img);" +
-                "\n       });" +
-                "\n   }" +
-                "\n})();";
-    webView.evaluateJavascript(js, null);
+        String js = "javascript:(function() {" +
+                    "var images = document.querySelectorAll('img');" +
+                    "var placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';" +
+                    "images.forEach(function(img) {" +
+                    "   if (img.hasAttribute('src')) {" +
+                    "       img.setAttribute('data-src', img.src);" +
+                    "       img.src = placeholder;" +
+                    "   }" +
+                    "});" +
+                    "if ('IntersectionObserver' in window) {" +
+                    "   var observer = new IntersectionObserver(function(entries) {" +
+                    "       entries.forEach(function(entry) {" +
+                    "           if (entry.isIntersecting) {" +
+                    "               var img = entry.target;" +
+                    "               if (img.dataset.src) {" +
+                    "                   img.src = img.dataset.src;" +
+                    "                   img.removeAttribute('data-src');" +
+                    "               }" +
+                    "               observer.unobserve(img);" +
+                    "           }" +
+                    "       });" +
+                    "   });" +
+                    "   images.forEach(function(img) {" +
+                    "       observer.observe(img);" +
+                    "   });" +
+                    "}" +
+                    "})();";
+        webView.evaluateJavascript(js, null);
     }
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
@@ -650,150 +636,149 @@ public class MainActivity extends AppCompatActivity {
         webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
 
         webView.setOnLongClickListener(v -> {
-    WebView.HitTestResult result = webView.getHitTestResult();
-    if (result != null) {
-        final int type = result.getType();
-        final String extra = result.getExtra();
-        boolean isDataUrl = extra != null && extra.startsWith("data:");
-        if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
-            final String[] options;
-            if (isDataUrl) {
-                options = new String[] {
-                    "リンクをコピー",
-                    "リンク先を新しいタブで開く",
-                    "画像を保存"
-                };
-            } else {
-                options = new String[] {
-                    "リンクをコピー",
-                    "リンクをダウンロード",
-                    "リンク先を新しいタブで開く",
-                    "画像を保存"
-                };
+            WebView.HitTestResult result = webView.getHitTestResult();
+            if (result != null) {
+                final int type = result.getType();
+                final String extra = result.getExtra();
+                boolean isDataUrl = extra != null && extra.startsWith("data:");
+                if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+                    final String[] options;
+                    if (isDataUrl) {
+                        options = new String[] {
+                            "リンクをコピー",
+                            "リンク先を新しいタブで開く",
+                            "画像を保存"
+                        };
+                    } else {
+                        options = new String[] {
+                            "リンクをコピー",
+                            "リンクをダウンロード",
+                            "リンク先を新しいタブで開く",
+                            "画像を保存"
+                        };
+                    }
+                    new MaterialAlertDialogBuilder(MainActivity.this)
+                        .setTitle("オプションを選択")
+                        .setItems(options, (dialog, which) -> {
+                            if (which == 0) {
+                                copyLink(extra);
+                            } else if (which == 1) {
+                                if (isDataUrl) {
+                                    if (webViews.size() >= MAX_TABS) {
+                                        Toast.makeText(MainActivity.this,
+                                            "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        WebView newWebView = createNewWebView();
+                                        webViews.add(newWebView);
+                                        updateTabCount();
+                                        switchToTab(webViews.size() - 1);
+                                        newWebView.loadUrl(extra);
+                                    }
+                                } else {
+                                    handleDownload(extra, null, null, null, 0);
+                                }
+                            } else if (which == 2) {
+                                if (isDataUrl) {
+                                    if (extra != null && !extra.isEmpty()) {
+                                        saveImage(extra);
+                                    }
+                                } else {
+                                    if (webViews.size() >= MAX_TABS) {
+                                        Toast.makeText(MainActivity.this,
+                                            "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        WebView newWebView = createNewWebView();
+                                        webViews.add(newWebView);
+                                        updateTabCount();
+                                        switchToTab(webViews.size() - 1);
+                                        newWebView.loadUrl(extra);
+                                    }
+                                }
+                            } else if (which == 3 && !isDataUrl) {
+                                if (extra != null && !extra.isEmpty()) {
+                                    saveImage(extra);
+                                }
+                            }
+                        }).show();
+                    return true;
+                } else if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
+                    final String[] options = {
+                        "リンクをコピー",
+                        "リンクをダウンロード",
+                        "リンク先を新しいタブで開く"
+                    };
+                    new MaterialAlertDialogBuilder(MainActivity.this)
+                        .setTitle("オプションを選択")
+                        .setItems(options, (dialog, which) -> {
+                            if (which == 0) {
+                                copyLink(extra);
+                            } else if (which == 1) {
+                                handleDownload(extra, null, null, null, 0);
+                            } else if (which == 2) {
+                                if (webViews.size() >= MAX_TABS) {
+                                    Toast.makeText(MainActivity.this,
+                                        "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    WebView newWebView = createNewWebView();
+                                    webViews.add(newWebView);
+                                    updateTabCount();
+                                    switchToTab(webViews.size() - 1);
+                                    newWebView.loadUrl(extra);
+                                }
+                            }
+                        }).show();
+                    return true;
+                } else if (type == WebView.HitTestResult.IMAGE_TYPE) {
+                    final String[] options;
+                    boolean isDataUrlLocal = extra != null && extra.startsWith("data:");
+                    if (isDataUrlLocal) {
+                        options = new String[] {
+                            "リンクをコピー",
+                            "画像を保存"
+                        };
+                    } else {
+                        options = new String[] {
+                            "リンクをコピー",
+                            "リンクをダウンロード",
+                            "リンク先を新しいタブで開く",
+                            "画像を保存"
+                        };
+                    }
+                    new MaterialAlertDialogBuilder(MainActivity.this)
+                        .setTitle("オプションを選択")
+                        .setItems(options, (dialog, which) -> {
+                            if (which == 0) {
+                                copyLink(extra);
+                            } else if (which == 1) {
+                                if (isDataUrlLocal) {
+                                    if (extra != null && !extra.isEmpty()) {
+                                        saveImage(extra);
+                                    }
+                                } else {
+                                    handleDownload(extra, null, null, null, 0);
+                                }
+                            } else if (which == 2 && !isDataUrlLocal) {
+                                if (webViews.size() >= MAX_TABS) {
+                                    Toast.makeText(MainActivity.this,
+                                        "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
+                                } else {
+                                    WebView newWebView = createNewWebView();
+                                    webViews.add(newWebView);
+                                    updateTabCount();
+                                    switchToTab(webViews.size() - 1);
+                                    newWebView.loadUrl(extra);
+                                }
+                            } else if (which == 3 && !isDataUrlLocal) {
+                                if (extra != null && !extra.isEmpty()) {
+                                    saveImage(extra);
+                                }
+                            }
+                        }).show();
+                    return true;
+                }
             }
-            new MaterialAlertDialogBuilder(MainActivity.this)
-                .setTitle("オプションを選択")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        copyLink(extra);
-                    } else if (which == 1) {
-                        if (isDataUrl) {
-                            if (webViews.size() >= MAX_TABS) {
-                                Toast.makeText(MainActivity.this,
-                                    "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
-                            } else {
-                                WebView newWebView = createNewWebView();
-                                webViews.add(newWebView);
-                                updateTabCount();
-                                switchToTab(webViews.size() - 1);
-                                newWebView.loadUrl(extra);
-                            }
-                        } else {
-                            handleDownload(extra, null, null, null, 0);
-                        }
-                    } else if (which == 2) {
-                        if (isDataUrl) {
-                            if (extra != null && !extra.isEmpty()) {
-                                saveImage(extra);
-                            }
-                        } else {
-                            if (webViews.size() >= MAX_TABS) {
-                                Toast.makeText(MainActivity.this,
-                                    "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
-                            } else {
-                                WebView newWebView = createNewWebView();
-                                webViews.add(newWebView);
-                                updateTabCount();
-                                switchToTab(webViews.size() - 1);
-                                newWebView.loadUrl(extra);
-                            }
-                        }
-                    } else if (which == 3 && !isDataUrl) {
-                        if (extra != null && !extra.isEmpty()) {
-                            saveImage(extra);
-                        }
-                    }
-                }).show();
-            return true;
-        } else if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
-            final String[] options = {
-                "リンクをコピー",
-                "リンクをダウンロード",
-                "リンク先を新しいタブで開く"
-            };
-            new MaterialAlertDialogBuilder(MainActivity.this)
-                .setTitle("オプションを選択")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        copyLink(extra);
-                    } else if (which == 1) {
-                        handleDownload(extra, null, null, null, 0);
-                    } else if (which == 2) {
-                        if (webViews.size() >= MAX_TABS) {
-                            Toast.makeText(MainActivity.this,
-                                "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
-                        } else {
-                            WebView newWebView = createNewWebView();
-                            webViews.add(newWebView);
-                            updateTabCount();
-                            switchToTab(webViews.size() - 1);
-                            newWebView.loadUrl(extra);
-                        }
-                    }
-                }).show();
-            return true;
-        } else if (type == WebView.HitTestResult.IMAGE_TYPE) {
-            final String[] options;
-            boolean isDataUrlLocal = extra != null && extra.startsWith("data:");
-            if (isDataUrlLocal) {
-                options = new String[] {
-                    "リンクをコピー",
-                    "画像を保存"
-                };
-            } else {
-                options = new String[] {
-                    "リンクをコピー",
-                    "リンクをダウンロード",
-                    "リンク先を新しいタブで開く",
-                    "画像を保存"
-                };
-            }
-            new MaterialAlertDialogBuilder(MainActivity.this)
-                .setTitle("オプションを選択")
-                .setItems(options, (dialog, which) -> {
-                    if (which == 0) {
-                        copyLink(extra);
-                    } else if (which == 1) {
-                        if (isDataUrlLocal) {
-                            if (extra != null && !extra.isEmpty()) {
-                                saveImage(extra);
-                            }
-                        } else {
-                            handleDownload(extra, null, null, null, 0);
-                        }
-                    } else if (which == 2 && !isDataUrlLocal) {
-                        if (webViews.size() >= MAX_TABS) {
-                            Toast.makeText(MainActivity.this,
-                                "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
-                        } else {
-                            WebView newWebView = createNewWebView();
-                            webViews.add(newWebView);
-                            updateTabCount();
-                            switchToTab(webViews.size() - 1);
-                            newWebView.loadUrl(extra);
-                        }
-                    } else if (which == 3 && !isDataUrlLocal) {
-                        if (extra != null && !extra.isEmpty()) {
-                            saveImage(extra);
-                        }
-                    }
-                }).show();
-            return true;
-        }
-    }
-    return false;
-});
-
+            return false;
+        });
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -859,33 +844,24 @@ public class MainActivity extends AppCompatActivity {
             }
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
-            String lowerUrl = url.toLowerCase();
-             boolean isMatched = java.util.regex.Pattern
-            .compile("(^|[/.])(?:(chatx2|chatx|chat|auth|login|disk|cgi|session|cloud))($|[/.])")
-            .matcher(lowerUrl)
-            .find();
-    
-             if (isMatched) {
-                 view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-            } else {
-                view.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-            }
-    
-                 urlEditText.setText(url);
+                String lowerUrl = url.toLowerCase();
+                boolean isMatched = CACHE_MODE_PATTERN.matcher(lowerUrl).find();
+                if (isMatched) {
+                    view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+                } else {
+                    view.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+                }
+                urlEditText.setText(url);
                 super.onPageStarted(view, url, favicon);
-              }
+            }
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                optimizeDOMUpdates(view);
-                batchStyleUpdates(view);
-                removeUnusedElements(view);
-                delayDOMUpdatesOnScroll(view);
-                view.getSettings().setBlockNetworkImage(false);
+                applyCombinedOptimizations(view);
                 if (url.startsWith("https://m.youtube.com")) {
                     new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    injectLazyLoading(view);
-                        }, 1000);
+                        injectLazyLoading(view);
+                    }, 1000);
                 }
                 if (view == getCurrentWebView()) {
                     urlEditText.setText(url);
@@ -907,8 +883,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 if (swipeRefreshLayout.isRefreshing()) {
                     swipeRefreshLayout.setRefreshing(false);
-               }
-               String jsOverrideHistory = "javascript:(function() {" +
+                }
+                String jsOverrideHistory = "javascript:(function() {" +
                         "function notifyUrlChange() {" +
                         "   AndroidBridge.onUrlChange(location.href);" +
                         "}" +
@@ -928,7 +904,7 @@ public class MainActivity extends AppCompatActivity {
                         "notifyUrlChange();" +
                         "})()";
                 view.loadUrl(jsOverrideHistory);
-                }
+            }
             @Override
             public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
                 if (!basicAuthEnabled) {
@@ -1070,7 +1046,9 @@ public class MainActivity extends AppCompatActivity {
         if (index != -1) {
             if (webViews.size() > 1) {
                 webViews.remove(index);
-                if (currentTabIndex >= webViews.size()) {
+                if (currentTabIndex > index) {
+                    currentTabIndex--;
+                } else if (currentTabIndex >= webViews.size()) {
                     currentTabIndex = webViews.size() - 1;
                 }
                 webViewContainer.removeAllViews();
@@ -1154,7 +1132,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class BlobDownloadInterface {
-        @android.webkit.JavascriptInterface
+        @JavascriptInterface
         public void onBlobDownloaded(String base64Data, String mimeType, String fileName) {
             runOnUiThread(() -> {
                 try {
@@ -1176,7 +1154,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
-        @android.webkit.JavascriptInterface
+        @JavascriptInterface
         public void onBlobDownloadError(String errorMessage) {
             runOnUiThread(() -> Toast.makeText(MainActivity.this, "blob ダウンロードエラー: " + errorMessage, Toast.LENGTH_LONG).show());
         }
@@ -1884,35 +1862,20 @@ private void performFindInPage() {
         public void onFindResultReceived(int activeMatchOrdinal, int numberOfMatches, boolean isDoneCounting) {
             currentMatchIndex = activeMatchOrdinal;
             totalMatches = numberOfMatches;
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (totalMatches > 0) {
-                
-                        tvFindCount.setText((activeMatchOrdinal + 1) + "/" + totalMatches);
-                    } else {
-                        tvFindCount.setText("0/0");
-                    }
-                }
-            });
+            tvFindCount.setText((activeMatchOrdinal + 1) + "/" + numberOfMatches);
         }
     });
 }
-
 private void hideFindInPageBar() {
     if (findInPageBarView != null) {
         findInPageBarView.setVisibility(View.GONE);
-        getCurrentWebView().clearMatches();
-        if (tvFindCount != null) {
-            tvFindCount.setText("0/0");
-        }
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
-            imm.hideSoftInputFromWindow(etFindQuery.getWindowToken(), 0);
+            imm.hideSoftInputFromWindow(findInPageBarView.getWindowToken(), 0);
         }
     }
 }
-    private void showHistoryDialog() {
+private void showHistoryDialog() {
         RecyclerView recyclerView = new RecyclerView(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
