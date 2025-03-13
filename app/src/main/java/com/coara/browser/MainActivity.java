@@ -480,28 +480,33 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     private void applyCombinedOptimizations(WebView webView) {
-        String js = "javascript:(function() {" +
-                    "var body = document.body;" +
-                    "if(body) {" +
-                    "   var newElement = document.createElement('div');" +
-                    "   var fragment = document.createDocumentFragment();" +
-                    "   fragment.appendChild(newElement);" +
-                    "   body.appendChild(fragment);" +
-                    "}" +
-                    "var style = document.createElement('style');" +
-                    "style.innerHTML = '* { transition: none !important; }';" +
-                    "document.head.appendChild(style);" +
-                    "var elements = document.querySelectorAll('.ads, .popup, .tracking');" +
-                    "for(var i=0; i<elements.length; i++) {" +
-                    "   elements[i].parentNode.removeChild(elements[i]);" +
-                    "}" +
-                    "var timeout;" +
-                    "window.addEventListener('scroll', function() {" +
-                    "   clearTimeout(timeout);" +
-                    "   timeout = setTimeout(function() {}, 200);" +
-                    "});" +
-                    "})();";
-        webView.evaluateJavascript(js, null);
+    String js = "javascript:(function() {\n" +
+                "    var body = document.body;\n" +
+                "    if (body) {\n" +
+                "        var newElement = document.createElement('div');\n" +
+                "        var fragment = document.createDocumentFragment();\n" +
+                "        fragment.appendChild(newElement);\n" +
+                "        body.appendChild(fragment);\n" +
+                "    }\n" +
+                "    var style = document.createElement('style');\n" +
+                "    style.innerHTML = '* { transition: none !important; }';\n" +
+                "    document.head.appendChild(style);\n" +
+                "    var elements = document.querySelectorAll('.ads, .popup, .tracking');\n" +
+                "    for (var i = 0; i < elements.length; i++) {\n" +
+                "        if (elements[i] && elements[i].parentNode) {\n" +
+                "            elements[i].parentNode.removeChild(elements[i]);\n" +
+                "        }\n" +
+                "    }\n" +
+                "    if (!('IntersectionObserver' in window)) {\n" +
+                "        var timeout;\n" +
+                "        window.addEventListener('scroll', function() {\n" +
+                "            clearTimeout(timeout);\n" +
+                "            timeout = setTimeout(function() {\n" +
+                "            }, 200);\n" +
+                "        });\n" +
+                "    }\n" +
+                "})();";
+    webView.evaluateJavascript(js, null);
     }
     private void injectLazyLoading(WebView webView) {
         String js = "javascript:(function() {" +
