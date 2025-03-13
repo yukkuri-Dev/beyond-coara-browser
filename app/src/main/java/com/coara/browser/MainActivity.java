@@ -492,15 +492,18 @@ public class MainActivity extends AppCompatActivity {
                 "    var style = document.createElement('style');\n" +
                 "    style.innerHTML = '* { transition: none !important; }';\n" +
                 "    document.head.appendChild(style);\n" +
-                "    var elements = document.querySelectorAll('div.ads, div.popup, div.tracking');\n" +
+                "    var elements = document.querySelectorAll('.ads, .popup, .tracking');\n" +
                 "    for (var i = 0; i < elements.length; i++) {\n" +
-                "        if (elements[i] && elements[i].parentNode) {\n" +
-                "            elements[i].parentNode.removeChild(elements[i]);\n" +
+                "        if (!elements[i].querySelector('img')) {\n" +
+                "            if (elements[i] && elements[i].parentNode) {\n" +
+                "                elements[i].parentNode.removeChild(elements[i]);\n" +
+                "            }\n" +
                 "        }\n" +
                 "    }\n" +
                 "})();";
     webView.evaluateJavascript(js, null);
-    }
+}
+
     private void injectLazyLoading(WebView webView) {
         String js = "javascript:(function() {" +
                     "var images = document.querySelectorAll('img');" +
