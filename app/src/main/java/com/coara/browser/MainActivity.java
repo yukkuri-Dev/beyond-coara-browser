@@ -883,10 +883,10 @@ public class MainActivity extends AppCompatActivity {
                 delayDOMUpdatesOnScroll(view);
                 view.getSettings().setBlockNetworkImage(false);
                 if (url.startsWith("https://m.youtube.com")) {
-    　　　　　　　　　　　　new Handler(Looper.getMainLooper()).postDelayed(() -> {
-       　　　　　　　　　　　　 injectLazyLoading(view);
-  　　　　　　　　　　  }, 1000);
-　　　　　　　　　　　}
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    injectLazyLoading(view);
+                        }, 1000);
+                }
                 if (view == getCurrentWebView()) {
                     urlEditText.setText(url);
                 }
