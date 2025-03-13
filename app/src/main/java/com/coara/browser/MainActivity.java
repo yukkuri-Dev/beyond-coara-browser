@@ -517,25 +517,31 @@ public class MainActivity extends AppCompatActivity {
     }
     private void injectLazyLoading(WebView webView) {
     String js = "javascript:(function() {" +
-                "\n   var images = document.getElementsByTagName('img');" +
-                "\n   for (var i = 0; i < images.length; i++) {" +
-                "\n       if (images[i].hasAttribute('src')) {" +
-                "\n           images[i].setAttribute('data-src', images[i].src);" +
-                "\n           images[i].src = 'about:blank';" +
+                "\n   var images = document.querySelectorAll('img');" +
+                "\n   var placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';" +
+                "\n   images.forEach(function(img) {" +
+                "\n       if (img.hasAttribute('src')) {" +
+                "\n           img.setAttribute('data-src', img.src);" +
+                "\n           img.src = placeholder;" +
                 "\n       }" +
+                "\n   });" +
+                "\n   if ('IntersectionObserver' in window) {" +
+                "\n       var observer = new IntersectionObserver(function(entries) {" +
+                "\n           entries.forEach(function(entry) {" +
+                "\n               if (entry.isIntersecting) {" +
+                "\n                   var img = entry.target;" +
+                "\n                   if (img.dataset.src) {" +
+                "\n                       img.src = img.dataset.src;" +
+                "\n                       img.removeAttribute('data-src');" +
+                "\n                   }" +
+                "\n                   observer.unobserve(img);" +
+                "\n               }" +
+                "\n           });" +
+                "\n       });" +
+                "\n       images.forEach(function(img) {" +
+                "\n           observer.observe(img);" +
+                "\n       });" +
                 "\n   }" +
-                "\n   function lazyLoad() {" +
-                "\n       var windowHeight = window.innerHeight;" +
-                "\n       for (var i = 0; i < images.length; i++) {" +
-                "\n           var rect = images[i].getBoundingClientRect();" +
-                "\n           if (images[i].hasAttribute('data-src') && rect.top < windowHeight) {" +
-                "\n               images[i].src = images[i].getAttribute('data-src');" +
-                "\n               images[i].removeAttribute('data-src');" +
-                "\n           }" +
-                "\n       }" +
-                "\n   }" +
-                "\n   window.addEventListener('scroll', lazyLoad);" +
-                "\n   lazyLoad();" +
                 "\n})();";
     webView.evaluateJavascript(js, null);
     }
