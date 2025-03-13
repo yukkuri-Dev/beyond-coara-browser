@@ -822,10 +822,6 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
             });
-            private WebChromeClient createCustomWebChromeClient() {
-            return new WebChromeClient() {
-                };
-            }
             webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -1322,6 +1318,10 @@ public class MainActivity extends AppCompatActivity {
         switchToTab(webViews.size() - 1);
         getCurrentWebView().loadUrl(START_PAGE);
     }
+    private WebChromeClient createCustomWebChromeClient() {
+            return new WebChromeClient() {
+                };
+            }
     private void resetWebView(WebView webView) {
                      if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
                         ((ViewGroup) webView.getParent()).removeView(webView);
