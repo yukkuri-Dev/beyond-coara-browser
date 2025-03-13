@@ -128,7 +128,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
     private static final String SENTINEL_FILENAME = "cache_sentinel.txt";
-    
+    private static Method sSetSaveFormDataMethod;
+    private static Method sSetDatabaseEnabledMethod;
+    private static Method sSetAppCacheEnabledMethod;
+    private static Method sSetAppCachePathMethod;
     private View findInPageBarView;
     private EditText etFindQuery;
     private TextView tvFindCount;
@@ -178,7 +181,26 @@ public class MainActivity extends AppCompatActivity {
     private WebView preloadedWebView = null;
     private View customView = null;
     private WebChromeClient.CustomViewCallback customViewCallback = null;
-
+    static {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        try {
+            sSetSaveFormDataMethod = WebSettings.class.getMethod("setSaveFormData", boolean.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            sSetDatabaseEnabledMethod = WebSettings.class.getMethod("setDatabaseEnabled", boolean.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            sSetAppCacheEnabledMethod = WebSettings.class.getMethod("setAppCacheEnabled", boolean.class);
+            sSetAppCachePathMethod = WebSettings.class.getMethod("setAppCachePath", String.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+           }
+        }
+     }
     public static class Bookmark {
         private final String title;
         private final String url;
@@ -200,7 +222,6 @@ public class MainActivity extends AppCompatActivity {
         public String getTitle() { return title; }
         public String getUrl() { return url; }
     }
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -604,28 +625,29 @@ public class MainActivity extends AppCompatActivity {
         applyOptimizedSettings(settings);
         
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+        if (sSetSaveFormDataMethod != null) {
             try {
-                Method setSaveFormData = settings.getClass().getMethod("setSaveFormData", boolean.class);
-                setSaveFormData.invoke(settings, false);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            try {
-                Method setDatabaseEnabled = settings.getClass().getMethod("setDatabaseEnabled", boolean.class);
-                setDatabaseEnabled.invoke(settings, true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            try {
-                Method setAppCacheEnabled = settings.getClass().getMethod("setAppCacheEnabled", boolean.class);
-                setAppCacheEnabled.invoke(settings, true);
-                Method setAppCachePath = settings.getClass().getMethod("setAppCachePath", String.class);
-                setAppCachePath.invoke(settings, getCacheDir().getAbsolutePath());
+                sSetSaveFormDataMethod.invoke(settings, false);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-
+        if (sSetDatabaseEnabledMethod != null) {
+            try {
+                sSetDatabaseEnabledMethod.invoke(settings, true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (sSetAppCacheEnabledMethod != null && sSetAppCachePathMethod != null) {
+            try {
+                sSetAppCacheEnabledMethod.invoke(settings, true);
+                sSetAppCachePathMethod.invoke(settings, getCacheDir().getAbsolutePath());
+            } catch (Exception e) {
+                e.printStackTrace();
+               }
+            }
+         }
         if (zoomEnabled) {
             settings.setBuiltInZoomControls(true);
             settings.setSupportZoom(true);
