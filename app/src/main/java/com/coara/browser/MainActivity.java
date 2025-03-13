@@ -824,8 +824,8 @@ public class MainActivity extends AppCompatActivity {
             });
             private WebChromeClient createCustomWebChromeClient() {
             return new WebChromeClient() {
-            }
                 };
+            }
             webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -1086,7 +1086,7 @@ public class MainActivity extends AppCompatActivity {
         });
         return webView;
         }
-}
+    }
         private void closeTab(WebView webView) {
         int index = webViews.indexOf(webView);
         if (index != -1) {
@@ -1105,8 +1105,7 @@ public class MainActivity extends AppCompatActivity {
                 webView.loadUrl(START_PAGE);
             }
         }
-    }
-
+        }
     private void handleDownload(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
            ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
