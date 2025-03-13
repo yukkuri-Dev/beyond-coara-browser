@@ -1079,8 +1079,8 @@ public class MainActivity extends AppCompatActivity {
                 closeTab(getCurrentWebView());
             }
         });
+            
         return webView;
-        }
        
         private void closeTab(WebView webView) {
         int index = webViews.indexOf(webView);
