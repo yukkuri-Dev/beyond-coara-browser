@@ -822,7 +822,38 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-        webView.setWebViewClient(new WebViewClient() {
+            private WebViewClient createCustomWebViewClient() {
+            return new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
+                if (url.startsWith("tel:")) {
+                    startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
+                    return true;
+                } else if (url.startsWith("mailto:")) {
+                    startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse(url)));
+                    return true;
+                } else if (url.startsWith("intent:")) {
+                    try {
+                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                        if (intent != null) {
+                            if (intent.resolveActivity(getPackageManager()) != null) {
+                                startActivity(intent);
+                            } else {
+                                String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                                if (fallbackUrl != null) {
+                                    view.loadUrl(fallbackUrl);
+                                }
+                            }
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                return false;
+            }
+            webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return super.shouldInterceptRequest(view, request);
@@ -1350,37 +1381,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             webView.destroy();
                  }
-            }
-        private WebViewClient createCustomWebViewClient() {
-            return new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                if (url.startsWith("tel:")) {
-                    startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
-                    return true;
-                } else if (url.startsWith("mailto:")) {
-                    startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse(url)));
-                    return true;
-                } else if (url.startsWith("intent:")) {
-                    try {
-                        Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
-                        if (intent != null) {
-                            if (intent.resolveActivity(getPackageManager()) != null) {
-                                startActivity(intent);
-                            } else {
-                                String fallbackUrl = intent.getStringExtra("browser_fallback_url");
-                                if (fallbackUrl != null) {
-                                    view.loadUrl(fallbackUrl);
-                                }
-                            }
-                            return true;
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                return false;
             }
     private void createNewTab(String url) {
         if (webViews.size() >= MAX_TABS) {
