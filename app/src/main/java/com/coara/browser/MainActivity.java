@@ -1865,16 +1865,30 @@ private void performFindInPage() {
         public void onFindResultReceived(int activeMatchOrdinal, int numberOfMatches, boolean isDoneCounting) {
             currentMatchIndex = activeMatchOrdinal;
             totalMatches = numberOfMatches;
-            tvFindCount.setText((activeMatchOrdinal + 1) + "/" + numberOfMatches);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (totalMatches > 0) {
+                
+                        tvFindCount.setText((activeMatchOrdinal + 1) + "/" + totalMatches);
+                    } else {
+                        tvFindCount.setText("0/0");
+                    }
+                }
+            });
         }
     });
 }
 private void hideFindInPageBar() {
     if (findInPageBarView != null) {
         findInPageBarView.setVisibility(View.GONE);
+        getCurrentWebView().clearMatches();
+        if (tvFindCount != null) {
+            tvFindCount.setText("0/0");
+        }
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         if (imm != null) {
-            imm.hideSoftInputFromWindow(findInPageBarView.getWindowToken(), 0);
+            imm.hideSoftInputFromWindow(etFindQuery.getWindowToken(), 0);
         }
     }
 }
