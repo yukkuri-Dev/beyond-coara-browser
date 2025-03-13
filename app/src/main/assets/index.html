@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
   <title>スタートページ</title>
   <style>
-    /* 既存のスタイル */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       height: 100%;
@@ -64,7 +63,6 @@
       to { -webkit-transform: rotate(360deg); }
     }
     form { text-align: center; }
-    /* 検索欄とGoボタン用コンテナ */
     .search-container {
       position: relative;
       display: inline-block;
@@ -73,7 +71,6 @@
       width: 80vw;
       max-width: 300px;
       padding: 10px 20px;
-      /* 右側に余白を確保 */
       padding-right: 70px;
       font-size: 16px;
       border: 2px solid #ffb6c1;
@@ -88,7 +85,6 @@
       border-color: #ff69b4;
       box-shadow: 0 6px 8px rgba(255,105,180,0.4);
     }
-    /* かわいいGoボタンのスタイル？ */
     #goButton {
       position: absolute;
       right: 5px;
@@ -277,6 +273,8 @@
       </div>
     </form>
     <button id="engineToggle">検索エンジン選択</button>
+
+    <button id="changeBackgroundButton">背景画像変更</button>
   </div>
   <div id="engineSelector">
     <button data-engine="google">Google</button>
@@ -286,6 +284,7 @@
     <button data-engine="ecosia">Ecosia</button>
   </div>
   <div id="notification">検索エンジンを変更しました</div>
+  <input type="file" id="backgroundFileInput" accept="image/*" style="display: none;">
   <script>
     document.getElementById('logo').addEventListener('click', function() {
       this.style.animation = 'rotateLogo 1s linear';
@@ -360,7 +359,7 @@
       inputField.style.webkitTransform = 'scale(1)';
     });
     
-    // 検索エンジン選択機能
+  
     const searchEngines = {
       google: { action: "https://www.google.com/search", param: "q", placeholder: "Googleで検索" },
       bing: { action: "https://www.bing.com/search", param: "q", placeholder: "Bingで検索" },
@@ -374,7 +373,6 @@
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
     
-    // フォーム送信時、検索欄が空なら送信をキャンセル
     searchForm.addEventListener('submit', function(e) {
       if (!searchInput.value.trim()) {
         e.preventDefault();
@@ -405,6 +403,25 @@
         }
         engineSelector.style.display = 'none';
       });
+    });
+    
+    const changeBackgroundButton = document.getElementById('changeBackgroundButton');
+    const backgroundFileInput = document.getElementById('backgroundFileInput');
+    
+    changeBackgroundButton.addEventListener('click', function() {
+      backgroundFileInput.click();
+    });
+    
+    backgroundFileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        document.body.style.backgroundImage = 'url(' + event.target.result + ')';
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundRepeat = 'no-repeat';
+      };
+      reader.readAsDataURL(file);
     });
   </script>
 </body>
