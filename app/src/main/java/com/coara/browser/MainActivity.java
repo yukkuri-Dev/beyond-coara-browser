@@ -276,21 +276,30 @@ public class MainActivity extends AppCompatActivity {
         tabCountTextView = findViewById(R.id.tabCountTextView);
         tabCountTextView.setOnClickListener(v -> showTabsDialog());
 
-        if (pref.contains(KEY_TABS)) {
-            loadTabsState();
-            if (webViews.isEmpty()) {
-                WebView initialWebView = createNewWebView();
-                webViews.add(initialWebView);
-                currentTabIndex = 0;
-                webViewContainer.addView(initialWebView);
-                initialWebView.loadUrl(START_PAGE);
-            }
+        if (savedInstanceState != null) {
+        int activeTabIndex = savedInstanceState.getInt("activeTabIndex", 0);
+        String activeTabUrl = savedInstanceState.getString("activeTabUrl", "");
+        if (!activeTabUrl.isEmpty()) {
+            webViews.clear();
+            webViewContainer.removeAllViews();
+            WebView restoredWebView = createNewWebView();
+            webViews.add(restoredWebView);
+            currentTabIndex = 0;
+            webViewContainer.addView(restoredWebView);
+            restoredWebView.loadUrl(activeTabUrl);
         } else {
             WebView initialWebView = createNewWebView();
             webViews.add(initialWebView);
             currentTabIndex = 0;
             webViewContainer.addView(initialWebView);
             initialWebView.loadUrl(START_PAGE);
+        }
+       } else {
+        WebView initialWebView = createNewWebView();
+        webViews.add(initialWebView);
+        currentTabIndex = 0;
+        webViewContainer.addView(initialWebView);
+        initialWebView.loadUrl(START_PAGE);
         }
         updateTabCount();
 
@@ -420,7 +429,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    WebView currentWebView = getCurrentWebView();
+    if (currentWebView != null) {
+        outState.putInt("activeTabIndex", currentTabIndex);
+        outState.putString("activeTabUrl", currentWebView.getUrl());
+       }
+     }
     private void handleIntent(Intent intent) {
         if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
             Uri data = intent.getData();
