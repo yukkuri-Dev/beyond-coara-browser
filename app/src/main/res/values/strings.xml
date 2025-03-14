@@ -4,8 +4,6 @@
     <string name="qrcode_long_label">QRコードに変換</string>
     <string name="pagedl_short_label">ページDL</string>
     <string name="pagedl_long_label">ページをダウンロード</string>
-    <string name="num_short_label">電卓</string>
-    <string name="num_long_label">電卓</string>
     <string name="asciiart_short_label">ASCIIアート</string>
     <string name="asciiart_long_label">画像をASCIIアートに変換</string>
     <string name="txtphoto_short_label">TXT画像</string>
