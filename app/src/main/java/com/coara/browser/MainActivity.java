@@ -111,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final Pattern CACHE_MODE_PATTERN = Pattern.compile("(^|[/.])(?:(chatx2|chatx|chat|auth|login|disk|cgi|session|cloud))($|[/.])", Pattern.CASE_INSENSITIVE);
     private static final String PREF_NAME = "AdvancedBrowserPrefs";
+    private static final String KEY_CURRENT_TAB_ID = "current_tab_id";
     private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_BASIC_AUTH = "basic_auth";
     private static final String KEY_ZOOM_ENABLED = "zoom_enabled";
