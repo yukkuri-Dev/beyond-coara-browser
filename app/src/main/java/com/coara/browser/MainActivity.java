@@ -866,6 +866,8 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+        }
+
         private void resetWebView(WebView webView) {
                 if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
                    ((ViewGroup) webView.getParent()).removeView(webView);
