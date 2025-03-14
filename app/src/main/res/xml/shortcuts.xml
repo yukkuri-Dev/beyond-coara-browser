@@ -12,18 +12,6 @@
             android:targetPackage="com.coara.browser"
             android:targetClass="com.coara.browser.QrCodeActivity" />
     </shortcut>
-    
-    <shortcut
-        android:shortcutId="num"
-        android:enabled="true"
-        android:icon="@drawable/ic_num"
-        android:shortcutShortLabel="@string/num_short_label"
-        android:shortcutLongLabel="@string/num_long_label">
-        <intent
-            android:action="android.intent.action.VIEW"
-            android:targetPackage="com.coara.browser"
-            android:targetClass="com.coara.browser.num" />
-    </shortcut>
   
     <shortcut
         android:shortcutId="pagedl"
