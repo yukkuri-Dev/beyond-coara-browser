@@ -600,44 +600,36 @@ public class MainActivity extends AppCompatActivity {
     }
     private void applyCombinedOptimizations(WebView webView) {
     String js = "javascript:(function() {" +
-                "  var elements = document.querySelectorAll('*');" +
-                "  elements.forEach(function(el) {" +
-                "    el.style.transform = 'translateZ(0)';" + // GPUアクセラレーションを有効化
-                "    el.style.willChange = 'transform, opacity';" + // ブラウザに最適化を予告
+                "  var animatedElements = document.querySelectorAll('.animated, .transition');" +
+                "  animatedElements.forEach(function(el) {" +
+                "    if (!el.style.transform) {" + 
+                "      el.style.transform = 'translateZ(0)';" + 
+                "    }" +
+                "    if (!el.style.willChange) {" +
+                "      el.style.willChange = 'transform, opacity';" +
+                "    }" +
                 "  });" +
-                "  var fixedElements = document.querySelectorAll('.fixed, .absolute');" +
+                "  var fixedElements = document.querySelectorAll('.fixed');" +
                 "  fixedElements.forEach(function(el) {" +
-                "    el.style.position = 'fixed';" + // 固定配置でレイヤー分離
-                "    el.style.overflow = 'hidden';" + // 不要な再描画を防止
+                "    if (el.style.position !== 'fixed') {" +
+                "      el.style.position = 'fixed';"
+                "    }" +
                 "  });" +
-                "  window.requestAnimationFrame = window.requestAnimationFrame || " +
-                "    window.mozRequestAnimationFrame || " +
-                "    window.webkitRequestAnimationFrame || " +
-                "    window.msRequestAnimationFrame;" +
-                "  function animate() {" +
-                "    requestAnimationFrame(animate);" +
-                "  }" +
-                "  animate();" +
-                "  var canvas = document.createElement('canvas');" +
-                "  canvas.width = window.innerWidth;" +
-                "  canvas.height = window.innerHeight;" +
-                "  document.body.appendChild(canvas);" +
-                "  var ctx = canvas.getContext('2d');" +
-                "  var img = document.querySelector('img');" +
-                "  if (img) ctx.drawImage(img, 0, 0);" +
                 "})();";
     webView.evaluateJavascript(js, null);
     }
     private void injectLazyLoading(WebView webView) {
     String js = "javascript:(function() {" +
                 "  var placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';" +
-                "  var images = document.querySelectorAll('img[src^=\"https://i.ytimg.com/\"]');" +
+                "  var images = document.querySelectorAll('img[src^=\\\"https://i.ytimg.com/\\\"]:not([data-lazy-loaded])');" +
                 "  images.forEach(function(img) {" +
+                "    img.setAttribute('data-lazy-loaded', 'true');" +
                 "    if (img.hasAttribute('src')) {" +
                 "      img.setAttribute('data-src', img.src);" +
                 "      img.src = placeholder;" +
                 "      img.style.opacity = '0';" +
                 "      img.style.transition = 'opacity 0.3s';" +
+                "      img.style.transform = 'translateZ(0);';" +
                 "    }" +
                 "  });" +
                 "  if ('IntersectionObserver' in window) {" +
@@ -660,13 +652,30 @@ public class MainActivity extends AppCompatActivity {
                 "      observer.observe(img);" +
                 "    });" +
                 "  } else {" +
-                "    images.forEach(function(img) {" +
-                "      if (img.dataset.src) {" +
-                "        img.src = img.dataset.src;" +
-                "        img.removeAttribute('data-src');" +
-                "        img.style.opacity = '1';" +
-                "      }" +
-                "    });" +
+                "    var loadImagesOnScroll = function() {" +
+                "      images.forEach(function(img) {" +
+                "        if (img.dataset.src && isElementInViewport(img)) {" +
+                "          img.src = img.dataset.src;" +
+                "          img.removeAttribute('data-src');" +
+                "          img.onload = function() {" +
+                "            img.style.opacity = '1';" +
+                "          };" +
+                "        }" +
+                "      });" +
+                "    };" +
+                "    var isElementInViewport = function(el) {" +
+                "      var rect = el.getBoundingClientRect();" +
+                "      return (" +
+                "        rect.top >= 0 &&" +
+                "        rect.left >= 0 &&" +
+                "        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&" +
+                "        rect.right <= (window.innerWidth || document.documentElement.clientWidth)" +
+                "      );" +
+                "    };" +
+                "    window.addEventListener('scroll', loadImagesOnScroll);" +
+                "    window.addEventListener('resize', loadImagesOnScroll);" +
+                "    window.addEventListener('load', loadImagesOnScroll);" +
+                "    loadImagesOnScroll();" +
                 "  }" +
                 "})();";
     webView.evaluateJavascript(js, null);
