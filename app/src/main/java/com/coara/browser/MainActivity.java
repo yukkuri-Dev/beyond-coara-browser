@@ -1469,10 +1469,10 @@ public class MainActivity extends AppCompatActivity {
             if (url.startsWith("https://m.youtube.com/watch") || 
                 url.startsWith("https://m.youtube.com/shorts/")) {
                 swipeRefreshLayout.setEnabled(false);
+                urlEditText.setText(url);
             } else {
                 swipeRefreshLayout.setEnabled(true);
             }
-            urlEditText.setText(url);
         });
       }
     }
