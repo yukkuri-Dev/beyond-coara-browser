@@ -138,9 +138,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnFindPrev, btnFindNext, btnFindClose;
     private PermissionRequest pendingPermissionRequest = null;
     private ActivityResultLauncher<String[]> permissionRequestLauncher;
-    private final ArrayList<WebView> webViewPool = new ArrayList<>();
-    private static final int MAX_POOL_SIZE = 10;
-    
+
     private WebView webView;
     private TextInputEditText urlEditText;
     private ImageView faviconImageView;
@@ -608,10 +606,6 @@ public class MainActivity extends AppCompatActivity {
 
     private WebView createNewWebView() {
         WebView webView;
-        if (!webViewPool.isEmpty()) {
-             webView = webViewPool.remove(0);
-             resetWebView(webView);
-        } else {
         if (preloadedWebView != null) {
             webView = preloadedWebView;
             preloadedWebView = null;
@@ -823,6 +817,7 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -1070,8 +1065,6 @@ public class MainActivity extends AppCompatActivity {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             }
         });
-        }
-
 
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
             if (url.startsWith("blob:")) {
@@ -1096,7 +1089,6 @@ public class MainActivity extends AppCompatActivity {
                 } else if (currentTabIndex >= webViews.size()) {
                     currentTabIndex = webViews.size() - 1;
                 }
-                poolWebView(webView);
                 webViewContainer.removeAllViews();
                 webViewContainer.addView(getCurrentWebView());
                 updateTabCount();
@@ -1311,7 +1303,7 @@ public class MainActivity extends AppCompatActivity {
     private void createNewTab() {
         if (webViews.size() >= MAX_TABS) {
             WebView removed = webViews.remove(0);
-            poolWebView(removed);
+            removed.destroy();
             if (currentTabIndex > 0) {
                 currentTabIndex--;
             }
@@ -1322,38 +1314,6 @@ public class MainActivity extends AppCompatActivity {
         switchToTab(webViews.size() - 1);
         getCurrentWebView().loadUrl(START_PAGE);
     }
-    private void resetWebView(WebView webView) {
-                     if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
-                        ((ViewGroup) webView.getParent()).removeView(webView);
-             }
-               webView.stopLoading();
-               webView.clearHistory();
-               webView.clearCache(true);
-               webView.loadUrl(START_PAGE);
-               WebSettings settings = webView.getSettings();
-               applyOptimizedSettings(settings);
-               webView.removeJavascriptInterface("AndroidBridge");
-               webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
-               webView.removeJavascriptInterface("BlobDownloader");
-               webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
-               webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-               webView.setBackgroundColor(Color.WHITE);
-               webView.setWebViewClient(new WebViewClient());
-               webView.setWebChromeClient(new WebChromeClient());
-            }
-          private void poolWebView(WebView webView) {
-                       webView.stopLoading();
-                       webView.clearHistory();
-                       webView.clearCache(true);
-        if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
-            ((ViewGroup) webView.getParent()).removeView(webView);
-        }
-        if (webViewPool.size() < MAX_POOL_SIZE) {
-            webViewPool.add(webView);
-        } else {
-            webView.destroy();
-                 }
-            }
     private void createNewTab(String url) {
         if (webViews.size() >= MAX_TABS) {
             Toast.makeText(this, "最大タブ数に達しました", Toast.LENGTH_SHORT).show();
