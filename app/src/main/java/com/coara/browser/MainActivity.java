@@ -157,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
             Runtime.getRuntime().availableProcessors());
     private final ArrayList<WebView> webViews = new ArrayList<>();
     private int currentTabIndex = 0;
+    private int nextTabId = 0;
     private int currentHistoryIndex = -1;
     private int currentMatchIndex = 0;
     private int totalMatches = 0;
@@ -278,15 +279,10 @@ public class MainActivity extends AppCompatActivity {
 
         if (pref.contains(KEY_TABS)) {
             loadTabsState();
-            if (webViews.isEmpty()) {
-                WebView initialWebView = createNewWebView();
-                webViews.add(initialWebView);
-                currentTabIndex = 0;
-                webViewContainer.addView(initialWebView);
-                initialWebView.loadUrl(START_PAGE);
-            }
         } else {
             WebView initialWebView = createNewWebView();
+            initialWebView.setTag(nextTabId);
+            nextTabId++;
             webViews.add(initialWebView);
             currentTabIndex = 0;
             webViewContainer.addView(initialWebView);
@@ -420,6 +416,39 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    private void saveBundleToFile(Bundle bundle, String fileName) {
+        File file = new File(getFilesDir(), fileName);
+        Parcel parcel = Parcel.obtain();
+        try {
+            bundle.writeToParcel(parcel, 0);
+            byte[] bytes = parcel.marshall();
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(bytes);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            parcel.recycle();
+        }
+    }
+
+    private Bundle loadBundleFromFile(String fileName) {
+        File file = new File(getFilesDir(), fileName);
+        if (!file.exists()) return null;
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] bytes = new byte[(int) file.length()];
+            fis.read(bytes);
+            Parcel parcel = Parcel.obtain();
+            parcel.unmarshall(bytes, 0, bytes.length);
+            parcel.setDataPosition(0);
+            Bundle bundle = Bundle.CREATOR.createFromParcel(parcel);
+            parcel.recycle();
+            return bundle;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     private void handleIntent(Intent intent) {
         if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
@@ -454,41 +483,84 @@ public class MainActivity extends AppCompatActivity {
     private void saveTabsState() {
         JSONArray tabsArray = new JSONArray();
         for (WebView webView : webViews) {
+            int id = (int) webView.getTag();
             String url = webView.getUrl();
-            tabsArray.put(url != null ? url : "");
+            if (url == null) url = "";
+            JSONObject tabObj = new JSONObject();
+            try {
+                tabObj.put("id", id);
+                tabObj.put("url", url);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            tabsArray.put(tabObj);
+            Bundle state = new Bundle();
+            webView.saveState(state);
+            saveBundleToFile(state, "tab_state_" + id + ".dat");
         }
+        int currentTabId = (int) getCurrentWebView().getTag();
         pref.edit()
             .putString(KEY_TABS, tabsArray.toString())
-            .putInt(KEY_CURRENT_TAB, currentTabIndex)
+            .putInt(KEY_CURRENT_TAB_ID, currentTabId)
             .apply();
     }
-
     private void loadTabsState() {
         String tabsJsonStr = pref.getString(KEY_TABS, "[]");
-        int savedCurrentTab = pref.getInt(KEY_CURRENT_TAB, 0);
+        int currentTabId = pref.getInt(KEY_CURRENT_TAB_ID, -1);
         try {
             JSONArray tabsArray = new JSONArray(tabsJsonStr);
             webViews.clear();
             webViewContainer.removeAllViews();
+            int maxId = 0;
             for (int i = 0; i < tabsArray.length(); i++) {
-                String url = tabsArray.getString(i);
+                JSONObject tabObj = tabsArray.getJSONObject(i);
+                int id = tabObj.getInt("id");
+                String url = tabObj.getString("url");
                 WebView webView = createNewWebView();
+                webView.setTag(id);
                 webViews.add(webView);
-                webView.loadUrl((url != null && !url.isEmpty()) ? url : START_PAGE);
+                if (id > maxId) maxId = id;
+                if (id == currentTabId) {
+                    // アクティブタブはURLを新たに読み込み
+                    webView.loadUrl(url);
+                } else {
+                    // 他のタブは状態を復元
+                    Bundle state = loadBundleFromFile("tab_state_" + id + ".dat");
+                    if (state != null) {
+                        webView.restoreState(state);
+                    } else {
+                        webView.loadUrl(url);
+                    }
+                }
             }
+            nextTabId = maxId + 1;
             if (webViews.isEmpty()) {
                 WebView initialWebView = createNewWebView();
+                initialWebView.setTag(nextTabId);
+                nextTabId++;
                 webViews.add(initialWebView);
                 currentTabIndex = 0;
                 webViewContainer.addView(initialWebView);
                 initialWebView.loadUrl(START_PAGE);
             } else {
-                currentTabIndex = Math.min(savedCurrentTab, webViews.size() - 1);
+                boolean found = false;
+                for (int i = 0; i < webViews.size(); i++) {
+                    if ((int) webViews.get(i).getTag() == currentTabId) {
+                        currentTabIndex = i;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    currentTabIndex = 0;
+                }
                 webViewContainer.addView(getCurrentWebView());
             }
         } catch (JSONException e) {
             e.printStackTrace();
             WebView initialWebView = createNewWebView();
+            initialWebView.setTag(nextTabId);
+            nextTabId++;
             webViews.clear();
             webViews.add(initialWebView);
             currentTabIndex = 0;
@@ -1309,6 +1381,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         WebView newWebView = createNewWebView();
+        newWebView.setTag(nextTabId);
+        nextTabId++;
         webViews.add(newWebView);
         updateTabCount();
         switchToTab(webViews.size() - 1);
