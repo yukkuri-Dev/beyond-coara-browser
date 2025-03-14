@@ -109,7 +109,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final Pattern CACHE_MODE_PATTERN = Pattern.compile("(^|[/.])(?:(chatx2|chatx|chat|auth|login|disk|cgi|session|m.youtube.com|cloud))($|[/.])", Pattern.CASE_INSENSITIVE);
+    private static final Pattern CACHE_MODE_PATTERN = Pattern.compile("(^|[/.])(?:(chatx2|chatx|chat|auth|login|disk|cgi|session|cloud))($|[/.])", Pattern.CASE_INSENSITIVE);
     private static final String PREF_NAME = "AdvancedBrowserPrefs";
     private static final String KEY_CURRENT_TAB_ID = "current_tab_id";
     private static final String KEY_DARK_MODE = "dark_mode";
@@ -620,8 +620,27 @@ public class MainActivity extends AppCompatActivity {
     }
     private void injectLazyLoading(WebView webView) {
     String js = "javascript:(function() {" +
+                "  var adPatterns = ['https://lh4.googleusercontent.com/', 'https://tpc.googlesyndication.com/'];" +
+                "  function hideAds() {" +
+                "    var images = document.querySelectorAll('img');" +
+                "    images.forEach(function(img) {" +
+                "      var src = img.getAttribute('src') || '';" +
+                "      if (adPatterns.some(function(pattern) { return src.startsWith(pattern); })) {" +
+                "        img.style.display = 'none';" +
+                "      }" +
+                "    });" +
+                "  }" +
+                "  var observer = new MutationObserver(function(mutations) {" +
+                "    mutations.forEach(function(mutation) {" +
+                "      if (mutation.addedNodes.length) {" +
+                "        hideAds();" +
+                "      }" +
+                "    });" +
+                "  });" +
+                "  observer.observe(document.body, { childList: true, subtree: true });" +
+                "  window.addEventListener('load', hideAds);" +
                 "  var placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';" +
-                "  var images = document.querySelectorAll('img[src^=\\\"https://i.ytimg.com/\\\"]:not([data-lazy-loaded])');" +
+                "  var images = document.querySelectorAll('img[src^=\"https://i.ytimg.com/\"]:not([data-lazy-loaded])');" +
                 "  images.forEach(function(img) {" +
                 "    img.setAttribute('data-lazy-loaded', 'true');" +
                 "    if (img.hasAttribute('src')) {" +
@@ -629,7 +648,9 @@ public class MainActivity extends AppCompatActivity {
                 "      img.src = placeholder;" +
                 "      img.style.opacity = '0';" +
                 "      img.style.transition = 'opacity 0.3s';" +
-                "      img.style.transform = 'translateZ(0);';" +
+                "      if (!img.style.transform) {" + 
+                "        img.style.transform = 'translateZ(0);';" +
+                "      }" +
                 "    }" +
                 "  });" +
                 "  if ('IntersectionObserver' in window) {" +
