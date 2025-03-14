@@ -620,25 +620,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private void injectLazyLoading(WebView webView) {
     String js = "javascript:(function() {" +
-                "  var adPatterns = ['https://lh4.googleusercontent.com/', 'https://tpc.googlesyndication.com/'];" +
-                "  function hideAds() {" +
-                "    var images = document.querySelectorAll('img');" +
-                "    images.forEach(function(img) {" +
-                "      var src = img.getAttribute('src') || '';" +
-                "      if (adPatterns.some(function(pattern) { return src.startsWith(pattern); })) {" +
-                "        img.style.display = 'none';" +
-                "      }" +
-                "    });" +
-                "  }" +
-                "  var observer = new MutationObserver(function(mutations) {" +
-                "    mutations.forEach(function(mutation) {" +
-                "      if (mutation.addedNodes.length) {" +
-                "        hideAds();" +
-                "      }" +
-                "    });" +
-                "  });" +
-                "  observer.observe(document.body, { childList: true, subtree: true });" +
-                "  window.addEventListener('load', hideAds);" +
                 "  var placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';" +
                 "  var images = document.querySelectorAll('img[src^=\"https://i.ytimg.com/\"]:not([data-lazy-loaded])');" +
                 "  images.forEach(function(img) {" +
@@ -648,7 +629,7 @@ public class MainActivity extends AppCompatActivity {
                 "      img.src = placeholder;" +
                 "      img.style.opacity = '0';" +
                 "      img.style.transition = 'opacity 0.3s';" +
-                "      if (!img.style.transform) {" + 
+                "      if (!img.style.transform) {" +
                 "        img.style.transform = 'translateZ(0);';" +
                 "      }" +
                 "    }" +
