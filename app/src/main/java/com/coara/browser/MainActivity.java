@@ -472,6 +472,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        saveTabsState();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         backgroundExecutor.shutdown();
