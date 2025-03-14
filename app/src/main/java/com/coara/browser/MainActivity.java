@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Parcel;
 import android.text.InputType;
 import android.util.Base64;
 import android.util.LruCache;
