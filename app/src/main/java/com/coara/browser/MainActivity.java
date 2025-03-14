@@ -524,10 +524,8 @@ public class MainActivity extends AppCompatActivity {
                 webViews.add(webView);
                 if (id > maxId) maxId = id;
                 if (id == currentTabId) {
-                    // アクティブタブはURLを新たに読み込み
                     webView.loadUrl(url);
                 } else {
-                    // 他のタブは状態を復元
                     Bundle state = loadBundleFromFile("tab_state_" + id + ".dat");
                     if (state != null) {
                         webView.restoreState(state);
@@ -602,47 +600,76 @@ public class MainActivity extends AppCompatActivity {
     }
     private void applyCombinedOptimizations(WebView webView) {
     String js = "javascript:(function() {" +
-                "  if (window.__optimizationsApplied) return;" +
-                "  window.__optimizationsApplied = true;" +
-                "  var style = document.createElement('style');" +
-                "  style.innerHTML = '* { transition: none !important; }';" +
-                "  document.head.appendChild(style);" +
-                "  var elements = document.querySelectorAll('.ads, .popup, .tracking');" +
-                "  for (var i = 0; i < elements.length; i++) {" +
-                "      elements[i].remove();" +
+                "  var elements = document.querySelectorAll('*');" +
+                "  elements.forEach(function(el) {" +
+                "    el.style.transform = 'translateZ(0)';" + // GPUアクセラレーションを有効化
+                "    el.style.willChange = 'transform, opacity';" + // ブラウザに最適化を予告
+                "  });" +
+                "  var fixedElements = document.querySelectorAll('.fixed, .absolute');" +
+                "  fixedElements.forEach(function(el) {" +
+                "    el.style.position = 'fixed';" + // 固定配置でレイヤー分離
+                "    el.style.overflow = 'hidden';" + // 不要な再描画を防止
+                "  });" +
+                "  window.requestAnimationFrame = window.requestAnimationFrame || " +
+                "    window.mozRequestAnimationFrame || " +
+                "    window.webkitRequestAnimationFrame || " +
+                "    window.msRequestAnimationFrame;" +
+                "  function animate() {" +
+                "    requestAnimationFrame(animate);" +
                 "  }" +
+                "  animate();" +
+                "  var canvas = document.createElement('canvas');" +
+                "  canvas.width = window.innerWidth;" +
+                "  canvas.height = window.innerHeight;" +
+                "  document.body.appendChild(canvas);" +
+                "  var ctx = canvas.getContext('2d');" +
+                "  var img = document.querySelector('img');" +
+                "  if (img) ctx.drawImage(img, 0, 0);" +
                 "})();";
     webView.evaluateJavascript(js, null);
     }
     private void injectLazyLoading(WebView webView) {
-        String js = "javascript:(function() {" +
-                    "var images = document.querySelectorAll('img');" +
-                    "var placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';" +
-                    "images.forEach(function(img) {" +
-                    "   if (img.hasAttribute('src')) {" +
-                    "       img.setAttribute('data-src', img.src);" +
-                    "       img.src = placeholder;" +
-                    "   }" +
-                    "});" +
-                    "if ('IntersectionObserver' in window) {" +
-                    "   var observer = new IntersectionObserver(function(entries) {" +
-                    "       entries.forEach(function(entry) {" +
-                    "           if (entry.isIntersecting) {" +
-                    "               var img = entry.target;" +
-                    "               if (img.dataset.src) {" +
-                    "                   img.src = img.dataset.src;" +
-                    "                   img.removeAttribute('data-src');" +
-                    "               }" +
-                    "               observer.unobserve(img);" +
-                    "           }" +
-                    "       });" +
-                    "   });" +
-                    "   images.forEach(function(img) {" +
-                    "       observer.observe(img);" +
-                    "   });" +
-                    "}" +
-                    "})();";
-        webView.evaluateJavascript(js, null);
+    String js = "javascript:(function() {" +
+                "  var placeholder = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';" +
+                "  var images = document.querySelectorAll('img[src^=\"https://i.ytimg.com/\"]');" +
+                "  images.forEach(function(img) {" +
+                "    if (img.hasAttribute('src')) {" +
+                "      img.setAttribute('data-src', img.src);" +
+                "      img.src = placeholder;" +
+                "      img.style.opacity = '0';" +
+                "      img.style.transition = 'opacity 0.3s';" +
+                "    }" +
+                "  });" +
+                "  if ('IntersectionObserver' in window) {" +
+                "    var observer = new IntersectionObserver(function(entries) {" +
+                "      entries.forEach(function(entry) {" +
+                "        if (entry.isIntersecting) {" +
+                "          var img = entry.target;" +
+                "          if (img.dataset.src) {" +
+                "            img.src = img.dataset.src;" +
+                "            img.removeAttribute('data-src');" +
+                "            img.onload = function() {" +
+                "              img.style.opacity = '1';" +
+                "            };" +
+                "          }" +
+                "          observer.unobserve(img);" +
+                "        }" +
+                "      });" +
+                "    }, { root: null, rootMargin: '0px', threshold: 0.1 });" +
+                "    images.forEach(function(img) {" +
+                "      observer.observe(img);" +
+                "    });" +
+                "  } else {" +
+                "    images.forEach(function(img) {" +
+                "      if (img.dataset.src) {" +
+                "        img.src = img.dataset.src;" +
+                "        img.removeAttribute('data-src');" +
+                "        img.style.opacity = '1';" +
+                "      }" +
+                "    });" +
+                "  }" +
+                "})();";
+    webView.evaluateJavascript(js, null);
     }
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
@@ -659,7 +686,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setDisplayZoomControls(false);
         settings.setBuiltInZoomControls(false);
         settings.setSupportZoom(false);
-        settings.setMediaPlaybackRequiresUserGesture(false);
+        settings.setMediaPlaybackRequiresUserGesture(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setOffscreenPreRaster(true);
         }
@@ -2313,7 +2340,7 @@ private void showHistoryDialog() {
         }
         File file = new File(faviconsDir, getFaviconFilename(url));
         try (FileOutputStream fos = new FileOutputStream(file)) {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 60, fos);
         } catch (IOException e) {
             e.printStackTrace();
         }
