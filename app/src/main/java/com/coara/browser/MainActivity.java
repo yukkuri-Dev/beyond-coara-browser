@@ -1483,7 +1483,7 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             if (url.startsWith("https://m.youtube.com/watch") ||
                 (url.startsWith("https://chatgpt.com/") ||
-                url.startsWith("https://m.youtube.com/shorts/")) {
+                (url.startsWith("https://m.youtube.com/shorts/")) {
                 swipeRefreshLayout.setEnabled(false);
                 urlEditText.setText(url);
             } else {
