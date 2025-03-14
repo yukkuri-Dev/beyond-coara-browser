@@ -612,7 +612,7 @@ public class MainActivity extends AppCompatActivity {
                 "  var fixedElements = document.querySelectorAll('.fixed');" +
                 "  fixedElements.forEach(function(el) {" +
                 "    if (el.style.position !== 'fixed') {" +
-                "      el.style.position = 'fixed';"
+                "      el.style.position = 'fixed';" +
                 "    }" +
                 "  });" +
                 "})();";
