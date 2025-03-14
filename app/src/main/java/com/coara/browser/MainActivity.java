@@ -138,6 +138,10 @@ public class MainActivity extends AppCompatActivity {
     private Button btnFindPrev, btnFindNext, btnFindClose;
     private PermissionRequest pendingPermissionRequest = null;
     private ActivityResultLauncher<String[]> permissionRequestLauncher;
+    private final ArrayList<WebView> webViewPool = new ArrayList<>();
+    private static final int MAX_POOL_SIZE = 10;
+    private WebViewClient createCustomWebViewClient() { /* … */ }
+    private WebChromeClient createCustomWebChromeClient() { /* … */ }
 
     private WebView webView;
     private TextInputEditText urlEditText;
@@ -606,6 +610,10 @@ public class MainActivity extends AppCompatActivity {
 
     private WebView createNewWebView() {
         WebView webView;
+        if (!webViewPool.isEmpty()) {
+             webView = webViewPool.remove(0);
+             resetWebView(webView);
+        } else {
         if (preloadedWebView != null) {
             webView = preloadedWebView;
             preloadedWebView = null;
@@ -817,7 +825,38 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-
+        private void resetWebView(WebView webView) {
+                if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
+                   ((ViewGroup) webView.getParent()).removeView(webView);
+                 }
+                     webView.stopLoading();
+                     webView.clearHistory();
+                     webView.clearCache(true);
+                     webView.loadUrl("about:blank");
+         WebSettings settings = webView.getSettings();
+    applyOptimizedSettings(settings);
+    webView.removeJavascriptInterface("AndroidBridge");
+    webView.addJavascriptInterface(new AndroidBridge(), "AndroidBridge");
+    webView.removeJavascriptInterface("BlobDownloader");
+    webView.addJavascriptInterface(new BlobDownloadInterface(), "BlobDownloader");
+    webView.setWebViewClient(createCustomWebViewClient());
+    webView.setWebChromeClient(createCustomWebChromeClient());
+    webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+    webView.setBackgroundColor(Color.WHITE);
+     }
+    private void poolWebView(WebView webView) {
+    webView.stopLoading();
+    webView.clearHistory();
+    webView.clearCache(true);
+    if (webView.getParent() != null && webView.getParent() instanceof ViewGroup) {
+        ((ViewGroup) webView.getParent()).removeView(webView);
+    }
+    if (webViewPool.size() < MAX_POOL_SIZE) {
+        webViewPool.add(webView);
+    } else {
+        webView.destroy();
+        }
+       }
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -1089,6 +1128,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (currentTabIndex >= webViews.size()) {
                     currentTabIndex = webViews.size() - 1;
                 }
+                poolWebView(webView);
                 webViewContainer.removeAllViews();
                 webViewContainer.addView(getCurrentWebView());
                 updateTabCount();
@@ -1303,7 +1343,7 @@ public class MainActivity extends AppCompatActivity {
     private void createNewTab() {
         if (webViews.size() >= MAX_TABS) {
             WebView removed = webViews.remove(0);
-            removed.destroy();
+            poolWebView(removed);
             if (currentTabIndex > 0) {
                 currentTabIndex--;
             }
