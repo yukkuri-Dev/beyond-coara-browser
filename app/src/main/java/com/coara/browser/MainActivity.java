@@ -571,6 +571,7 @@ public class MainActivity extends AppCompatActivity {
     }
     private void applyOptimizedSettings(WebSettings settings) {
         settings.setJavaScriptEnabled(true);
+        settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
