@@ -140,9 +140,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityResultLauncher<String[]> permissionRequestLauncher;
     private final ArrayList<WebView> webViewPool = new ArrayList<>();
     private static final int MAX_POOL_SIZE = 10;
-    private WebViewClient createCustomWebViewClient();
-    private WebChromeClient createCustomWebChromeClient();
-
+    
     private WebView webView;
     private TextInputEditText urlEditText;
     private ImageView faviconImageView;
@@ -226,6 +224,49 @@ public class MainActivity extends AppCompatActivity {
         public String getTitle() { return title; }
         public String getUrl() { return url; }
     }
+    private WebChromeClient createCustomWebChromeClient() {
+    return new WebChromeClient() {
+        private ActivityResultLauncher<Intent> fileChooserLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (filePathCallback == null) return;
+                Uri[] resultUris = (result.getResultCode() == RESULT_OK && result.getData() != null)
+                    ? WebChromeClient.FileChooserParams.parseResult(result.getResultCode(), result.getData())
+                    : null;
+                filePathCallback.onReceiveValue(resultUris);
+                filePathCallback = null;
+            });
+        private WebViewClient createCustomWebViewClient() {
+        return new WebViewClient() {
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            String url = request.getUrl().toString();
+            if (url.startsWith("tel:")) {
+                startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse(url)));
+                return true;
+            } else if (url.startsWith("mailto:")) {
+                startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse(url)));
+                return true;
+            } else if (url.startsWith("intent:")) {
+                try {
+                    Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                    if (intent != null) {
+                        if (intent.resolveActivity(getPackageManager()) != null) {
+                            startActivity(intent);
+                        } else {
+                            String fallbackUrl = intent.getStringExtra("browser_fallback_url");
+                            if (fallbackUrl != null) {
+                                view.loadUrl(fallbackUrl);
+                            }
+                        }
+                        return true;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return false;
+        }
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
