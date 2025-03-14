@@ -1482,16 +1482,16 @@ public class MainActivity extends AppCompatActivity {
     public void onUrlChange(final String url) {
         runOnUiThread(() -> {
             if (url.startsWith("https://m.youtube.com/watch") ||
-                (url.startsWith("https://chatgpt.com/") ||
-                (url.startsWith("https://m.youtube.com/shorts/")) {
+                url.startsWith("https://chatgpt.com/") ||
+                url.startsWith("https://m.youtube.com/shorts/")) {
                 swipeRefreshLayout.setEnabled(false);
                 urlEditText.setText(url);
             } else {
                 swipeRefreshLayout.setEnabled(true);
             }
         });
-      }
     }
+}
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.top_app_bar_menu, menu);
