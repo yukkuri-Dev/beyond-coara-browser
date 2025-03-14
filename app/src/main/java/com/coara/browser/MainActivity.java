@@ -140,8 +140,8 @@ public class MainActivity extends AppCompatActivity {
     private ActivityResultLauncher<String[]> permissionRequestLauncher;
     private final ArrayList<WebView> webViewPool = new ArrayList<>();
     private static final int MAX_POOL_SIZE = 10;
-    private WebViewClient createCustomWebViewClient() { /* … */ }
-    private WebChromeClient createCustomWebChromeClient() { /* … */ }
+    private WebViewClient createCustomWebViewClient();
+    private WebChromeClient createCustomWebChromeClient();
 
     private WebView webView;
     private TextInputEditText urlEditText;
