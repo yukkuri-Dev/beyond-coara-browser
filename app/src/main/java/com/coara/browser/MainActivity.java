@@ -2351,7 +2351,7 @@ private void showHistoryDialog() {
         }
         File file = new File(faviconsDir, getFaviconFilename(url));
         try (FileOutputStream fos = new FileOutputStream(file)) {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 60, fos);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 50, fos);
         } catch (IOException e) {
             e.printStackTrace();
         }
