@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
   <title>スタートページ</title>
   <style>
-    /* 既存のスタイル */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       height: 100%;
@@ -64,7 +63,6 @@
       to { -webkit-transform: rotate(360deg); }
     }
     form { text-align: center; }
-    /* 検索欄とGoボタン用コンテナ */
     .search-container {
       position: relative;
       display: inline-block;
@@ -73,7 +71,6 @@
       width: 80vw;
       max-width: 300px;
       padding: 10px 20px;
-      /* 右側に余白を確保 */
       padding-right: 70px;
       font-size: 16px;
       border: 2px solid #ffb6c1;
@@ -88,7 +85,6 @@
       border-color: #ff69b4;
       box-shadow: 0 6px 8px rgba(255,105,180,0.4);
     }
-    /* かわいいGoボタンのスタイル？ */
     #goButton {
       position: absolute;
       right: 5px;
@@ -209,7 +205,6 @@
       90% { opacity: 1; }
       100% { -webkit-transform: translate(120vw, 0); opacity: 0; }
     }
-    
     #engineToggle {
       margin-top: 10px;
       padding: 8px 14px;
@@ -222,9 +217,7 @@
       font-size: 14px;
       transition: background 0.2s ease;
     }
-    #engineToggle:hover {
-      background: #c14a57;
-    }
+    #engineToggle:hover { background: #c14a57; }
     #engineSelector {
       display: none;
       position: absolute;
@@ -295,30 +288,11 @@
         this.style.webkitAnimation = '';
       }, { once: true });
     });
-  
     const patterns = ['snow', 'feather', 'petal', 'bubble', 'leaf', 'star', 'cloud', 'sparkle'];
-    const patternSymbols = {
-      snow: '❄',
-      feather: '🪶',
-      petal: '❀',
-      bubble: '○',
-      leaf: '🍂',
-      star: '★',
-      cloud: '☁',
-      sparkle: '✨',
-      bird: '🐦'
-    };
-    const patternTop = {
-      snow: "-10vh",
-      feather: "110vh",
-      petal: "-10vh",
-      bubble: "110vh",
-      leaf: "-10vh",
-      star: "110vh",
-      cloud: null,
-      sparkle: null
-    };
+    const patternSymbols = { snow: '❄', feather: '🪶', petal: '❀', bubble: '○', leaf: '🍂', star: '★', cloud: '☁', sparkle: '✨', bird: '🐦' };
+    const patternTop = { snow: "-10vh", feather: "110vh", petal: "-10vh", bubble: "110vh", leaf: "-10vh", star: "110vh", cloud: null, sparkle: null };
     function createFluffy() {
+      if(document.querySelectorAll('.fluffy').length > 50) return;
       const pattern = patterns[Math.floor(Math.random() * patterns.length)];
       const div = document.createElement('div');
       div.classList.add('fluffy', pattern);
@@ -332,7 +306,7 @@
       document.body.appendChild(div);
       setTimeout(function() { div.remove(); }, duration * 1000);
     }
-    setInterval(createFluffy, 500);
+    setInterval(createFluffy, 750);
     function createBird() {
       const div = document.createElement('div');
       div.classList.add('fluffy', 'bird');
@@ -359,8 +333,6 @@
       inputField.style.transform = 'scale(1)';
       inputField.style.webkitTransform = 'scale(1)';
     });
-    
-    // 検索エンジン選択機能
     const searchEngines = {
       google: { action: "https://www.google.com/search", param: "q", placeholder: "Googleで検索" },
       bing: { action: "https://www.bing.com/search", param: "q", placeholder: "Bingで検索" },
@@ -373,15 +345,12 @@
     const notification = document.getElementById('notification');
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
-    
-    // フォーム送信時、検索欄が空なら送信をキャンセル
     searchForm.addEventListener('submit', function(e) {
       if (!searchInput.value.trim()) {
         e.preventDefault();
         return false;
       }
     });
-    
     engineToggle.addEventListener('click', () => {
       if (engineSelector.style.display === 'none' || engineSelector.style.display === '') {
         engineSelector.style.display = 'flex';
@@ -390,7 +359,6 @@
         engineSelector.style.display = 'none';
       }
     });
-    
     engineSelector.querySelectorAll('button').forEach(button => {
       button.addEventListener('click', () => {
         const engineKey = button.getAttribute('data-engine');
