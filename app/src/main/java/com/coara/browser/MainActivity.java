@@ -1534,6 +1534,8 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "この機能はAndroid 10以上で利用可能です", Toast.LENGTH_SHORT).show();
             }
+        } else if (id == R.id.action_Settings) {
+            startActivity(new Intent(MainActivity.this, SettingsActivity.class));
         } else if (id == R.id.action_downloads) {
             startActivity(new Intent(MainActivity.this, DownloadHistoryActivity.class));
         } else if (id == R.id.action_qr) {
