@@ -92,6 +92,11 @@
             android:name=".QrCodeActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true" />
+       
+        <activity
+            android:name=".SettingsActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
