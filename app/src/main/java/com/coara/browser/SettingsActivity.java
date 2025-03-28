@@ -88,7 +88,6 @@ public class SettingsActivity extends AppCompatActivity {
         } catch (Exception e) {
             licenseText.append("ライセンス情報を取得できません");
         }
-        // Markdown をレンダリングして表示するダイアログを表示
         showMarkdownDialog("ライセンス情報", licenseText.toString());
     }
 
