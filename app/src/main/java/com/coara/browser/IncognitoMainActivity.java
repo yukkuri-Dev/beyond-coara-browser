@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class IncognitoMainActivity extends MainActivity {
     private boolean isIncognitoMode = true;
+    private static final String LITE_GOOGLE_URL = "https://www.google.com/?gws_rd=ssl&lite=1";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,6 +21,11 @@ public class IncognitoMainActivity extends MainActivity {
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setBackgroundColor(Color.DKGRAY);
+        
+        WebView initialWebView = createNewWebView();
+        initialWebView.loadUrl(LITE_GOOGLE_URL);
+        addTab(initialWebView);
+        
         handleIntent(getIntent());
     }
 
@@ -36,16 +42,13 @@ public class IncognitoMainActivity extends MainActivity {
         return webView;
     }
 
-  
     @Override
     public void onPageFinished(WebView view, String url) {
         super.onPageFinished(view, url);
-        
         if (!isIncognitoMode) {
             addHistory(url, view.getTitle());
         }
     }
-
 
     @Override
     protected void onPause() {
@@ -55,10 +58,8 @@ public class IncognitoMainActivity extends MainActivity {
                 webView.clearHistory();        
                 webView.clearCache(true);    
             }
-          
             CookieManager.getInstance().removeAllCookies(null);
             CookieManager.getInstance().flush();
-        
             WebViewDatabase.getInstance(this).clearFormData();
         }
     }
@@ -74,7 +75,6 @@ public class IncognitoMainActivity extends MainActivity {
 
     @Override
     protected void handleIntent(Intent intent) {
-        super.handleIntent(intent);
         if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
             String url = intent.getDataString();
             if (url != null) {
