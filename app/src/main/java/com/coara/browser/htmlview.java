@@ -20,6 +20,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -50,6 +52,7 @@ import java.util.regex.Pattern;
 
 public class htmlview extends AppCompatActivity {
 
+    
     private static final int TAG_COLOR = 0xFF0000FF;       // 青
     private static final int ATTRIBUTE_COLOR = 0xFF008000; // 緑
     private static final int VALUE_COLOR = 0xFFB22222;     // 赤
@@ -64,6 +67,7 @@ public class htmlview extends AppCompatActivity {
     private FloatingActionButton revertFab;
     private RelativeLayout searchOverlay;
     private EditText searchQueryEditText;
+    private TextView searchResultCountTextView;
     private Button searchNextButton, searchPrevButton, closeSearchButton;
 
     private String originalHtml = "";
@@ -74,13 +78,16 @@ public class htmlview extends AppCompatActivity {
     private long lastUndoTimestamp = 0;
     private static final long UNDO_THRESHOLD = 1000;
 
+
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final Pattern ATTR_PATTERN = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
-    private final ArrayList<Integer> searchMatchPositions = new ArrayList<>();
+    private ArrayList<Integer> searchMatchPositions = new ArrayList<>();
     private int currentSearchIndex = -1;
+
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler uiHandler = new Handler();
+
 
     private Runnable highlightRunnable;
 
@@ -89,6 +96,7 @@ public class htmlview extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.htmlview);
 
+    
         urlInput = findViewById(R.id.urlInput);
         loadButton = findViewById(R.id.loadButton);
         loadFromStorageButton = findViewById(R.id.loadFromStorageButton);
@@ -99,13 +107,15 @@ public class htmlview extends AppCompatActivity {
         searchButton = findViewById(R.id.searchButton);
         searchOverlay = findViewById(R.id.searchOverlay);
         searchQueryEditText = findViewById(R.id.searchQueryEditText);
+        searchResultCountTextView = findViewById(R.id.searchResultCountTextView);
         searchNextButton = findViewById(R.id.searchNextButton);
         searchPrevButton = findViewById(R.id.searchPrevButton);
         closeSearchButton = findViewById(R.id.closeSearchButton);
 
-    
+        
         htmlEditText.setKeyListener(null);
 
+        
         loadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -122,6 +132,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
+        
         loadFromStorageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -132,6 +143,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
+    
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -139,8 +151,7 @@ public class htmlview extends AppCompatActivity {
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
                     lastUndoTimestamp = System.currentTimeMillis();
-                
-            
+                    
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -149,6 +160,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
+        
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
             @Override
@@ -199,6 +211,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
+        
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -232,6 +245,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
+        
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -250,17 +264,12 @@ public class htmlview extends AppCompatActivity {
     
         searchButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 showSearchOverlay();
-                searchButton.animate().alpha(0f).setDuration(200).withEndAction(new Runnable() {
-                    @Override
-                    public void run() {
-                        searchButton.setClickable(false);
-                    }
-                });
             }
         });
 
+    
         searchQueryEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
@@ -272,32 +281,29 @@ public class htmlview extends AppCompatActivity {
             public void afterTextChanged(Editable s) { }
         });
 
+        
         searchNextButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 moveToNextSearchMatch();
             }
         });
         searchPrevButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 moveToPreviousSearchMatch();
             }
         });
 
+        
         closeSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 hideSearchOverlay();
-                searchButton.animate().alpha(1f).setDuration(200).withStartAction(new Runnable() {
-                    @Override
-                    public void run() {
-                        searchButton.setClickable(true);
-                    }
-                });
             }
         });
 
+    
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             htmlEditText.setOnScrollChangeListener(new View.OnScrollChangeListener() {
                 @Override
@@ -326,18 +332,21 @@ public class htmlview extends AppCompatActivity {
         searchOverlay.setVisibility(View.VISIBLE);
         searchQueryEditText.requestFocus();
         searchQueryEditText.setText("");
+        searchResultCountTextView.setText("件数: 0");
         searchMatchPositions.clear();
         currentSearchIndex = -1;
     }
 
+
     private void hideSearchOverlay() {
-        searchOverlay.setVisibility(View.INVISIBLE);
+        searchOverlay.setVisibility(View.GONE);
         Editable text = htmlEditText.getText();
         Object[] bgSpans = text.getSpans(0, text.length(), BackgroundColorSpan.class);
         for (Object span : bgSpans) {
             text.removeSpan(span);
         }
     }
+
 
     private void performSearch(final String query) {
         executor.execute(new Runnable() {
@@ -352,10 +361,12 @@ public class htmlview extends AppCompatActivity {
                         index = text.indexOf(query, index + query.length());
                     }
                 }
+                final int count = searchMatchPositions.size();
                 uiHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (!searchMatchPositions.isEmpty()) {
+                        searchResultCountTextView.setText("件数: " + count);
+                        if (count > 0) {
                             currentSearchIndex = 0;
                             highlightCurrentSearchMatch();
                         }
@@ -364,6 +375,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
     }
+
 
     private void highlightCurrentSearchMatch() {
         Editable text = htmlEditText.getText();
@@ -395,6 +407,7 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
+    
     private void fetchHtml(final String urlString) {
         isLoading = true;
         executor.execute(new Runnable() {
@@ -455,6 +468,7 @@ public class htmlview extends AppCompatActivity {
         });
     }
 
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CODE_PICK_HTML && resultCode == Activity.RESULT_OK) {
@@ -467,6 +481,7 @@ public class htmlview extends AppCompatActivity {
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
+
 
     private void readHtmlFromUri(final Uri uri) {
         isLoading = true;
@@ -522,6 +537,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
     }
+
 
     private int[][] getHighlightSpans(String text) {
         ArrayList<int[]> spans = new ArrayList<>();
@@ -592,6 +608,7 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
+    
     private void saveHtmlToFile() {
         final String currentText = htmlEditText.getText().toString();
         final String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
@@ -627,7 +644,7 @@ public class htmlview extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-            @NonNull String[] permissions, @NonNull int[] grantResults) {
+                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == REQUEST_PERMISSION_WRITE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 saveHtmlToFile();
