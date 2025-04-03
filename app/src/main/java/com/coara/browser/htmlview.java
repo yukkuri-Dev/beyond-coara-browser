@@ -2,7 +2,6 @@ package com.coara.browser;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.Editable;
@@ -22,37 +21,44 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Stack;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class htmlview extends AppCompatActivity {
 
     private EditText urlInput;
-    private Button loadButton;
-    private Button editButton;
-    private Button saveButton;
+    private Button loadButton, editButton, saveButton;
     private EditText htmlEditText;
     private FloatingActionButton revertFab;
 
     private String originalHtml = "";
-
-    private Stack<String> editHistory = new Stack<>();
+    private final Stack<String> editHistory = new Stack<>();
 
     private boolean isEditing = false;
-    
     private boolean isUpdating = false;
 
     private static final int REQUEST_PERMISSION_WRITE = 100;
+
+
+    private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
+    private static final Pattern ATTR_PATTERN = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
+
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,16 +72,15 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
-        
+    
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                String urlString = urlInput.getText().toString().trim();
-                if (urlString.startsWith("http://") || urlString.startsWith("https://")) {
-                    new FetchHtmlTask().execute(urlString);
+                String urlStr = urlInput.getText().toString().trim();
+                if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
+                    fetchHtml(urlStr);
                 } else {
                     Toast.makeText(htmlview.this, "正しいURLを入力してください", Toast.LENGTH_SHORT).show();
                 }
@@ -85,14 +90,9 @@ public class htmlview extends AppCompatActivity {
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 if (!isEditing) {
-                
                     editHistory.clear();
-                
                     editHistory.push(htmlEditText.getText().toString());
-                    
-                
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -101,38 +101,31 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-        
+    
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
-
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                 if (!isUpdating && isEditing) {
                     beforeChange = s.toString();
                 }
             }
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                
             }
-
             @Override
             public void afterTextChanged(Editable s) {
                 if (!isUpdating && isEditing) {
                     String newText = s.toString();
                     if (!newText.equals(beforeChange)) {
-                    
                         if (editHistory.isEmpty() || !editHistory.peek().equals(beforeChange)) {
                             editHistory.push(beforeChange);
                         }
-                
                         isUpdating = true;
                         int selectionStart = htmlEditText.getSelectionStart();
                         int selectionEnd = htmlEditText.getSelectionEnd();
                         Spannable highlighted = highlightHtml(newText);
                         htmlEditText.setText(highlighted);
-                    
                         if (selectionStart <= htmlEditText.getText().length() &&
                             selectionEnd <= htmlEditText.getText().length()) {
                             htmlEditText.setSelection(selectionStart, selectionEnd);
@@ -146,10 +139,8 @@ public class htmlview extends AppCompatActivity {
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 if (isEditing) {
                     if (!editHistory.isEmpty()) {
-                    
                         String previousText = editHistory.pop();
                         isUpdating = true;
                         int selectionStart = htmlEditText.getSelectionStart();
@@ -172,7 +163,6 @@ public class htmlview extends AppCompatActivity {
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 if (ContextCompat.checkSelfPermission(htmlview.this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -186,105 +176,114 @@ public class htmlview extends AppCompatActivity {
         });
     }
 
-    private class FetchHtmlTask extends AsyncTask<String, Void, String> {
-        @Override
-        protected String doInBackground(String... params) {
-            String urlString = params[0];
-            StringBuilder result = new StringBuilder();
-            try {
-                URL url = new URL(urlString);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setUseCaches(false);
-                connection.setInstanceFollowRedirects(true);
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(10000);
-                connection.setReadTimeout(10000);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    result.append(line).append("\n");
+    private void fetchHtml(final String urlString) {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                final StringBuilder result = new StringBuilder();
+                try {
+                    URL url = new URL(urlString);
+                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                    connection.setUseCaches(false);
+                    connection.setInstanceFollowRedirects(true);
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(10000);
+                    connection.setReadTimeout(10000);
+                    BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        result.append(line).append('\n');
+                    }
+                    reader.close();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            originalHtml = result.toString();
+                            isEditing = false;
+                            editHistory.clear();
+                            Spannable highlighted = highlightHtml(originalHtml);
+                            htmlEditText.setText(highlighted);
+                            htmlEditText.setKeyListener(null);
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(htmlview.this, "HTMLの取得に失敗しました", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 }
-                reader.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-                return null;
             }
-            return result.toString();
-        }
-
-        @Override
-        protected void onPostExecute(String html) {
-            if (html != null) {
-                originalHtml = html;
-                isEditing = false;
-                editHistory.clear();
-
-        
-                Spannable highlighted = highlightHtml(html);
-                htmlEditText.setText(highlighted);
-                htmlEditText.setKeyListener(null);
-            } else {
-                Toast.makeText(htmlview.this, "HTMLの取得に失敗しました", Toast.LENGTH_SHORT).show();
-            }
-        }
+        });
     }
 
     private Spannable highlightHtml(String html) {
         SpannableString spannable = new SpannableString(html);
+        int tagColor = 0xFF0000FF;       
+        int attributeColor = 0xFF008000; 
+        int valueColor = 0xFFB22222;     
 
-        int tagColor = 0xFF0000FF;
-        int attributeColor = 0xFF008000;
-        int valueColor = 0xFFB22222;
-
-        Pattern tagPattern = Pattern.compile("<[^>]+>");
-        Matcher tagMatcher = tagPattern.matcher(html);
+        Matcher tagMatcher = TAG_PATTERN.matcher(html);
         while (tagMatcher.find()) {
+            int tagStart = tagMatcher.start();
+            int tagEnd = tagMatcher.end();
             spannable.setSpan(new ForegroundColorSpan(tagColor),
-                    tagMatcher.start(), tagMatcher.end(),
-                    Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-            String tagText = html.substring(tagMatcher.start(), tagMatcher.end());
-            Pattern attrPattern = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
-            Matcher attrMatcher = attrPattern.matcher(tagText);
+                    tagStart, tagEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            String tagText = html.substring(tagStart, tagEnd);
+            Matcher attrMatcher = ATTR_PATTERN.matcher(tagText);
             while (attrMatcher.find()) {
-                int attrNameStart = tagMatcher.start() + attrMatcher.start(1);
-                int attrNameEnd = tagMatcher.start() + attrMatcher.end(1);
+                int attrNameStart = tagStart + attrMatcher.start(1);
+                int attrNameEnd = tagStart + attrMatcher.end(1);
                 spannable.setSpan(new ForegroundColorSpan(attributeColor),
-                        attrNameStart, attrNameEnd,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-
-                int attrValueStart = tagMatcher.start() + attrMatcher.start(2);
-                int attrValueEnd = tagMatcher.start() + attrMatcher.end(2);
+                        attrNameStart, attrNameEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                int attrValueStart = tagStart + attrMatcher.start(2);
+                int attrValueEnd = tagStart + attrMatcher.end(2);
                 spannable.setSpan(new ForegroundColorSpan(valueColor),
-                        attrValueStart, attrValueEnd,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        attrValueStart, attrValueEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
         }
         return spannable;
     }
 
     private void saveHtmlToFile() {
-        String currentText = htmlEditText.getText().toString();
-
-        boolean isEdited = !currentText.equals(originalHtml);
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String fileName = timeStamp + (isEdited ? "Edit.html" : ".html");
-        File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        File file = new File(downloadDir, fileName);
-        try {
-            FileOutputStream fos = new FileOutputStream(file);
-            fos.write(currentText.getBytes("UTF-8"));
-            fos.close();
-            Toast.makeText(htmlview.this, "保存しました: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(htmlview.this, "保存に失敗しました", Toast.LENGTH_SHORT).show();
-        }
+        final String currentText = htmlEditText.getText().toString();
+        final String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        final String fileName = timeStamp + (!currentText.equals(originalHtml) ? "Edit.html" : ".html");
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File file = new File(downloadDir, fileName);
+                    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
+                    bos.write(currentText.getBytes(StandardCharsets.UTF_8));
+                    bos.flush();
+                    bos.close();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(htmlview.this, "保存しました: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(htmlview.this, "保存に失敗しました", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+        });
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-           @NonNull String[] permissions, @NonNull int[] grantResults) {
+            @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == REQUEST_PERMISSION_WRITE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 saveHtmlToFile();
