@@ -1548,6 +1548,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(MainActivity.this, num.class));
         } else if (id == R.id.action_asciiart) {
             startActivity(new Intent(MainActivity.this, asciiart.class));
+        } else if (id == R.id.action_htmlview) {
+            startActivity(new Intent(MainActivity.this, htmlview.class));
         } else if (id == R.id.action_bookmark_management) {
             showBookmarksManagementDialog();
         } else if (id == R.id.action_find_in_page) {
