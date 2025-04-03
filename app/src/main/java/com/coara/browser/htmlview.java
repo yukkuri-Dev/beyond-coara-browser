@@ -43,6 +43,7 @@ public class htmlview extends AppCompatActivity {
         System.loadLibrary("highlight_native");
     }
     
+    
     public static native int[][] diffHighlightNative(String oldText, String newText);
     
     private EditText urlInput;
@@ -51,6 +52,7 @@ public class htmlview extends AppCompatActivity {
     private FloatingActionButton revertFab;
     
     private String originalHtml = "";
+    
     private final Stack<String> editHistory = new Stack<>();
     
     private boolean isEditing = false;
@@ -61,7 +63,7 @@ public class htmlview extends AppCompatActivity {
     private static final int REQUEST_PERMISSION_WRITE = 100;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler uiHandler = new Handler();
-    
+
     private Runnable highlightRunnable;
     
     @Override
@@ -76,7 +78,7 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
-
+    
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
@@ -99,18 +101,18 @@ public class htmlview extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!isEditing) {
-                
+                    
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
-                
+                    
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
                     Toast.makeText(htmlview.this, "編集モードに入りました", Toast.LENGTH_SHORT).show();
                 }
             }
-        })
-            
+        });
+        
         
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
@@ -134,13 +136,13 @@ public class htmlview extends AppCompatActivity {
                     if (!newText.equals(beforeChange)) {
                         editHistory.push(beforeChange);
                     }
-                
+                    
                     highlightRunnable = new Runnable() {
                         @Override
                         public void run() {
                             if (!isUpdating) {
                                 isUpdating = true;
-                                
+                            
                                 executor.execute(new Runnable() {
                                     @Override
                                     public void run() {
@@ -170,11 +172,11 @@ public class htmlview extends AppCompatActivity {
                     if (!editHistory.isEmpty()) {
                         final String previousText = editHistory.pop();
                         isUpdating = true;
-                    
+            
                         Editable editable = htmlEditText.getText();
                         int curPos = htmlEditText.getSelectionStart();
                         editable.replace(0, editable.length(), previousText);
-                        
+                    
                         executor.execute(new Runnable() {
                             @Override
                             public void run() {
@@ -242,11 +244,11 @@ public class htmlview extends AppCompatActivity {
                             originalHtml = result.toString();
                             isEditing = false;
                             editHistory.clear();
-                            
+                        
                             Editable editable = htmlEditText.getText();
                             editable.clear();
                             editable.append(originalHtml);
-                            
+                        
                             executor.execute(new Runnable() {
                                 @Override
                                 public void run() {
@@ -278,7 +280,7 @@ public class htmlview extends AppCompatActivity {
         });
     }
     
-
+    
     private void applyHighlight(Editable editable, int[][] spans) {
         if (spans != null) {
         
@@ -286,7 +288,7 @@ public class htmlview extends AppCompatActivity {
             for (Object span : oldSpans) {
                 editable.removeSpan(span);
             }
-        
+            
             for (int[] span : spans) {
                 if (span.length == 3) {
                     int start = span[0];
