@@ -2,10 +2,11 @@
 <RelativeLayout 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"    
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-  
+
     <LinearLayout
         android:id="@+id/topLayout"
         android:layout_width="match_parent"
@@ -25,15 +26,32 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="読み込み" />
+
+        <Button
+            android:id="@+id/loadFromStorageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Storage読み込み"
+            android:layout_marginStart="8dp"/>
     </LinearLayout>
 
     
+    <Button
+        android:id="@+id/searchButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="検索"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@id/topLayout"
+        android:layout_margin="8dp"/>
+
+
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/topLayout"
-        android:layout_above="@+id/bottomLayout"
+        android:layout_above="@id/bottomLayout"
         android:padding="8dp">
 
         <EditText
@@ -49,7 +67,7 @@
             android:focusable="true" />
     </ScrollView>
 
-  
+    
     <LinearLayout
         android:id="@+id/bottomLayout"
         android:layout_width="match_parent"
@@ -73,7 +91,7 @@
             android:layout_marginStart="16dp"/>
     </LinearLayout>
 
-    
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/revertFab"
         android:layout_width="wrap_content"
