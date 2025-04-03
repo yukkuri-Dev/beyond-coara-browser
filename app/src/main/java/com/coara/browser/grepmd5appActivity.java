@@ -44,7 +44,7 @@ public class grepmd5appActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_grep);
 
         Button selectFileButton = findViewById(R.id.selectFileButton);
         Button grepButton = findViewById(R.id.grepButton);
