@@ -2,6 +2,7 @@ package com.coara.browser;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -42,9 +43,13 @@ import java.util.regex.Pattern;
 
 public class htmlview extends AppCompatActivity {
 
+    
     private static final int TAG_COLOR = 0xFF0000FF;       // 青
     private static final int ATTRIBUTE_COLOR = 0xFF008000; // 緑
     private static final int VALUE_COLOR = 0xFFB22222;     // 茶
+
+    
+    private static final int LARGE_TEXT_THRESHOLD = 10000;
 
     private EditText urlInput;
     private Button loadButton, editButton, saveButton;
@@ -52,6 +57,7 @@ public class htmlview extends AppCompatActivity {
     private FloatingActionButton revertFab;
 
     private String originalHtml = "";
+    
     private final Stack<String> editHistory = new Stack<>();
 
     private boolean isEditing = false;
@@ -63,7 +69,6 @@ public class htmlview extends AppCompatActivity {
 
     
     private long lastUndoTimestamp = 0;
-
     private static final long UNDO_THRESHOLD = 1000;
 
     
@@ -72,7 +77,7 @@ public class htmlview extends AppCompatActivity {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler uiHandler = new Handler();
-    
+
     private Runnable highlightRunnable;
 
     @Override
@@ -87,7 +92,7 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
-    
+        
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
@@ -110,12 +115,11 @@ public class htmlview extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!isEditing) {
-                
+                    
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
-                
                     lastUndoTimestamp = System.currentTimeMillis();
-                    
+                
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -124,7 +128,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-    
+        
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
             @Override
@@ -144,12 +148,11 @@ public class htmlview extends AppCompatActivity {
                 if (!isUpdating && isEditing) {
                     final String newText = s.toString();
                     long now = System.currentTimeMillis();
-            
+                
                     if (now - lastUndoTimestamp > UNDO_THRESHOLD) {
                         editHistory.push(beforeChange);
                         lastUndoTimestamp = now;
                     }
-                    
                     highlightRunnable = new Runnable() {
                         @Override
                         public void run() {
@@ -225,9 +228,33 @@ public class htmlview extends AppCompatActivity {
                 }
             }
         });
+
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            htmlEditText.setOnScrollChangeListener(new View.OnScrollChangeListener() {
+                @Override
+                public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                    if (!isUpdating && htmlEditText.getText().length() > LARGE_TEXT_THRESHOLD) {
+                        final String currentText = htmlEditText.getText().toString();
+                        executor.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                final int[][] spans = getHighlightSpans(currentText);
+                                uiHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        applyHighlight(htmlEditText.getText(), spans);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        }
     }
 
-    
+
     private void fetchHtml(final String urlString) {
         isLoading = true;
         executor.execute(new Runnable() {
@@ -266,7 +293,7 @@ public class htmlview extends AppCompatActivity {
                                         @Override
                                         public void run() {
                                             applyHighlight(htmlEditText.getText(), spans);
-                                            
+                                        
                                             htmlEditText.setKeyListener(null);
                                             isLoading = false;
                                         }
@@ -292,20 +319,44 @@ public class htmlview extends AppCompatActivity {
     
     private int[][] getHighlightSpans(String text) {
         ArrayList<int[]> spans = new ArrayList<>();
-        Matcher tagMatcher = TAG_PATTERN.matcher(text);
-        while (tagMatcher.find()) {
-            int tagStart = tagMatcher.start();
-            int tagEnd = tagMatcher.end();
-            spans.add(new int[]{tagStart, tagEnd, TAG_COLOR});
-            String tagText = text.substring(tagStart, tagEnd);
-            Matcher attrMatcher = ATTR_PATTERN.matcher(tagText);
-            while (attrMatcher.find()) {
-                int attrNameStart = tagStart + attrMatcher.start(1);
-                int attrNameEnd = tagStart + attrMatcher.end(1);
-                spans.add(new int[]{attrNameStart, attrNameEnd, ATTRIBUTE_COLOR});
-                int attrValueStart = tagStart + attrMatcher.start(2);
-                int attrValueEnd = tagStart + attrMatcher.end(2);
-                spans.add(new int[]{attrValueStart, attrValueEnd, VALUE_COLOR});
+        if (text.length() > LARGE_TEXT_THRESHOLD && htmlEditText.getLayout() != null) {
+            int firstVisibleLine = htmlEditText.getLayout().getLineForVertical(htmlEditText.getScrollY());
+            int lastVisibleLine = htmlEditText.getLayout().getLineForVertical(htmlEditText.getScrollY() + htmlEditText.getHeight());
+            int visibleStart = htmlEditText.getLayout().getLineStart(firstVisibleLine);
+            int visibleEnd = htmlEditText.getLayout().getLineEnd(lastVisibleLine);
+            String visibleText = text.substring(visibleStart, visibleEnd);
+            Matcher tagMatcher = TAG_PATTERN.matcher(visibleText);
+            while (tagMatcher.find()) {
+                int tagStart = visibleStart + tagMatcher.start();
+                int tagEnd = visibleStart + tagMatcher.end();
+                spans.add(new int[]{tagStart, tagEnd, TAG_COLOR});
+                String tagText = text.substring(tagStart, tagEnd);
+                Matcher attrMatcher = ATTR_PATTERN.matcher(tagText);
+                while (attrMatcher.find()) {
+                    int attrNameStart = tagStart + attrMatcher.start(1);
+                    int attrNameEnd = tagStart + attrMatcher.end(1);
+                    spans.add(new int[]{attrNameStart, attrNameEnd, ATTRIBUTE_COLOR});
+                    int attrValueStart = tagStart + attrMatcher.start(2);
+                    int attrValueEnd = tagStart + attrMatcher.end(2);
+                    spans.add(new int[]{attrValueStart, attrValueEnd, VALUE_COLOR});
+                }
+            }
+        } else {
+            Matcher tagMatcher = TAG_PATTERN.matcher(text);
+            while (tagMatcher.find()) {
+                int tagStart = tagMatcher.start();
+                int tagEnd = tagMatcher.end();
+                spans.add(new int[]{tagStart, tagEnd, TAG_COLOR});
+                String tagText = text.substring(tagStart, tagEnd);
+                Matcher attrMatcher = ATTR_PATTERN.matcher(tagText);
+                while (attrMatcher.find()) {
+                    int attrNameStart = tagStart + attrMatcher.start(1);
+                    int attrNameEnd = tagStart + attrMatcher.end(1);
+                    spans.add(new int[]{attrNameStart, attrNameEnd, ATTRIBUTE_COLOR});
+                    int attrValueStart = tagStart + attrMatcher.start(2);
+                    int attrValueEnd = tagStart + attrMatcher.end(2);
+                    spans.add(new int[]{attrValueStart, attrValueEnd, VALUE_COLOR});
+                }
             }
         }
         int[][] result = new int[spans.size()][3];
