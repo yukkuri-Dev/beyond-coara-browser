@@ -14,7 +14,7 @@ android {
         multiDexEnabled = true
         externalNativeBuild {
         cmake {
-        cppFlags "-std=c++11 -O3 -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2 -fPIE -pie"
+        cppFlags ""
          }
       }
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -41,7 +41,6 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
-            jniDebuggable false
             debuggable false
             signingConfig signingConfigs.release
         }

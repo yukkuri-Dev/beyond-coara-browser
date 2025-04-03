@@ -35,8 +35,6 @@ import java.util.Locale;
 import java.util.Stack;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class htmlview extends AppCompatActivity {
 
@@ -54,10 +52,6 @@ public class htmlview extends AppCompatActivity {
     private static final int REQUEST_PERMISSION_WRITE = 100;
 
 
-    private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
-    private static final Pattern ATTR_PATTERN = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
-
-
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -72,7 +66,7 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
-    
+        
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
@@ -101,7 +95,6 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-    
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
             @Override
@@ -221,29 +214,13 @@ public class htmlview extends AppCompatActivity {
     }
 
     private Spannable highlightHtml(String html) {
+        int[][] nativeSpans = HighlightNative.highlightHtmlNative(html);
         SpannableString spannable = new SpannableString(html);
-        int tagColor = 0xFF0000FF;       
-        int attributeColor = 0xFF008000; 
-        int valueColor = 0xFFB22222;     
-
-        Matcher tagMatcher = TAG_PATTERN.matcher(html);
-        while (tagMatcher.find()) {
-            int tagStart = tagMatcher.start();
-            int tagEnd = tagMatcher.end();
-            spannable.setSpan(new ForegroundColorSpan(tagColor),
-                    tagStart, tagEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            String tagText = html.substring(tagStart, tagEnd);
-            Matcher attrMatcher = ATTR_PATTERN.matcher(tagText);
-            while (attrMatcher.find()) {
-                int attrNameStart = tagStart + attrMatcher.start(1);
-                int attrNameEnd = tagStart + attrMatcher.end(1);
-                spannable.setSpan(new ForegroundColorSpan(attributeColor),
-                        attrNameStart, attrNameEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                int attrValueStart = tagStart + attrMatcher.start(2);
-                int attrValueEnd = tagStart + attrMatcher.end(2);
-                spannable.setSpan(new ForegroundColorSpan(valueColor),
-                        attrValueStart, attrValueEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            }
+        for (int[] span : nativeSpans) {
+            int start = span[0];
+            int end = span[1];
+            int color = span[2];
+            spannable.setSpan(new ForegroundColorSpan(color), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         return spannable;
     }
