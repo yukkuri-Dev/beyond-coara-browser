@@ -7,7 +7,6 @@ import android.os.Environment;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
-import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.Button;
@@ -38,6 +37,12 @@ import java.util.concurrent.Executors;
 
 public class htmlview extends AppCompatActivity {
 
+    static {
+        System.loadLibrary("highlight_native");
+    }
+    
+    public static native int[][] highlightHtmlNative(String html);
+
     private EditText urlInput;
     private Button loadButton, editButton, saveButton;
     private EditText htmlEditText;
@@ -50,8 +55,6 @@ public class htmlview extends AppCompatActivity {
     private boolean isUpdating = false;
 
     private static final int REQUEST_PERMISSION_WRITE = 100;
-
-
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -87,6 +90,7 @@ public class htmlview extends AppCompatActivity {
                 if (!isEditing) {
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
+                
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -95,7 +99,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-        htmlEditText.addTextChangedListener(new TextWatcher() {
+        htmlEditText.addTextChangedListener(new android.text.TextWatcher() {
             private String beforeChange;
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -117,10 +121,11 @@ public class htmlview extends AppCompatActivity {
                         isUpdating = true;
                         int selectionStart = htmlEditText.getSelectionStart();
                         int selectionEnd = htmlEditText.getSelectionEnd();
+                    
                         Spannable highlighted = highlightHtml(newText);
                         htmlEditText.setText(highlighted);
                         if (selectionStart <= htmlEditText.getText().length() &&
-                            selectionEnd <= htmlEditText.getText().length()) {
+                                selectionEnd <= htmlEditText.getText().length()) {
                             htmlEditText.setSelection(selectionStart, selectionEnd);
                         }
                         isUpdating = false;
@@ -141,7 +146,7 @@ public class htmlview extends AppCompatActivity {
                         Spannable highlighted = highlightHtml(previousText);
                         htmlEditText.setText(highlighted);
                         if (selectionStart <= htmlEditText.getText().length() &&
-                            selectionEnd <= htmlEditText.getText().length()) {
+                                selectionEnd <= htmlEditText.getText().length()) {
                             htmlEditText.setSelection(selectionStart, selectionEnd);
                         }
                         isUpdating = false;
@@ -168,7 +173,6 @@ public class htmlview extends AppCompatActivity {
             }
         });
     }
-
     private void fetchHtml(final String urlString) {
         executor.execute(new Runnable() {
             @Override
@@ -214,13 +218,20 @@ public class htmlview extends AppCompatActivity {
     }
 
     private Spannable highlightHtml(String html) {
-        int[][] nativeSpans = HighlightNative.highlightHtmlNative(html);
+        int[][] spans = highlightHtmlNative(html);
         SpannableString spannable = new SpannableString(html);
-        for (int[] span : nativeSpans) {
-            int start = span[0];
-            int end = span[1];
-            int color = span[2];
-            spannable.setSpan(new ForegroundColorSpan(color), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (spans != null) {
+            for (int[] span : spans) {
+                if (span.length == 3) {
+                    int start = span[0];
+                    int end = span[1];
+                    int color = span[2];
+                    if (start >= 0 && end <= html.length() && start < end) {
+                        spannable.setSpan(new ForegroundColorSpan(color),
+                                start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                }
+            }
         }
         return spannable;
     }
@@ -260,7 +271,7 @@ public class htmlview extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-            @NonNull String[] permissions, @NonNull int[] grantResults) {
+                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == REQUEST_PERMISSION_WRITE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 saveHtmlToFile();
