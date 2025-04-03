@@ -9,8 +9,8 @@
         android:shortcutLongLabel="@string/qrcode_long_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.coara.browser"
-            android:targetClass="com.coara.browser.QrCodeActivity" />
+            android:targetPackage="com.coara.browserV2"
+            android:targetClass="com.coara.browserV2.QrCodeActivity" />
     </shortcut>
   
     <shortcut
@@ -21,8 +21,8 @@
         android:shortcutLongLabel="@string/pagedl_long_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.coara.browser"
-            android:targetClass="com.coara.browser.pagedl" />
+            android:targetPackage="com.coara.browserV2"
+            android:targetClass="com.coara.browserV2.pagedl" />
     </shortcut>
 
     <shortcut
@@ -33,8 +33,8 @@
         android:shortcutLongLabel="@string/asciiart_long_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.coara.browser"
-            android:targetClass="com.coara.browser.asciiart" />
+            android:targetPackage="com.coara.browserV2"
+            android:targetClass="com.coara.browserV2.asciiart" />
     </shortcut>
 
     <shortcut
@@ -45,8 +45,8 @@
         android:shortcutLongLabel="@string/txtphoto_long_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.coara.browser"
-            android:targetClass="com.coara.browser.txtphoto" />
+            android:targetPackage="com.coara.browserV2"
+            android:targetClass="com.coara.browserV2.txtphoto" />
     </shortcut>
 
 </shortcuts>

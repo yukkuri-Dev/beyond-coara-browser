@@ -1,4 +1,4 @@
-package com.coara.browser;
+package com.coara.browserV2;
 
 import android.Manifest;
 import android.app.Activity;

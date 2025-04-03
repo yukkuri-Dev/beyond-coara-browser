@@ -1,4 +1,4 @@
-package com.coara.browser;
+package com.coara.browserV2;
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;

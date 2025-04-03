@@ -30,7 +30,7 @@
         android:allowBackup="false"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="Coara browser"
+        android:label="Beyond Coara browser"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.MaterialComponents.Light.NoActionBar">
@@ -110,7 +110,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.coara.browser.fileprovider"
+            android:authorities="com.coara.browserV2.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

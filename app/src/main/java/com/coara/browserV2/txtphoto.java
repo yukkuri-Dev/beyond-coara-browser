@@ -1,7 +1,6 @@
-package com.coara.browser;
+package com.coara.browserV2;
 
 import android.app.Activity;
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;

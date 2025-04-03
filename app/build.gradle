@@ -4,7 +4,7 @@ plugins {
 
 android {
     compileSdk = 35
-    namespace = 'com.coara.browser'
+    namespace = 'com.coara.browserV2'
 
     defaultConfig {
         minSdk = 24

@@ -1,4 +1,4 @@
-package com.coara.browser;
+package com.coara.browserV2;
 
 import android.Manifest;
 import android.app.Activity;
@@ -37,7 +37,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.CookieManager;
-import android.webkit.DownloadListener;
 import android.webkit.WebViewDatabase;
 import android.webkit.HttpAuthHandler;
 import android.webkit.URLUtil;
@@ -66,7 +65,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;

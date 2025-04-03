@@ -1,4 +1,4 @@
-package com.coara.browser;
+package com.coara.browserV2;
 
 import android.os.Bundle;
 import android.os.Environment;
