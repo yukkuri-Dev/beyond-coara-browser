@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    compileSdk = 35 
+    compileSdk = 35
     namespace = 'com.coara.browser'
 
     defaultConfig {
@@ -12,9 +12,7 @@ android {
         versionCode = 185
         versionName = "4.1.19"
         multiDexEnabled = true
-      }
-        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-      }
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
@@ -39,6 +37,7 @@ android {
             shrinkResources true
             debuggable false
             signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -56,6 +55,7 @@ android {
             version "3.22.1"
         }
     }
+    
     ndkVersion "25.1.8937393" 
 }
 
