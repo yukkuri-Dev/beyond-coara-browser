@@ -12,10 +12,6 @@ android {
         versionCode = 185
         versionName = "4.1.19"
         multiDexEnabled = true
-        externalNativeBuild {
-        cmake {
-        cppFlags ""
-         }
       }
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
       }
@@ -60,6 +56,7 @@ android {
             version "3.22.1"
         }
     }
+    ndkVersion "25.1.8937393" 
 }
 
 tasks.withType(JavaCompile).configureEach {
