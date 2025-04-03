@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 
 public class htmlview extends AppCompatActivity {
 
-
     private static final int TAG_COLOR = 0xFF0000FF;       // 青
     private static final int ATTRIBUTE_COLOR = 0xFF008000; // 緑
     private static final int VALUE_COLOR = 0xFFB22222;     // 茶
@@ -53,23 +52,24 @@ public class htmlview extends AppCompatActivity {
     private FloatingActionButton revertFab;
 
     private String originalHtml = "";
-
+    
     private final Stack<String> editHistory = new Stack<>();
 
     private boolean isEditing = false;
-
+    
     private volatile boolean isUpdating = false;
     private volatile boolean isLoading = false;
 
     private static final int REQUEST_PERMISSION_WRITE = 100;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final Handler uiHandler = new Handler();
 
-    private Runnable highlightRunnable;
-
-
+    
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final Pattern ATTR_PATTERN = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler uiHandler = new Handler();
+    
+    private Runnable highlightRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,7 +83,7 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
-    
+        
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
@@ -106,7 +106,7 @@ public class htmlview extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!isEditing) {
-                    
+                
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
                     
@@ -118,7 +118,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-        
+    
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
             @Override
@@ -219,7 +219,7 @@ public class htmlview extends AppCompatActivity {
         });
     }
 
-    
+
     private void fetchHtml(final String urlString) {
         isLoading = true;
         executor.execute(new Runnable() {
@@ -258,7 +258,7 @@ public class htmlview extends AppCompatActivity {
                                         @Override
                                         public void run() {
                                             applyHighlight(htmlEditText.getText(), spans);
-                        
+                
                                             htmlEditText.setKeyListener(null);
                                             isLoading = false;
                                         }
@@ -289,7 +289,7 @@ public class htmlview extends AppCompatActivity {
             int tagStart = tagMatcher.start();
             int tagEnd = tagMatcher.end();
             spans.add(new int[]{tagStart, tagEnd, TAG_COLOR});
-            String tagText = tagMatcher.group();
+            String tagText = text.substring(tagStart, tagEnd);
             Matcher attrMatcher = ATTR_PATTERN.matcher(tagText);
             while (attrMatcher.find()) {
                 int attrNameStart = tagStart + attrMatcher.start(1);
@@ -328,7 +328,7 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
-    
+
     private void saveHtmlToFile() {
         final String currentText = htmlEditText.getText().toString();
         final String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
@@ -364,7 +364,7 @@ public class htmlview extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions, @NonNull int[] grantResults) {
+            @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == REQUEST_PERMISSION_WRITE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 saveHtmlToFile();
