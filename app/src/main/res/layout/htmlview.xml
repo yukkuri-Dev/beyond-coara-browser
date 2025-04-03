@@ -62,8 +62,7 @@
         <EditText
             android:id="@+id/searchQueryEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="検索キーワード" />
+            android:layout_height="wrap_content"/>
 
         <Button
             android:id="@+id/searchPrevButton"
@@ -98,7 +97,7 @@
     android:layout_width="32dp"
     android:layout_height="32dp"
     android:text="X"
-    android:textSize="10sp"
+    android:textSize="14sp"
     android:gravity="center"
     android:padding="0dp"
     android:background="?android:attr/selectableItemBackground"
