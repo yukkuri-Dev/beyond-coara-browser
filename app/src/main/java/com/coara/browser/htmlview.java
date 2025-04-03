@@ -44,12 +44,12 @@ import java.util.regex.Pattern;
 public class htmlview extends AppCompatActivity {
 
     
-    private static final int TAG_COLOR = 0xFF0000FF;       // 青
-    private static final int ATTRIBUTE_COLOR = 0xFF008000; // 緑
-    private static final int VALUE_COLOR = 0xFFB22222;     // 茶
+    private static final int TAG_COLOR = 0xFF0000FF;       
+    private static final int ATTRIBUTE_COLOR = 0xFF008000; 
+    private static final int VALUE_COLOR = 0xFFB22222;    
 
     
-    private static final int LARGE_TEXT_THRESHOLD = 10000;
+    private static final int LARGE_TEXT_THRESHOLD = 1000;
 
     private EditText urlInput;
     private Button loadButton, editButton, saveButton;
