@@ -80,7 +80,7 @@ public class htmlview extends AppCompatActivity {
 
                 if (!isEditing) {
                     preEditCache = htmlEditText.getText().toString();
-                    htmlEditText.setKeyListener(new EditText(MainActivity.this).getKeyListener());
+                    htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     isEditing = true;
                     Toast.makeText(htmlview.this, "編集モードに入りました", Toast.LENGTH_SHORT).show();
                 }
@@ -109,10 +109,10 @@ public class htmlview extends AppCompatActivity {
             public void onClick(View v) {
 
             
-                if (ContextCompat.checkSelfPermission(MainActivity.this,
+                if (ContextCompat.checkSelfPermission(htmlview.this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(MainActivity.this,
+                    ActivityCompat.requestPermissions(htmlview.this,
                             new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                             REQUEST_PERMISSION_WRITE);
                 } else {
