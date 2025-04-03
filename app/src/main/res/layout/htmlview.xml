@@ -22,19 +22,24 @@
             android:minWidth="200dp" />
 
         <Button
-            android:id="@+id/loadButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="6sp"
-            android:text="読み込み" />
-
-        <Button
-            android:id="@+id/loadFromStorageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ファイル選択"
-            android:textSize="6sp"
-            android:layout_marginStart="4dp"/>
+           android:id="@+id/loadButton"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:textSize="10sp"
+           android:text="読み込み"
+           android:padding="4dp"
+           android:minWidth="0dp"
+           android:minHeight="0dp"/>
+<Button
+    android:id="@+id/loadFromStorageButton"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="ファイル選択"
+    android:textSize="10sp"
+    android:padding="4dp"
+    android:minWidth="0dp"
+    android:minHeight="0dp"
+    android:layout_marginStart="4dp"/>
     </LinearLayout>
 
     <Button
