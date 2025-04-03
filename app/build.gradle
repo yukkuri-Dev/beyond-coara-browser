@@ -12,8 +12,13 @@ android {
         versionCode = 185
         versionName = "4.1.19"
         multiDexEnabled = true
+        externalNativeBuild {
+        cmake {
+        cppFlags "-std=c++11 -O3 -DNDEBUG -fstack-protector-strong -D_FORTIFY_SOURCE=2 -fPIE -pie"
+         }
+      }
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-    }
+      }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
@@ -36,6 +41,8 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
+            jniDebuggable false
+            debuggable false
             signingConfig signingConfigs.release
         }
     }
@@ -46,6 +53,13 @@ android {
 
     buildFeatures {
         viewBinding true
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
+        }
     }
 }
 
