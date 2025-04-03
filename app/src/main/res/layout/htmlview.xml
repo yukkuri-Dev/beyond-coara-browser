@@ -32,7 +32,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ファイル選択"
-            android:layout_marginStart="6dp"/>
+            android:layout_marginStart="4dp"/>
     </LinearLayout>
 
     <Button
@@ -42,7 +42,7 @@
         android:text="検索"
         android:layout_alignParentEnd="true"
         android:layout_below="@id/topLayout"
-        android:layout_margin="6dp"/>
+        android:layout_margin="4dp"/>
 
     <RelativeLayout
         android:id="@+id/searchOverlay"
@@ -90,10 +90,10 @@
             android:id="@+id/closeSearchButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="閉じる"
+            android:text="x"
             android:layout_below="@id/searchQueryEditText"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="8dp"/>
+            android:layout_marginTop="2dp"/>
     </RelativeLayout>
 
     <ScrollView
