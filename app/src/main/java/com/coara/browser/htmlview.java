@@ -20,6 +20,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -50,9 +51,9 @@ import java.util.regex.Pattern;
 
 public class htmlview extends AppCompatActivity {
 
-    private static final int TAG_COLOR = 0xFF0000FF;      
-    private static final int ATTRIBUTE_COLOR = 0xFF008000;
-    private static final int VALUE_COLOR = 0xFFB22222;     
+    private static final int TAG_COLOR = 0xFF0000FF;       // 青
+    private static final int ATTRIBUTE_COLOR = 0xFF008000; // 緑
+    private static final int VALUE_COLOR = 0xFFB22222;     // 赤
 
     private static final int LARGE_TEXT_THRESHOLD = 700;
     private static final int REQUEST_PERMISSION_WRITE = 100;
@@ -64,9 +65,8 @@ public class htmlview extends AppCompatActivity {
     private FloatingActionButton revertFab;
     private RelativeLayout searchOverlay;
     private EditText searchQueryEditText;
+    private TextView searchResultCountTextView;
     private Button searchNextButton, searchPrevButton, closeSearchButton;
-    private Toast toast;
-    private EditText dummyEditText; 
 
     private String originalHtml = "";
     private final Stack<String> editHistory = new Stack<>();
@@ -100,8 +100,8 @@ public class htmlview extends AppCompatActivity {
         revertFab = findViewById(R.id.revertFab);
         searchButton = findViewById(R.id.searchButton);
         searchOverlay = findViewById(R.id.searchOverlay);
-        searchResultCountTextView = findViewById(R.id.searchResultCountTextView);
         searchQueryEditText = findViewById(R.id.searchQueryEditText);
+        searchResultCountTextView = findViewById(R.id.searchResultCountTextView);
         searchNextButton = findViewById(R.id.searchNextButton);
         searchPrevButton = findViewById(R.id.searchPrevButton);
         closeSearchButton = findViewById(R.id.closeSearchButton);
@@ -110,7 +110,7 @@ public class htmlview extends AppCompatActivity {
 
         loadButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 String urlStr = urlInput.getText().toString().trim();
                 if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
                     if (!isLoading) {
@@ -126,7 +126,7 @@ public class htmlview extends AppCompatActivity {
 
         loadFromStorageButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("text/html");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -136,12 +136,12 @@ public class htmlview extends AppCompatActivity {
 
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 if (!isEditing) {
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
                     lastUndoTimestamp = System.currentTimeMillis();
-                    
+
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -202,7 +202,7 @@ public class htmlview extends AppCompatActivity {
 
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 if (isEditing && !isUpdating) {
                     if (!editHistory.isEmpty()) {
                         final String previousText = editHistory.pop();
@@ -235,7 +235,7 @@ public class htmlview extends AppCompatActivity {
 
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 if (ContextCompat.checkSelfPermission(htmlview.this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -250,7 +250,7 @@ public class htmlview extends AppCompatActivity {
 
         searchButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 showSearchOverlay();
             }
         });
@@ -268,20 +268,20 @@ public class htmlview extends AppCompatActivity {
 
         searchNextButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 moveToNextSearchMatch();
             }
         });
         searchPrevButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 moveToPreviousSearchMatch();
             }
         });
 
         closeSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {                
+            public void onClick(View v) {
                 hideSearchOverlay();
             }
         });
@@ -311,7 +311,7 @@ public class htmlview extends AppCompatActivity {
     }
 
     private void showSearchOverlay() {
-
+    
         searchOverlay.setVisibility(View.VISIBLE);
         searchButton.setVisibility(View.INVISIBLE);
         searchQueryEditText.requestFocus();
@@ -322,8 +322,8 @@ public class htmlview extends AppCompatActivity {
     }
 
     private void hideSearchOverlay() {
-        searchOverlay.setVisibility(View.GONE);
         
+        searchOverlay.setVisibility(View.GONE);
         searchButton.setVisibility(View.VISIBLE);
         Editable text = htmlEditText.getText();
         Object[] bgSpans = text.getSpans(0, text.length(), BackgroundColorSpan.class);
