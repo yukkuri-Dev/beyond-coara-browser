@@ -45,8 +45,8 @@
             android:scrollbars="vertical"
             android:inputType="textMultiLine"
             android:textIsSelectable="true"
-            android:editable="false"
-            android:focusable="false" />
+            android:editable="true"
+            android:focusable="true" />
     </ScrollView>
 
   
