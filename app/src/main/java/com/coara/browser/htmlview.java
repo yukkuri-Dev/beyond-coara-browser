@@ -110,7 +110,7 @@ public class htmlview extends AppCompatActivity {
 
         loadButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 String urlStr = urlInput.getText().toString().trim();
                 if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
                     if (!isLoading) {
@@ -126,7 +126,7 @@ public class htmlview extends AppCompatActivity {
 
         loadFromStorageButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("text/html");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -136,12 +136,12 @@ public class htmlview extends AppCompatActivity {
 
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 if (!isEditing) {
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
                     lastUndoTimestamp = System.currentTimeMillis();
-
+                    
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -202,13 +202,13 @@ public class htmlview extends AppCompatActivity {
 
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 if (isEditing && !isUpdating) {
                     if (!editHistory.isEmpty()) {
                         final String previousText = editHistory.pop();
                         isUpdating = true;
-                        Editable editable = htmlEditText.getText();
-                        int curPos = htmlEditText.getSelectionStart();
+                        final Editable editable = htmlEditText.getText();
+                        final int curPos = htmlEditText.getSelectionStart();
                         editable.replace(0, editable.length(), previousText);
                         executor.execute(new Runnable() {
                             @Override
@@ -235,7 +235,7 @@ public class htmlview extends AppCompatActivity {
 
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 if (ContextCompat.checkSelfPermission(htmlview.this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -250,7 +250,7 @@ public class htmlview extends AppCompatActivity {
 
         searchButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 showSearchOverlay();
             }
         });
@@ -268,20 +268,20 @@ public class htmlview extends AppCompatActivity {
 
         searchNextButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 moveToNextSearchMatch();
             }
         });
         searchPrevButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 moveToPreviousSearchMatch();
             }
         });
 
         closeSearchButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 hideSearchOverlay();
             }
         });
@@ -322,7 +322,7 @@ public class htmlview extends AppCompatActivity {
     }
 
     private void hideSearchOverlay() {
-        
+
         searchOverlay.setVisibility(View.GONE);
         searchButton.setVisibility(View.VISIBLE);
         Editable text = htmlEditText.getText();
@@ -367,11 +367,22 @@ public class htmlview extends AppCompatActivity {
             text.removeSpan(span);
         }
         if (currentSearchIndex >= 0 && currentSearchIndex < searchMatchPositions.size()) {
-            int start = searchMatchPositions.get(currentSearchIndex);
+            final int start = searchMatchPositions.get(currentSearchIndex);
             int end = start + searchQueryEditText.getText().toString().length();
             if (start >= 0 && end <= text.length()) {
                 text.setSpan(new BackgroundColorSpan(Color.YELLOW), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 htmlEditText.setSelection(start, end);
+            
+                htmlEditText.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (htmlEditText.getLayout() != null) {
+                            int line = htmlEditText.getLayout().getLineForOffset(start);
+                            int y = htmlEditText.getLayout().getLineTop(line);
+                            htmlEditText.scrollTo(0, y);
+                        }
+                    }
+                });
             }
         }
     }
@@ -471,14 +482,18 @@ public class htmlview extends AppCompatActivity {
                 final StringBuilder sb = new StringBuilder();
                 try {
                     ContentResolver resolver = getContentResolver();
-                    InputStream in = resolver.openInputStream(uri);
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line).append('\n');
+                    
+                    try (InputStream in = resolver.openInputStream(uri)) {
+                        if (in == null) {
+                            throw new Exception("InputStreamが取得できません");
+                        }
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line).append('\n');
+                            }
+                        }
                     }
-                    reader.close();
-                    in.close();
                     uiHandler.post(new Runnable() {
                         @Override
                         public void run() {
