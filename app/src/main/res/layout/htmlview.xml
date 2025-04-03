@@ -6,7 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    
     <LinearLayout
         android:id="@+id/topLayout"
         android:layout_width="match_parent"
@@ -23,27 +22,25 @@
             android:minWidth="200dp" />
 
         <Button
-            android:id="@+id/loadButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:text="読み込み"
-            android:padding="4dp"
-            android:minWidth="0dp"
-            android:minHeight="0dp"/>
-
-        <Button
-            android:id="@+id/loadFromStorageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ファイル選択"
-            android:textSize="14sp"
-            android:padding="4dp"
-            android:minWidth="0dp"
-            android:minHeight="0dp"
-            android:layout_marginStart="4dp"/>
+           android:id="@+id/loadButton"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:textSize="14sp"
+           android:text="読み込み"
+           android:padding="4dp"
+           android:minWidth="0dp"
+           android:minHeight="0dp"/>
+<Button
+    android:id="@+id/loadFromStorageButton"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="ファイル選択"
+    android:textSize="14sp"
+    android:padding="4dp"
+    android:minWidth="0dp"
+    android:minHeight="0dp"
+    android:layout_marginStart="4dp"/>
     </LinearLayout>
-
 
     <Button
         android:id="@+id/searchButton"
@@ -51,10 +48,9 @@
         android:layout_height="wrap_content"
         android:text="検索"
         android:layout_alignParentEnd="true"
-        android:layout_alignTop="@id/topLayout"
+        android:layout_below="@id/topLayout"
         android:layout_margin="4dp"/>
 
-    
     <RelativeLayout
         android:id="@+id/searchOverlay"
         android:layout_width="match_parent"
@@ -66,7 +62,8 @@
         <EditText
             android:id="@+id/searchQueryEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:hint="検索キーワード" />
 
         <Button
             android:id="@+id/searchPrevButton"
@@ -97,26 +94,26 @@
             android:layout_marginTop="8dp"/>
 
         <Button
-            android:id="@+id/closeSearchButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:text="X"
-            android:textSize="14sp"
-            android:gravity="center"
-            android:padding="0dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginEnd="4dp"
-            android:layout_marginTop="4dp"/>
+    android:id="@+id/closeSearchButton"
+    android:layout_width="32dp"
+    android:layout_height="32dp"
+    android:text="X"
+    android:textSize="10sp"
+    android:gravity="center"
+    android:padding="0dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:layout_alignParentEnd="true"
+    android:layout_alignParentTop="true"
+    android:layout_marginEnd="4dp"
+    android:layout_marginTop="4dp"/>
     </RelativeLayout>
 
-    
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/topLayout"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_below="@id/searchButton"
         android:layout_above="@id/bottomLayout"
         android:padding="8dp">
 
@@ -132,7 +129,6 @@
             android:focusable="true" />
     </ScrollView>
 
-    
     <LinearLayout
         android:id="@+id/bottomLayout"
         android:layout_width="match_parent"
@@ -156,7 +152,6 @@
             android:layout_marginStart="16dp"/>
     </LinearLayout>
 
-    
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/revertFab"
         android:layout_width="wrap_content"
