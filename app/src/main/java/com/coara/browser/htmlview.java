@@ -1,7 +1,12 @@
 package com.coara.browser;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -10,10 +15,16 @@ import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -27,6 +38,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -43,38 +55,42 @@ import java.util.regex.Pattern;
 
 public class htmlview extends AppCompatActivity {
 
-    
-    private static final int TAG_COLOR = 0xFF0000FF;       
-    private static final int ATTRIBUTE_COLOR = 0xFF008000; 
-    private static final int VALUE_COLOR = 0xFFB22222;    
+    private static final int TAG_COLOR = 0xFF0000FF;       // 青
+    private static final int ATTRIBUTE_COLOR = 0xFF008000; // 緑
+    private static final int VALUE_COLOR = 0xFFB22222;     // 赤
 
-    
     private static final int LARGE_TEXT_THRESHOLD = 1000;
+    private static final int REQUEST_PERMISSION_WRITE = 100;
+    private static final int REQUEST_CODE_PICK_HTML = 101; 
 
     private EditText urlInput;
     private Button loadButton, editButton, saveButton;
+    
+    private Button loadFromStorageButton;
     private EditText htmlEditText;
     private FloatingActionButton revertFab;
+    
+    private RelativeLayout searchOverlay;
+    private EditText searchQueryEditText;
+    private TextView searchResultCountTextView;
+    private Button searchNextButton, searchPrevButton, closeSearchButton;
+    private Button searchButton; 
 
     private String originalHtml = "";
-    
     private final Stack<String> editHistory = new Stack<>();
-
     private boolean isEditing = false;
-    
     private volatile boolean isUpdating = false;
     private volatile boolean isLoading = false;
-
-    private static final int REQUEST_PERMISSION_WRITE = 100;
-
-    
     private long lastUndoTimestamp = 0;
     private static final long UNDO_THRESHOLD = 1000;
 
-    
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final Pattern ATTR_PATTERN = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
-
+    
+    
+    private ArrayList<Integer> searchMatchPositions = new ArrayList<>();
+    private int currentSearchIndex = -1;
+    
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler uiHandler = new Handler();
 
@@ -85,6 +101,7 @@ public class htmlview extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.htmlview);
 
+        
         urlInput = findViewById(R.id.urlInput);
         loadButton = findViewById(R.id.loadButton);
         editButton = findViewById(R.id.editButton);
@@ -92,9 +109,21 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
+    
+        loadFromStorageButton = new Button(this);
+        loadFromStorageButton.setText("Storageから読み込み");
         
+        ((ViewGroup)findViewById(R.id.rootLayout)).addView(loadFromStorageButton);
+
+
+        searchButton = new Button(this);
+        searchButton.setText("検索");
+        ((ViewGroup)findViewById(R.id.rootLayout)).addView(searchButton);
+
+    
         htmlEditText.setKeyListener(null);
 
+        
         loadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -111,15 +140,27 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
+    
+        loadFromStorageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {                
+                
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("text/html");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(Intent.createChooser(intent, "HTMLファイルを選択"), REQUEST_CODE_PICK_HTML);
+            }
+        });
+
+        
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 if (!isEditing) {
-                    
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
                     lastUndoTimestamp = System.currentTimeMillis();
-                
+                    
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -128,7 +169,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-        
+    
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
             @Override
@@ -148,7 +189,6 @@ public class htmlview extends AppCompatActivity {
                 if (!isUpdating && isEditing) {
                     final String newText = s.toString();
                     long now = System.currentTimeMillis();
-                
                     if (now - lastUndoTimestamp > UNDO_THRESHOLD) {
                         editHistory.push(beforeChange);
                         lastUndoTimestamp = now;
@@ -180,7 +220,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-        
+
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -214,6 +254,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
+    
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -229,7 +270,18 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
+    
+        createSearchOverlay();
 
+    
+        searchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {                
+                showSearchOverlay();
+            }
+        });
+
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             htmlEditText.setOnScrollChangeListener(new View.OnScrollChangeListener() {
                 @Override
@@ -254,6 +306,195 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
+    
+    private void createSearchOverlay() {
+
+        FrameLayout root = findViewById(R.id.rootLayout);
+        searchOverlay = new RelativeLayout(this);
+        searchOverlay.setBackgroundColor(Color.parseColor("#88000000")); // 薄暗い半透明黒
+        RelativeLayout.LayoutParams overlayParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        overlayParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+        searchOverlay.setLayoutParams(overlayParams);
+        searchOverlay.setVisibility(View.GONE);
+
+        
+        searchQueryEditText = new EditText(this);
+        searchQueryEditText.setId(View.generateViewId());
+        RelativeLayout.LayoutParams queryParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        queryParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+        queryParams.setMargins(16, 16, 16, 16);
+        searchQueryEditText.setLayoutParams(queryParams);
+        searchQueryEditText.setHint("検索キーワード");
+        searchOverlay.addView(searchQueryEditText);
+
+    
+        searchPrevButton = new Button(this);
+        searchPrevButton.setId(View.generateViewId());
+        searchPrevButton.setText("前");
+        RelativeLayout.LayoutParams prevParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        prevParams.addRule(RelativeLayout.BELOW, searchQueryEditText.getId());
+        prevParams.addRule(RelativeLayout.ALIGN_PARENT_START);
+        prevParams.setMargins(16, 0, 16, 16);
+        searchPrevButton.setLayoutParams(prevParams);
+        searchOverlay.addView(searchPrevButton);
+
+    
+        searchNextButton = new Button(this);
+        searchNextButton.setId(View.generateViewId());
+        searchNextButton.setText("次");
+        RelativeLayout.LayoutParams nextParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        nextParams.addRule(RelativeLayout.BELOW, searchQueryEditText.getId());
+        nextParams.addRule(RelativeLayout.RIGHT_OF, searchPrevButton.getId());
+        nextParams.setMargins(16, 0, 16, 16);
+        searchNextButton.setLayoutParams(nextParams);
+        searchOverlay.addView(searchNextButton);
+
+    
+        searchResultCountTextView = new TextView(this);
+        searchResultCountTextView.setId(View.generateViewId());
+        searchResultCountTextView.setTextColor(Color.WHITE);
+        RelativeLayout.LayoutParams countParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        countParams.addRule(RelativeLayout.BELOW, searchQueryEditText.getId());
+        countParams.addRule(RelativeLayout.ALIGN_PARENT_END);
+        countParams.setMargins(16, 0, 16, 16);
+        searchResultCountTextView.setLayoutParams(countParams);
+        searchOverlay.addView(searchResultCountTextView);
+
+    
+        closeSearchButton = new Button(this);
+        closeSearchButton.setId(View.generateViewId());
+        closeSearchButton.setText("閉じる");
+        RelativeLayout.LayoutParams closeParams = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        closeParams.addRule(RelativeLayout.BELOW, searchQueryEditText.getId());
+        closeParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
+        closeParams.setMargins(16, 0, 16, 16);
+        closeSearchButton.setLayoutParams(closeParams);
+        searchOverlay.addView(closeSearchButton);
+
+        root.addView(searchOverlay);
+
+    
+        searchQueryEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            
+            }
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                performSearch(s.toString());
+            }
+            @Override
+            public void afterTextChanged(Editable s) {
+        
+            }
+        });
+
+
+        searchNextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {                
+                moveToNextSearchMatch();
+            }
+        });
+        searchPrevButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {                
+                moveToPreviousSearchMatch();
+            }
+        });
+        closeSearchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {                
+                hideSearchOverlay();
+            }
+        });
+    }
+
+    private void showSearchOverlay() {
+        searchOverlay.setVisibility(View.VISIBLE);
+        searchQueryEditText.requestFocus();
+        searchQueryEditText.setText("");
+        searchResultCountTextView.setText("");
+        searchMatchPositions.clear();
+        currentSearchIndex = -1;
+    }
+
+    private void hideSearchOverlay() {
+        searchOverlay.setVisibility(View.GONE);
+        Editable text = htmlEditText.getText();
+        Object[] bgSpans = text.getSpans(0, text.length(), BackgroundColorSpan.class);
+        for (Object span : bgSpans) {
+            text.removeSpan(span);
+        }
+    }
+
+    
+    private void performSearch(final String query) {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                searchMatchPositions.clear();
+                if (query != null && !query.isEmpty()) {
+                    String text = htmlEditText.getText().toString();
+                    int index = text.indexOf(query);
+                    while (index >= 0) {
+                        searchMatchPositions.add(index);
+                        index = text.indexOf(query, index + query.length());
+                    }
+                }
+                uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        int count = searchMatchPositions.size();
+                        searchResultCountTextView.setText("件数: " + count);
+                        if (count > 0) {
+                            currentSearchIndex = 0;
+                            highlightCurrentSearchMatch();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+
+    private void highlightCurrentSearchMatch() {
+        Editable text = htmlEditText.getText();
+
+        Object[] bgSpans = text.getSpans(0, text.length(), BackgroundColorSpan.class);
+        for (Object span : bgSpans) {
+            text.removeSpan(span);
+        }
+        if (currentSearchIndex >= 0 && currentSearchIndex < searchMatchPositions.size()) {
+            int start = searchMatchPositions.get(currentSearchIndex);
+            int end = start + searchQueryEditText.getText().toString().length();
+            if(start >= 0 && end <= text.length()){
+                text.setSpan(new BackgroundColorSpan(Color.YELLOW), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            
+                htmlEditText.setSelection(start, end);
+            }
+        }
+    }
+
+    private void moveToNextSearchMatch() {
+        if (!searchMatchPositions.isEmpty()) {
+            currentSearchIndex = (currentSearchIndex + 1) % searchMatchPositions.size();
+            highlightCurrentSearchMatch();
+        }
+    }
+
+    private void moveToPreviousSearchMatch() {
+        if (!searchMatchPositions.isEmpty()) {
+            currentSearchIndex = (currentSearchIndex - 1 + searchMatchPositions.size()) % searchMatchPositions.size();
+            highlightCurrentSearchMatch();
+        }
+    }
 
     private void fetchHtml(final String urlString) {
         isLoading = true;
@@ -293,7 +534,6 @@ public class htmlview extends AppCompatActivity {
                                         @Override
                                         public void run() {
                                             applyHighlight(htmlEditText.getText(), spans);
-                                        
                                             htmlEditText.setKeyListener(null);
                                             isLoading = false;
                                         }
@@ -317,6 +557,74 @@ public class htmlview extends AppCompatActivity {
     }
 
     
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_CODE_PICK_HTML && resultCode == Activity.RESULT_OK) {
+            if (data != null) {
+                Uri uri = data.getData();
+                if (uri != null) {
+                    readHtmlFromUri(uri);
+                }
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void readHtmlFromUri(final Uri uri) {
+        isLoading = true;
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                final StringBuilder sb = new StringBuilder();
+                try {
+                    ContentResolver resolver = getContentResolver();
+                    InputStream in = resolver.openInputStream(uri);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line).append('\n');
+                    }
+                    reader.close();
+                    in.close();
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            originalHtml = sb.toString();
+                            isEditing = false;
+                            editHistory.clear();
+                            Editable editable = htmlEditText.getText();
+                            editable.clear();
+                            editable.append(originalHtml);
+                            executor.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    final int[][] spans = getHighlightSpans(originalHtml);
+                                    uiHandler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            applyHighlight(htmlEditText.getText(), spans);
+                                            htmlEditText.setKeyListener(null);
+                                            isLoading = false;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                } catch (final Exception e) {
+                    e.printStackTrace();
+                    uiHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(htmlview.this, "HTMLファイルの読み込みに失敗しました: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            isLoading = false;
+                        }
+                    });
+                }
+            }
+        });
+    }
+
     private int[][] getHighlightSpans(String text) {
         ArrayList<int[]> spans = new ArrayList<>();
         if (text.length() > LARGE_TEXT_THRESHOLD && htmlEditText.getLayout() != null) {
@@ -366,7 +674,6 @@ public class htmlview extends AppCompatActivity {
         return result;
     }
 
-    
     private void applyHighlight(Editable editable, int[][] spans) {
         if (spans != null) {
             Object[] oldSpans = editable.getSpans(0, editable.length(), ForegroundColorSpan.class);
