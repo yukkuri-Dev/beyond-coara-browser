@@ -10,7 +10,6 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -44,7 +43,6 @@ public class htmlview extends AppCompatActivity {
         System.loadLibrary("highlight_native");
     }
     
-
     public static native int[][] diffHighlightNative(String oldText, String newText);
     
     private EditText urlInput;
@@ -53,18 +51,19 @@ public class htmlview extends AppCompatActivity {
     private FloatingActionButton revertFab;
     
     private String originalHtml = "";
-    
     private final Stack<String> editHistory = new Stack<>();
     
     private boolean isEditing = false;
-    private boolean isUpdating = false;
+    
+    private volatile boolean isUpdating = false;
+    private volatile boolean isLoading = false;
     
     private static final int REQUEST_PERMISSION_WRITE = 100;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler uiHandler = new Handler();
     
     private Runnable highlightRunnable;
-
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +76,7 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
-        
+
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
@@ -85,7 +84,11 @@ public class htmlview extends AppCompatActivity {
             public void onClick(View v) {                
                 String urlStr = urlInput.getText().toString().trim();
                 if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
-                    fetchHtml(urlStr);
+                    if (!isLoading) {
+                        fetchHtml(urlStr);
+                    } else {
+                        Toast.makeText(htmlview.this, "読み込み中です。", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     Toast.makeText(htmlview.this, "正しいURLを入力してください", Toast.LENGTH_SHORT).show();
                 }
@@ -96,19 +99,19 @@ public class htmlview extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (!isEditing) {
-                    
+                
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
-                    
+                
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
                     Toast.makeText(htmlview.this, "編集モードに入りました", Toast.LENGTH_SHORT).show();
                 }
             }
-        });
+        })
+            
         
-    
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
             @Override
@@ -119,7 +122,6 @@ public class htmlview extends AppCompatActivity {
             }
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-            
                 if (highlightRunnable != null) {
                     uiHandler.removeCallbacks(highlightRunnable);
                 }
@@ -128,30 +130,34 @@ public class htmlview extends AppCompatActivity {
             public void afterTextChanged(final Editable s) {
                 if (!isUpdating && isEditing) {
                     final String newText = s.toString();
-            
+                
                     if (!newText.equals(beforeChange)) {
                         editHistory.push(beforeChange);
                     }
-                    
+                
                     highlightRunnable = new Runnable() {
                         @Override
                         public void run() {
-                            
-                            executor.execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    final int[][] spans = diffHighlightNative(newText, newText);
-                                    uiHandler.post(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            applyHighlight(s, spans);
-                                        }
-                                    });
-                                }
-                            });
+                            if (!isUpdating) {
+                                isUpdating = true;
+                                
+                                executor.execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        final int[][] spans = diffHighlightNative(newText, newText);
+                                        uiHandler.post(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                applyHighlight(htmlEditText.getText(), spans);
+                                                isUpdating = false;
+                                            }
+                                        });
+                                    }
+                                });
+                            }
                         }
                     };
-                    uiHandler.postDelayed(highlightRunnable, 200);
+                    uiHandler.postDelayed(highlightRunnable, 150);
                 }
             }
         });
@@ -160,12 +166,11 @@ public class htmlview extends AppCompatActivity {
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
-                if (isEditing) {
+                if (isEditing && !isUpdating) {
                     if (!editHistory.isEmpty()) {
-                    
                         final String previousText = editHistory.pop();
                         isUpdating = true;
-                        
+                    
                         Editable editable = htmlEditText.getText();
                         int curPos = htmlEditText.getSelectionStart();
                         editable.replace(0, editable.length(), previousText);
@@ -178,7 +183,6 @@ public class htmlview extends AppCompatActivity {
                                     @Override
                                     public void run() {
                                         applyHighlight(htmlEditText.getText(), spans);
-                                    
                                         int pos = Math.min(previousText.length(), curPos);
                                         htmlEditText.setSelection(pos);
                                         isUpdating = false;
@@ -210,8 +214,9 @@ public class htmlview extends AppCompatActivity {
         });
     }
     
-
+    
     private void fetchHtml(final String urlString) {
+        isLoading = true;
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -238,9 +243,10 @@ public class htmlview extends AppCompatActivity {
                             isEditing = false;
                             editHistory.clear();
                             
-                            Editable editable = htmlEditText.getEditableText();
+                            Editable editable = htmlEditText.getText();
                             editable.clear();
                             editable.append(originalHtml);
+                            
                             executor.execute(new Runnable() {
                                 @Override
                                 public void run() {
@@ -248,27 +254,31 @@ public class htmlview extends AppCompatActivity {
                                     uiHandler.post(new Runnable() {
                                         @Override
                                         public void run() {
-                                            applyHighlight(editable, spans);
+                                            applyHighlight(htmlEditText.getText(), spans);
                                             
                                             htmlEditText.setKeyListener(null);
+                                            isLoading = false;
                                         }
                                     });
                                 }
                             });
                         }
                     });
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     e.printStackTrace();
                     uiHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(htmlview.this, "HTMLの取得に失敗しました", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(htmlview.this, "HTMLの取得に失敗しました: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            isLoading = false;
                         }
                     });
                 }
             }
         });
     }
+    
+
     private void applyHighlight(Editable editable, int[][] spans) {
         if (spans != null) {
         
@@ -276,7 +286,7 @@ public class htmlview extends AppCompatActivity {
             for (Object span : oldSpans) {
                 editable.removeSpan(span);
             }
-            
+        
             for (int[] span : spans) {
                 if (span.length == 3) {
                     int start = span[0];
@@ -312,12 +322,12 @@ public class htmlview extends AppCompatActivity {
                             Toast.makeText(htmlview.this, "保存しました: " + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
                         }
                     });
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     e.printStackTrace();
                     uiHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            Toast.makeText(htmlview.this, "保存に失敗しました", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(htmlview.this, "保存に失敗しました: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
