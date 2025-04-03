@@ -4,62 +4,52 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"    
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/transparent">
+    android:layout_height="match_parent">
 
-    <FrameLayout
-        android:id="@+id/headerLayout"
+    <LinearLayout
+        android:id="@+id/topLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/transparent">
+        android:orientation="horizontal"
+        android:padding="8dp">
 
-        <LinearLayout
-            android:id="@+id/topLayout"
-            android:layout_width="match_parent"
+        <EditText
+            android:id="@+id/urlInput"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="8dp"
-            android:background="@android:color/transparent">
-
-            <EditText
-                android:id="@+id/urlInput"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="URLを入力"
-                android:minWidth="200dp"
-                android:background="@android:color/transparent" />
-
-            <Button
-                android:id="@+id/loadButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:text="読み込み"
-                android:padding="4dp"
-                android:background="@android:color/transparent"/>
-
-            <Button
-                android:id="@+id/loadFromStorageButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ファイル選択"
-                android:textSize="14sp"
-                android:padding="4dp"
-                android:layout_marginStart="4dp"
-                android:background="@android:color/transparent"/>
-        </LinearLayout>
+            android:layout_weight="1"
+            android:hint="URLを入力"
+            android:minWidth="200dp" />
 
         <Button
-            android:id="@+id/searchButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="検索"
-            android:textColor="#000000"
-            android:layout_gravity="end|center_vertical"
-            android:background="@android:color/transparent"
-            android:padding="4dp"/>
-    </FrameLayout>
+           android:id="@+id/loadButton"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:textSize="12sp"
+           android:text="読み込み"
+           android:padding="4dp"
+           android:minWidth="0dp"
+           android:minHeight="0dp"/>
+<Button
+    android:id="@+id/loadFromStorageButton"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="ファイル選択"
+    android:textSize="12sp"
+    android:padding="4dp"
+    android:minWidth="0dp"
+    android:minHeight="0dp"
+    android:layout_marginStart="4dp"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/searchButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="検索"
+        android:layout_alignParentEnd="true"
+        android:layout_below="@id/topLayout"
+        android:layout_margin="3dp"/>
 
     <RelativeLayout
         android:id="@+id/searchOverlay"
@@ -72,8 +62,7 @@
         <EditText
             android:id="@+id/searchQueryEditText"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="検索ワードを入力" />
+            android:layout_height="wrap_content" />
 
         <Button
             android:id="@+id/searchPrevButton"
@@ -101,27 +90,29 @@
             android:textColor="#FFFFFF"
             android:layout_alignParentEnd="true"
             android:layout_below="@id/searchQueryEditText"
-            android:layout_marginTop="8dp"/>
+            android:layout_marginTop="4dp"/>
 
         <Button
-            android:id="@+id/closeSearchButton"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:text="X"
-            android:textSize="14sp"
-            android:gravity="center"
-            android:background="?android:attr/selectableItemBackground"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginEnd="4dp"
-            android:layout_marginTop="4dp"/>
+    android:id="@+id/closeSearchButton"
+    android:layout_width="32dp"
+    android:layout_height="32dp"
+    android:text="X"
+    android:textSize="10sp"
+    android:gravity="center"
+    android:padding="0dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:layout_alignParentEnd="true"
+    android:layout_alignParentTop="true"
+    android:layout_marginEnd="4dp"
+    android:layout_marginTop="4dp"/>
     </RelativeLayout>
 
     <ScrollView
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/headerLayout"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_below="@id/searchButton"
         android:layout_above="@id/bottomLayout"
         android:padding="8dp">
 
@@ -133,7 +124,8 @@
             android:textSize="13sp"
             android:scrollbars="vertical"
             android:inputType="textMultiLine"
-            android:textIsSelectable="true"/>
+            android:textIsSelectable="true"
+            android:focusable="true" />
     </ScrollView>
 
     <LinearLayout
@@ -143,8 +135,7 @@
         android:layout_alignParentBottom="true"
         android:orientation="horizontal"
         android:padding="8dp"
-        android:gravity="center"
-        android:background="@android:color/transparent">
+        android:gravity="center">
 
         <Button
             android:id="@+id/editButton"
