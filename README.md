@@ -1,5 +1,7 @@
-# CoaraBrowser
+# BeyondCoaraBrowser
 
+- CoaraBrowerを改変して独自機能や、実装しない物を実装します
+- Beyondとかついていますが全然Beyondではないです
 - Android の WebView を活用した
 - 軽量マルチタブ方式の Web ブラウザです。
 
