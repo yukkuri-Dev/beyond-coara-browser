@@ -325,7 +325,7 @@ public class htmlview extends AppCompatActivity {
     }
 
     private void hideSearchOverlay() {
-        searchOverlay.setVisibility(View.GONE);
+        searchOverlay.setVisibility(View.INVISIBLE);
         
         Editable text = htmlEditText.getText();
         Object[] bgSpans = text.getSpans(0, text.length(), BackgroundColorSpan.class);
