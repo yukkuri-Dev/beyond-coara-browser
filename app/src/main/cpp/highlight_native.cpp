@@ -29,7 +29,6 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
         diffStart++;
     }
 
-
     int diffEndOld = oldText.size();
     int diffEndNew = newText.size();
     while (diffEndOld > diffStart && diffEndNew > diffStart &&
@@ -38,13 +37,19 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
         diffEndNew--;
     }
 
+    
+    if(diffStart >= diffEndNew){
+         diffStart = 0;
+         diffEndNew = newText.size();
+    }
 
     std::string diffSegment = newText.substr(diffStart, diffEndNew - diffStart);
 
 
-    const int tagColor       = 0xFF0000FF;  // 青
-    const int attributeColor = 0xFF008000;  // 緑
-    const int valueColor     = 0xFFB22222;  // 茶
+    const int tagColor       = 0xFF0000FF;  
+    const int attributeColor = 0xFF008000;  
+    const int valueColor     = 0xFFB22222; 
+
 
     std::regex tag_regex("<[^>]+>");
     std::regex attr_regex("(\\w+)=\\\"([^\\\"]*)\\\"");
@@ -54,7 +59,6 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
     auto tag_end = std::sregex_iterator();
     for (auto it = tag_begin; it != tag_end; ++it) {
         std::smatch tagMatch = *it;
-        
         int tagStart = static_cast<int>(tagMatch.position()) + diffStart;
         int tagEndPos = tagStart + static_cast<int>(tagMatch.length());
         spans.push_back({ tagStart, tagEndPos, tagColor });
@@ -73,7 +77,6 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
         }
     }
 
-    
     jclass intArrayClass = env->FindClass("[I");
     jobjectArray jresult = env->NewObjectArray(static_cast<jsize>(spans.size()), intArrayClass, nullptr);
     for (size_t i = 0; i < spans.size(); i++) {
@@ -85,4 +88,5 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
     }
     return jresult;
 }
+
 }
