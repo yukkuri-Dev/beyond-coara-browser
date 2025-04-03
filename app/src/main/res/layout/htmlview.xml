@@ -1,79 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout 
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"    
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-  
-    <LinearLayout
-        android:id="@+id/topLayout"
+
+    <EditText
+        android:id="@+id/urlInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp">
+        android:hint="URLを入力"
+        android:padding="8dp" />
 
-        <EditText
-            android:id="@+id/urlInput"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="URLを入力" />
 
-        <Button
-            android:id="@+id/loadButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="読み込み" />
-    </LinearLayout>
+    <Button
+        android:id="@+id/loadButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="読み込み"
+        android:layout_below="@id/urlInput"
+        android:layout_margin="8dp" />
+
+
+    <Button
+        android:id="@+id/editButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="編集"
+        android:layout_toRightOf="@id/loadButton"
+        android:layout_alignTop="@id/loadButton"
+        android:layout_marginLeft="8dp" />
+
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="保存"
+        android:layout_toRightOf="@id/editButton"
+        android:layout_alignTop="@id/loadButton"
+        android:layout_marginLeft="8dp" />
 
     
-    <ScrollView
-        android:id="@+id/scrollView"
+    <EditText
+        android:id="@+id/htmlEditText"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/topLayout"
-        android:layout_above="@+id/bottomLayout"
-        android:padding="8dp">
-
-        <EditText
-            android:id="@+id/htmlEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#F5F5F5"
-            android:textSize="14sp"
-            android:scrollbars="vertical"
-            android:inputType="textMultiLine"
-            android:textIsSelectable="true"
-            android:editable="true"
-            android:focusable="true" />
-    </ScrollView>
-
-  
-    <LinearLayout
-        android:id="@+id/bottomLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:orientation="horizontal"
+        android:layout_below="@id/loadButton"
         android:padding="8dp"
-        android:gravity="center">
+        android:background="#f5f5f5"
+        android:textIsSelectable="true"
+        android:scrollbars="vertical" />
 
-        <Button
-            android:id="@+id/editButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="編集" />
-
-        <Button
-            android:id="@+id/saveButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="保存"
-            android:layout_marginStart="16dp"/>
-    </LinearLayout>
-
-    
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/revertFab"
         android:layout_width="wrap_content"
@@ -81,6 +59,7 @@
         android:src="@android:drawable/ic_menu_revert"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:layout_margin="16dp" />
+        android:layout_margin="16dp"
+        app:backgroundTint="@color/design_default_color_primary" />
 
 </RelativeLayout>
