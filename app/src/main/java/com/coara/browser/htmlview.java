@@ -31,41 +31,46 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Stack;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class htmlview extends AppCompatActivity {
 
-    static {
-        System.loadLibrary("highlight_native");
-    }
-    
-    
-    public static native int[][] diffHighlightNative(String oldText, String newText);
-    
+
+    private static final int TAG_COLOR = 0xFF0000FF;       // 青
+    private static final int ATTRIBUTE_COLOR = 0xFF008000; // 緑
+    private static final int VALUE_COLOR = 0xFFB22222;     // 茶
+
     private EditText urlInput;
     private Button loadButton, editButton, saveButton;
     private EditText htmlEditText;
     private FloatingActionButton revertFab;
-    
+
     private String originalHtml = "";
-    
+
     private final Stack<String> editHistory = new Stack<>();
-    
+
     private boolean isEditing = false;
-    
+
     private volatile boolean isUpdating = false;
     private volatile boolean isLoading = false;
-    
+
     private static final int REQUEST_PERMISSION_WRITE = 100;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler uiHandler = new Handler();
 
     private Runnable highlightRunnable;
-    
+
+
+    private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
+    private static final Pattern ATTR_PATTERN = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -96,7 +101,7 @@ public class htmlview extends AppCompatActivity {
                 }
             }
         });
-        
+
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -112,7 +117,7 @@ public class htmlview extends AppCompatActivity {
                 }
             }
         });
-        
+
         
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
@@ -142,11 +147,11 @@ public class htmlview extends AppCompatActivity {
                         public void run() {
                             if (!isUpdating) {
                                 isUpdating = true;
-                            
+                                final String currentText = newText;
                                 executor.execute(new Runnable() {
                                     @Override
                                     public void run() {
-                                        final int[][] spans = diffHighlightNative(newText, newText);
+                                        final int[][] spans = getHighlightSpans(currentText);
                                         uiHandler.post(new Runnable() {
                                             @Override
                                             public void run() {
@@ -163,7 +168,7 @@ public class htmlview extends AppCompatActivity {
                 }
             }
         });
-        
+
         
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -172,15 +177,13 @@ public class htmlview extends AppCompatActivity {
                     if (!editHistory.isEmpty()) {
                         final String previousText = editHistory.pop();
                         isUpdating = true;
-            
                         Editable editable = htmlEditText.getText();
                         int curPos = htmlEditText.getSelectionStart();
                         editable.replace(0, editable.length(), previousText);
-                    
                         executor.execute(new Runnable() {
                             @Override
                             public void run() {
-                                final int[][] spans = diffHighlightNative(previousText, previousText);
+                                final int[][] spans = getHighlightSpans(previousText);
                                 uiHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
@@ -199,7 +202,7 @@ public class htmlview extends AppCompatActivity {
                 }
             }
         });
-        
+
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -215,7 +218,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
     }
-    
+
     
     private void fetchHtml(final String urlString) {
         isLoading = true;
@@ -244,20 +247,18 @@ public class htmlview extends AppCompatActivity {
                             originalHtml = result.toString();
                             isEditing = false;
                             editHistory.clear();
-                        
                             Editable editable = htmlEditText.getText();
                             editable.clear();
                             editable.append(originalHtml);
-                        
                             executor.execute(new Runnable() {
                                 @Override
                                 public void run() {
-                                    final int[][] spans = diffHighlightNative("", originalHtml);
+                                    final int[][] spans = getHighlightSpans(originalHtml);
                                     uiHandler.post(new Runnable() {
                                         @Override
                                         public void run() {
                                             applyHighlight(htmlEditText.getText(), spans);
-                                            
+                        
                                             htmlEditText.setKeyListener(null);
                                             isLoading = false;
                                         }
@@ -279,16 +280,40 @@ public class htmlview extends AppCompatActivity {
             }
         });
     }
+
     
+    private int[][] getHighlightSpans(String text) {
+        ArrayList<int[]> spans = new ArrayList<>();
+        Matcher tagMatcher = TAG_PATTERN.matcher(text);
+        while (tagMatcher.find()) {
+            int tagStart = tagMatcher.start();
+            int tagEnd = tagMatcher.end();
+            spans.add(new int[]{tagStart, tagEnd, TAG_COLOR});
+            String tagText = tagMatcher.group();
+            Matcher attrMatcher = ATTR_PATTERN.matcher(tagText);
+            while (attrMatcher.find()) {
+                int attrNameStart = tagStart + attrMatcher.start(1);
+                int attrNameEnd = tagStart + attrMatcher.end(1);
+                spans.add(new int[]{attrNameStart, attrNameEnd, ATTRIBUTE_COLOR});
+                int attrValueStart = tagStart + attrMatcher.start(2);
+                int attrValueEnd = tagStart + attrMatcher.end(2);
+                spans.add(new int[]{attrValueStart, attrValueEnd, VALUE_COLOR});
+            }
+        }
+        int[][] result = new int[spans.size()][3];
+        for (int i = 0; i < spans.size(); i++) {
+            result[i] = spans.get(i);
+        }
+        return result;
+    }
+
     
     private void applyHighlight(Editable editable, int[][] spans) {
         if (spans != null) {
-        
             Object[] oldSpans = editable.getSpans(0, editable.length(), ForegroundColorSpan.class);
             for (Object span : oldSpans) {
                 editable.removeSpan(span);
             }
-            
             for (int[] span : spans) {
                 if (span.length == 3) {
                     int start = span[0];
@@ -302,8 +327,8 @@ public class htmlview extends AppCompatActivity {
             }
         }
     }
-    
 
+    
     private void saveHtmlToFile() {
         final String currentText = htmlEditText.getText().toString();
         final String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
@@ -336,7 +361,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
     }
-    
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions, @NonNull int[] grantResults) {
