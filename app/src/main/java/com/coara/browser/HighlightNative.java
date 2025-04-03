@@ -2,7 +2,7 @@ package com.coara.browser;
 
 public class HighlightNative {
     static {
-        System.loadLibrary("highlight_native");
+        System.loadLibrary("highlightNative");
     }
     
     public static native int[][] highlightHtmlNative(String html);
