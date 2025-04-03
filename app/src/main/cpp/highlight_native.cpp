@@ -3,6 +3,8 @@
 #include <vector>
 #include <regex>
 #include <algorithm>
+
+
 struct HighlightSpan {
     int start;
     int end;
@@ -21,21 +23,17 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
     env->ReleaseStringUTFChars(oldTextJ, oldTextC);
     env->ReleaseStringUTFChars(newTextJ, newTextC);
 
-
+    
     int diffStart = 0;
     int diffEndNew = newText.size();
-    if(diffStart >= diffEndNew) {
-        diffStart = 0;
-        diffEndNew = newText.size();
-    }
     std::string diffSegment = newText.substr(diffStart, diffEndNew - diffStart);
 
-
+    
     const int tagColor       = 0xFF0000FF;  // 青
     const int attributeColor = 0xFF008000;  // 緑
     const int valueColor     = 0xFFB22222;  // 茶
 
-    
+
     std::regex tag_regex("<[^>]+>");
     std::regex attr_regex("(\\w+)=\\\"([^\\\"]*)\\\"");
     std::vector<HighlightSpan> spans;
@@ -61,7 +59,7 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
         }
     }
     
-
+    
     jclass intArrayClass = env->FindClass("[I");
     jobjectArray jresult = env->NewObjectArray(static_cast<jsize>(spans.size()), intArrayClass, nullptr);
     for (size_t i = 0; i < spans.size(); i++) {
