@@ -100,6 +100,7 @@ public class htmlview extends AppCompatActivity {
         revertFab = findViewById(R.id.revertFab);
         searchButton = findViewById(R.id.searchButton);
         searchOverlay = findViewById(R.id.searchOverlay);
+        searchResultCountTextView = findViewById(R.id.searchResultCountTextView);
         searchQueryEditText = findViewById(R.id.searchQueryEditText);
         searchNextButton = findViewById(R.id.searchNextButton);
         searchPrevButton = findViewById(R.id.searchPrevButton);
