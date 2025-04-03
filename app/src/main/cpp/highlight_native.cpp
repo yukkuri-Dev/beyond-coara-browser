@@ -12,7 +12,7 @@ struct HighlightSpan {
 extern "C" {
 
 JNIEXPORT jobjectArray JNICALL
-Java_com_coara_browser_HighlightNative_highlightHtmlNative(JNIEnv* env, jclass clazz, jstring htmlStr) {
+Java_com_coara_browser_htmlview_highlightHtmlNative(JNIEnv* env, jclass clazz, jstring htmlStr) {
   
     const char* cstr = env->GetStringUTFChars(htmlStr, nullptr);
     std::string html(cstr);
