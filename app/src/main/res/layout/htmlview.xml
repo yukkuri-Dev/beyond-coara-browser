@@ -92,9 +92,10 @@
            android:layout_height="32dp"
            android:text="x"
            android:textSize="6sp"
-           android:layout_below="@id/searchQueryEditText"
            android:layout_alignParentEnd="true"
-           android:layout_margin="4dp"/>
+           android:layout_alignParentTop="true"
+           android:layout_marginEnd="4dp"
+           android:layout_marginTop="4dp"/>
     </RelativeLayout>
 
     <ScrollView
