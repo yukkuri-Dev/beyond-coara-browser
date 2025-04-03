@@ -52,7 +52,6 @@ public class htmlview extends AppCompatActivity {
     private FloatingActionButton revertFab;
 
     private String originalHtml = "";
-    
     private final Stack<String> editHistory = new Stack<>();
 
     private boolean isEditing = false;
@@ -61,6 +60,11 @@ public class htmlview extends AppCompatActivity {
     private volatile boolean isLoading = false;
 
     private static final int REQUEST_PERMISSION_WRITE = 100;
+
+    
+    private long lastUndoTimestamp = 0;
+
+    private static final long UNDO_THRESHOLD = 1000;
 
     
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
@@ -83,7 +87,7 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
-        
+    
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
@@ -109,6 +113,8 @@ public class htmlview extends AppCompatActivity {
                 
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
+                
+                    lastUndoTimestamp = System.currentTimeMillis();
                     
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
@@ -137,9 +143,11 @@ public class htmlview extends AppCompatActivity {
             public void afterTextChanged(final Editable s) {
                 if (!isUpdating && isEditing) {
                     final String newText = s.toString();
-                
-                    if (!newText.equals(beforeChange)) {
+                    long now = System.currentTimeMillis();
+            
+                    if (now - lastUndoTimestamp > UNDO_THRESHOLD) {
                         editHistory.push(beforeChange);
+                        lastUndoTimestamp = now;
                     }
                     
                     highlightRunnable = new Runnable() {
@@ -219,7 +227,7 @@ public class htmlview extends AppCompatActivity {
         });
     }
 
-
+    
     private void fetchHtml(final String urlString) {
         isLoading = true;
         executor.execute(new Runnable() {
@@ -258,7 +266,7 @@ public class htmlview extends AppCompatActivity {
                                         @Override
                                         public void run() {
                                             applyHighlight(htmlEditText.getText(), spans);
-                
+                                            
                                             htmlEditText.setKeyListener(null);
                                             isLoading = false;
                                         }
@@ -328,7 +336,7 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
-
+    
     private void saveHtmlToFile() {
         final String currentText = htmlEditText.getText().toString();
         final String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
