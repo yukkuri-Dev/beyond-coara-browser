@@ -14,12 +14,14 @@ import android.os.Handler;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.TextWatcher;
+import android.text.method.ScrollingMovementMethod;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -105,6 +107,11 @@ public class htmlview extends AppCompatActivity {
         searchNextButton = findViewById(R.id.searchNextButton);
         searchPrevButton = findViewById(R.id.searchPrevButton);
         closeSearchButton = findViewById(R.id.closeSearchButton);
+
+        
+        htmlEditText.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        
+        htmlEditText.setMovementMethod(new ScrollingMovementMethod());
 
         htmlEditText.setKeyListener(null);
 
@@ -311,7 +318,7 @@ public class htmlview extends AppCompatActivity {
     }
 
     private void showSearchOverlay() {
-    
+
         searchOverlay.setVisibility(View.VISIBLE);
         searchButton.setVisibility(View.INVISIBLE);
         searchQueryEditText.requestFocus();
@@ -322,7 +329,7 @@ public class htmlview extends AppCompatActivity {
     }
 
     private void hideSearchOverlay() {
-
+    
         searchOverlay.setVisibility(View.GONE);
         searchButton.setVisibility(View.VISIBLE);
         Editable text = htmlEditText.getText();
@@ -372,14 +379,20 @@ public class htmlview extends AppCompatActivity {
             if (start >= 0 && end <= text.length()) {
                 text.setSpan(new BackgroundColorSpan(Color.YELLOW), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                 htmlEditText.setSelection(start, end);
-            
+                
                 htmlEditText.post(new Runnable() {
                     @Override
                     public void run() {
                         if (htmlEditText.getLayout() != null) {
                             int line = htmlEditText.getLayout().getLineForOffset(start);
                             int y = htmlEditText.getLayout().getLineTop(line);
-                            htmlEditText.scrollTo(0, y);
+                            
+                            View parent = (View) htmlEditText.getParent();
+                            if (parent instanceof ScrollView) {
+                                ((ScrollView) parent).smoothScrollTo(0, y);
+                            } else {
+                                htmlEditText.scrollTo(0, y);
+                            }
                         }
                     }
                 });
