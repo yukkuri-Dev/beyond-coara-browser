@@ -57,7 +57,7 @@ public class htmlview extends AppCompatActivity {
     private static final int ATTRIBUTE_COLOR = 0xFF008000; // 緑
     private static final int VALUE_COLOR = 0xFFB22222;     // 赤
 
-    private static final int LARGE_TEXT_THRESHOLD = 1000;
+    private static final int LARGE_TEXT_THRESHOLD = 700;
     private static final int REQUEST_PERMISSION_WRITE = 100;
     private static final int REQUEST_CODE_PICK_HTML = 101;
 
