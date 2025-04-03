@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:text="タイトル"
             android:textStyle="bold"
-            android:textAppearance="?attr/textAppearanceHeadline6" />
+            android:textAppearance="?attr/textAppearanceBody2" />
 
         <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/bookmarkUrl"
