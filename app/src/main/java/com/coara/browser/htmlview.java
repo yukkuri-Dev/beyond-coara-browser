@@ -103,12 +103,12 @@ public class htmlview extends AppCompatActivity {
         searchPrevButton = findViewById(R.id.searchPrevButton);
         closeSearchButton = findViewById(R.id.closeSearchButton);
 
-
+    
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 String urlStr = urlInput.getText().toString().trim();
                 if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
                     if (!isLoading) {
@@ -124,7 +124,7 @@ public class htmlview extends AppCompatActivity {
 
         loadFromStorageButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("text/html");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -134,13 +134,13 @@ public class htmlview extends AppCompatActivity {
 
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 if (!isEditing) {
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
                     lastUndoTimestamp = System.currentTimeMillis();
-
-                    
+                
+            
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -151,7 +151,6 @@ public class htmlview extends AppCompatActivity {
 
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
-
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                 if (!isUpdating && isEditing) {
@@ -202,7 +201,7 @@ public class htmlview extends AppCompatActivity {
 
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 if (isEditing && !isUpdating) {
                     if (!editHistory.isEmpty()) {
                         final String previousText = editHistory.pop();
@@ -235,7 +234,7 @@ public class htmlview extends AppCompatActivity {
 
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void onClick(View v) {                
                 if (ContextCompat.checkSelfPermission(htmlview.this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -248,12 +247,17 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-        
+    
         searchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 showSearchOverlay();
-                searchButton.setVisibility(View.GONE);
+                searchButton.animate().alpha(0f).setDuration(200).withEndAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        searchButton.setClickable(false);
+                    }
+                });
             }
         });
 
@@ -285,8 +289,12 @@ public class htmlview extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 hideSearchOverlay();
-    
-                searchButton.setVisibility(View.VISIBLE);
+                searchButton.animate().alpha(1f).setDuration(200).withStartAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        searchButton.setClickable(true);
+                    }
+                });
             }
         });
 
@@ -294,7 +302,6 @@ public class htmlview extends AppCompatActivity {
             htmlEditText.setOnScrollChangeListener(new View.OnScrollChangeListener() {
                 @Override
                 public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                    
                     if (!isUpdating && htmlEditText.getText().length() > LARGE_TEXT_THRESHOLD) {
                         final String currentText = htmlEditText.getText().toString();
                         executor.execute(new Runnable() {
@@ -319,14 +326,12 @@ public class htmlview extends AppCompatActivity {
         searchOverlay.setVisibility(View.VISIBLE);
         searchQueryEditText.requestFocus();
         searchQueryEditText.setText("");
-        
         searchMatchPositions.clear();
         currentSearchIndex = -1;
     }
 
     private void hideSearchOverlay() {
         searchOverlay.setVisibility(View.INVISIBLE);
-        
         Editable text = htmlEditText.getText();
         Object[] bgSpans = text.getSpans(0, text.length(), BackgroundColorSpan.class);
         for (Object span : bgSpans) {
@@ -362,7 +367,6 @@ public class htmlview extends AppCompatActivity {
 
     private void highlightCurrentSearchMatch() {
         Editable text = htmlEditText.getText();
-        
         Object[] bgSpans = text.getSpans(0, text.length(), BackgroundColorSpan.class);
         for (Object span : bgSpans) {
             text.removeSpan(span);
@@ -521,7 +525,6 @@ public class htmlview extends AppCompatActivity {
 
     private int[][] getHighlightSpans(String text) {
         ArrayList<int[]> spans = new ArrayList<>();
-
         if (text.length() > LARGE_TEXT_THRESHOLD && htmlEditText.getLayout() != null) {
             int firstVisibleLine = htmlEditText.getLayout().getLineForVertical(htmlEditText.getScrollY());
             int lastVisibleLine = htmlEditText.getLayout().getLineForVertical(htmlEditText.getScrollY() + htmlEditText.getHeight());
