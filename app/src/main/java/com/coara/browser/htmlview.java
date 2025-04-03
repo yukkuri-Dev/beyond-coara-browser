@@ -37,18 +37,22 @@ import java.util.concurrent.Executors;
 
 public class htmlview extends AppCompatActivity {
 
+
     static {
         System.loadLibrary("highlight_native");
     }
     
-    public static native int[][] highlightHtmlNative(String html);
-
+    
+    public static native int[][] diffHighlightNative(String oldText, String newText);
+    
     private EditText urlInput;
     private Button loadButton, editButton, saveButton;
     private EditText htmlEditText;
     private FloatingActionButton revertFab;
 
+    
     private String originalHtml = "";
+    
     private final Stack<String> editHistory = new Stack<>();
 
     private boolean isEditing = false;
@@ -69,7 +73,7 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
-        
+    
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
@@ -90,7 +94,7 @@ public class htmlview extends AppCompatActivity {
                 if (!isEditing) {
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
-                
+                    
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -98,6 +102,7 @@ public class htmlview extends AppCompatActivity {
                 }
             }
         });
+
 
         htmlEditText.addTextChangedListener(new android.text.TextWatcher() {
             private String beforeChange;
@@ -108,8 +113,7 @@ public class htmlview extends AppCompatActivity {
                 }
             }
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-            }
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
             @Override
             public void afterTextChanged(Editable s) {
                 if (!isUpdating && isEditing) {
@@ -121,8 +125,9 @@ public class htmlview extends AppCompatActivity {
                         isUpdating = true;
                         int selectionStart = htmlEditText.getSelectionStart();
                         int selectionEnd = htmlEditText.getSelectionEnd();
-                    
-                        Spannable highlighted = highlightHtml(newText);
+
+                        
+                        Spannable highlighted = diffHighlightHtml(beforeChange, newText);
                         htmlEditText.setText(highlighted);
                         if (selectionStart <= htmlEditText.getText().length() &&
                                 selectionEnd <= htmlEditText.getText().length()) {
@@ -143,7 +148,7 @@ public class htmlview extends AppCompatActivity {
                         isUpdating = true;
                         int selectionStart = htmlEditText.getSelectionStart();
                         int selectionEnd = htmlEditText.getSelectionEnd();
-                        Spannable highlighted = highlightHtml(previousText);
+                        Spannable highlighted = diffHighlightHtml(htmlEditText.getText().toString(), previousText);
                         htmlEditText.setText(highlighted);
                         if (selectionStart <= htmlEditText.getText().length() &&
                                 selectionEnd <= htmlEditText.getText().length()) {
@@ -173,6 +178,7 @@ public class htmlview extends AppCompatActivity {
             }
         });
     }
+
     private void fetchHtml(final String urlString) {
         executor.execute(new Runnable() {
             @Override
@@ -199,7 +205,8 @@ public class htmlview extends AppCompatActivity {
                             originalHtml = result.toString();
                             isEditing = false;
                             editHistory.clear();
-                            Spannable highlighted = highlightHtml(originalHtml);
+                            
+                            Spannable highlighted = diffHighlightHtml("", originalHtml);
                             htmlEditText.setText(highlighted);
                             htmlEditText.setKeyListener(null);
                         }
@@ -217,16 +224,17 @@ public class htmlview extends AppCompatActivity {
         });
     }
 
-    private Spannable highlightHtml(String html) {
-        int[][] spans = highlightHtmlNative(html);
-        SpannableString spannable = new SpannableString(html);
+
+    private Spannable diffHighlightHtml(String oldText, String newText) {
+        int[][] spans = diffHighlightNative(oldText, newText);
+        SpannableString spannable = new SpannableString(newText);
         if (spans != null) {
             for (int[] span : spans) {
                 if (span.length == 3) {
                     int start = span[0];
                     int end = span[1];
                     int color = span[2];
-                    if (start >= 0 && end <= html.length() && start < end) {
+                    if (start >= 0 && end <= newText.length() && start < end) {
                         spannable.setSpan(new ForegroundColorSpan(color),
                                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
