@@ -49,7 +49,7 @@ public class htmlview extends AppCompatActivity {
     private static final int VALUE_COLOR = 0xFFB22222;    
 
     
-    private static final int LARGE_TEXT_THRESHOLD = 1000;
+    private static final int LARGE_TEXT_THRESHOLD = 500;
 
     private EditText urlInput;
     private Button loadButton, editButton, saveButton;
