@@ -5,8 +5,10 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
+import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.Button;
@@ -29,6 +31,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,12 +41,16 @@ public class htmlview extends AppCompatActivity {
     private Button loadButton;
     private Button editButton;
     private Button saveButton;
-    private EditText htmlEditText; 
+    private EditText htmlEditText;
     private FloatingActionButton revertFab;
-  
-    private String originalHtml = "";   
-    private String preEditCache = "";   
-    private boolean isEditing = false; 
+
+    private String originalHtml = "";
+
+    private Stack<String> editHistory = new Stack<>();
+
+    private boolean isEditing = false;
+    
+    private boolean isUpdating = false;
 
     private static final int REQUEST_PERMISSION_WRITE = 100;
 
@@ -59,6 +66,7 @@ public class htmlview extends AppCompatActivity {
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
 
+        
         htmlEditText.setKeyListener(null);
 
         loadButton.setOnClickListener(new View.OnClickListener() {
@@ -79,22 +87,80 @@ public class htmlview extends AppCompatActivity {
             public void onClick(View v) {
 
                 if (!isEditing) {
-                    preEditCache = htmlEditText.getText().toString();
+                
+                    editHistory.clear();
+                
+                    editHistory.push(htmlEditText.getText().toString());
+                    
+                
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
+                    htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
                     Toast.makeText(htmlview.this, "編集モードに入りました", Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
-      
+        
+        htmlEditText.addTextChangedListener(new TextWatcher() {
+            private String beforeChange;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                if (!isUpdating && isEditing) {
+                    beforeChange = s.toString();
+                }
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!isUpdating && isEditing) {
+                    String newText = s.toString();
+                    if (!newText.equals(beforeChange)) {
+                    
+                        if (editHistory.isEmpty() || !editHistory.peek().equals(beforeChange)) {
+                            editHistory.push(beforeChange);
+                        }
+                
+                        isUpdating = true;
+                        int selectionStart = htmlEditText.getSelectionStart();
+                        int selectionEnd = htmlEditText.getSelectionEnd();
+                        Spannable highlighted = highlightHtml(newText);
+                        htmlEditText.setText(highlighted);
+                    
+                        if (selectionStart <= htmlEditText.getText().length() &&
+                            selectionEnd <= htmlEditText.getText().length()) {
+                            htmlEditText.setSelection(selectionStart, selectionEnd);
+                        }
+                        isUpdating = false;
+                    }
+                }
+            }
+        });
+
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 if (isEditing) {
-                    if (!preEditCache.isEmpty()) {
-                        htmlEditText.setText(preEditCache);
+                    if (!editHistory.isEmpty()) {
+                    
+                        String previousText = editHistory.pop();
+                        isUpdating = true;
+                        int selectionStart = htmlEditText.getSelectionStart();
+                        int selectionEnd = htmlEditText.getSelectionEnd();
+                        Spannable highlighted = highlightHtml(previousText);
+                        htmlEditText.setText(highlighted);
+                        if (selectionStart <= htmlEditText.getText().length() &&
+                            selectionEnd <= htmlEditText.getText().length()) {
+                            htmlEditText.setSelection(selectionStart, selectionEnd);
+                        }
+                        isUpdating = false;
                         Toast.makeText(htmlview.this, "変更を元に戻しました", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(htmlview.this, "これ以上前はありません", Toast.LENGTH_SHORT).show();
@@ -103,12 +169,10 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-      
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-            
                 if (ContextCompat.checkSelfPermission(htmlview.this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
@@ -122,7 +186,6 @@ public class htmlview extends AppCompatActivity {
         });
     }
 
-    
     private class FetchHtmlTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... params) {
@@ -154,11 +217,11 @@ public class htmlview extends AppCompatActivity {
             if (html != null) {
                 originalHtml = html;
                 isEditing = false;
-                preEditCache = "";
-            
+                editHistory.clear();
+
+        
                 Spannable highlighted = highlightHtml(html);
                 htmlEditText.setText(highlighted);
-          
                 htmlEditText.setKeyListener(null);
             } else {
                 Toast.makeText(htmlview.this, "HTMLの取得に失敗しました", Toast.LENGTH_SHORT).show();
@@ -168,12 +231,11 @@ public class htmlview extends AppCompatActivity {
 
     private Spannable highlightHtml(String html) {
         SpannableString spannable = new SpannableString(html);
-    
-        int tagColor = 0xFF0000FF;    
-        int attributeColor = 0xFF008000; 
-        int valueColor = 0xFFB22222;     
 
-    
+        int tagColor = 0xFF0000FF;
+        int attributeColor = 0xFF008000;
+        int valueColor = 0xFFB22222;
+
         Pattern tagPattern = Pattern.compile("<[^>]+>");
         Matcher tagMatcher = tagPattern.matcher(html);
         while (tagMatcher.find()) {
@@ -181,7 +243,6 @@ public class htmlview extends AppCompatActivity {
                     tagMatcher.start(), tagMatcher.end(),
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-            
             String tagText = html.substring(tagMatcher.start(), tagMatcher.end());
             Pattern attrPattern = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
             Matcher attrMatcher = attrPattern.matcher(tagText);
@@ -202,10 +263,9 @@ public class htmlview extends AppCompatActivity {
         return spannable;
     }
 
-    
     private void saveHtmlToFile() {
         String currentText = htmlEditText.getText().toString();
-      
+
         boolean isEdited = !currentText.equals(originalHtml);
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
         String fileName = timeStamp + (isEdited ? "Edit.html" : ".html");
@@ -222,7 +282,6 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
-  
     @Override
     public void onRequestPermissionsResult(int requestCode,
            @NonNull String[] permissions, @NonNull int[] grantResults) {
