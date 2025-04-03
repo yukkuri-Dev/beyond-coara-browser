@@ -3,7 +3,6 @@
 #include <vector>
 #include <regex>
 #include <algorithm>
-
 struct HighlightSpan {
     int start;
     int end;
@@ -15,7 +14,7 @@ extern "C" {
 JNIEXPORT jobjectArray JNICALL
 Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
                                                       jstring oldTextJ, jstring newTextJ) {
-
+    
     const char* oldTextC = env->GetStringUTFChars(oldTextJ, nullptr);
     const char* newTextC = env->GetStringUTFChars(newTextJ, nullptr);
     std::string oldText(oldTextC), newText(newTextC);
@@ -24,33 +23,19 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
 
 
     int diffStart = 0;
-    int minLen = std::min(oldText.size(), newText.size());
-    while (diffStart < minLen && oldText[diffStart] == newText[diffStart]) {
-        diffStart++;
-    }
-
-    int diffEndOld = oldText.size();
     int diffEndNew = newText.size();
-    while (diffEndOld > diffStart && diffEndNew > diffStart &&
-           oldText[diffEndOld - 1] == newText[diffEndNew - 1]) {
-        diffEndOld--;
-        diffEndNew--;
+    if(diffStart >= diffEndNew) {
+        diffStart = 0;
+        diffEndNew = newText.size();
     }
-
-    
-    if(diffStart >= diffEndNew){
-         diffStart = 0;
-         diffEndNew = newText.size();
-    }
-
     std::string diffSegment = newText.substr(diffStart, diffEndNew - diffStart);
 
 
-    const int tagColor       = 0xFF0000FF;  
-    const int attributeColor = 0xFF008000;  
-    const int valueColor     = 0xFFB22222; 
+    const int tagColor       = 0xFF0000FF;  // 青
+    const int attributeColor = 0xFF008000;  // 緑
+    const int valueColor     = 0xFFB22222;  // 茶
 
-
+    
     std::regex tag_regex("<[^>]+>");
     std::regex attr_regex("(\\w+)=\\\"([^\\\"]*)\\\"");
     std::vector<HighlightSpan> spans;
@@ -62,7 +47,6 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
         int tagStart = static_cast<int>(tagMatch.position()) + diffStart;
         int tagEndPos = tagStart + static_cast<int>(tagMatch.length());
         spans.push_back({ tagStart, tagEndPos, tagColor });
-
         std::string tagText = tagMatch.str();
         auto attr_begin = std::sregex_iterator(tagText.begin(), tagText.end(), attr_regex);
         auto attr_end = std::sregex_iterator();
@@ -76,6 +60,7 @@ Java_com_coara_browser_htmlview_diffHighlightNative(JNIEnv* env, jclass clazz,
             spans.push_back({ attrValueStart, attrValueEnd, valueColor });
         }
     }
+    
 
     jclass intArrayClass = env->FindClass("[I");
     jobjectArray jresult = env->NewObjectArray(static_cast<jsize>(spans.size()), intArrayClass, nullptr);
