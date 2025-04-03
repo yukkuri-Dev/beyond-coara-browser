@@ -13,17 +13,14 @@ import android.os.Environment;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
-import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -61,20 +58,18 @@ public class htmlview extends AppCompatActivity {
 
     private static final int LARGE_TEXT_THRESHOLD = 1000;
     private static final int REQUEST_PERMISSION_WRITE = 100;
-    private static final int REQUEST_CODE_PICK_HTML = 101; 
+    private static final int REQUEST_CODE_PICK_HTML = 101;
 
     private EditText urlInput;
     private Button loadButton, editButton, saveButton;
-    
-    private Button loadFromStorageButton;
+    private Button loadFromStorageButton, searchButton;
     private EditText htmlEditText;
     private FloatingActionButton revertFab;
-    
+
     private RelativeLayout searchOverlay;
     private EditText searchQueryEditText;
     private TextView searchResultCountTextView;
     private Button searchNextButton, searchPrevButton, closeSearchButton;
-    private Button searchButton; 
 
     private String originalHtml = "";
     private final Stack<String> editHistory = new Stack<>();
@@ -86,11 +81,10 @@ public class htmlview extends AppCompatActivity {
 
     private static final Pattern TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final Pattern ATTR_PATTERN = Pattern.compile("(\\w+)=\\\"([^\\\"]*)\\\"");
-    
-    
+
     private ArrayList<Integer> searchMatchPositions = new ArrayList<>();
     private int currentSearchIndex = -1;
-    
+
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler uiHandler = new Handler();
 
@@ -101,29 +95,24 @@ public class htmlview extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.htmlview);
 
-        
+    
         urlInput = findViewById(R.id.urlInput);
         loadButton = findViewById(R.id.loadButton);
         editButton = findViewById(R.id.editButton);
         saveButton = findViewById(R.id.saveButton);
         htmlEditText = findViewById(R.id.htmlEditText);
         revertFab = findViewById(R.id.revertFab);
+        loadFromStorageButton = findViewById(R.id.loadFromStorageButton);
+        searchButton = findViewById(R.id.searchButton);
+        searchOverlay = findViewById(R.id.searchOverlay);
+        searchQueryEditText = findViewById(R.id.searchQueryEditText);
+        searchResultCountTextView = findViewById(R.id.searchResultCountTextView);
+        searchNextButton = findViewById(R.id.searchNextButton);
+        searchPrevButton = findViewById(R.id.searchPrevButton);
+        closeSearchButton = findViewById(R.id.closeSearchButton);
 
-    
-        loadFromStorageButton = new Button(this);
-        loadFromStorageButton.setText("Storageから読み込み");
-        
-        ((ViewGroup)findViewById(R.id.rootLayout)).addView(loadFromStorageButton);
-
-
-        searchButton = new Button(this);
-        searchButton.setText("検索");
-        ((ViewGroup)findViewById(R.id.rootLayout)).addView(searchButton);
-
-    
         htmlEditText.setKeyListener(null);
 
-        
         loadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -140,11 +129,9 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-    
         loadFromStorageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
-                
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("text/html");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -152,7 +139,6 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-        
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -160,7 +146,7 @@ public class htmlview extends AppCompatActivity {
                     editHistory.clear();
                     editHistory.push(htmlEditText.getText().toString());
                     lastUndoTimestamp = System.currentTimeMillis();
-                    
+                    // 編集可能にするためキーリスナーを復元
                     htmlEditText.setKeyListener(new EditText(htmlview.this).getKeyListener());
                     htmlEditText.setFocusableInTouchMode(true);
                     isEditing = true;
@@ -169,7 +155,6 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-    
         htmlEditText.addTextChangedListener(new TextWatcher() {
             private String beforeChange;
             @Override
@@ -220,7 +205,6 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-
         revertFab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -254,7 +238,6 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-    
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -270,10 +253,6 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-    
-        createSearchOverlay();
-
-    
         searchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {                
@@ -281,7 +260,36 @@ public class htmlview extends AppCompatActivity {
             }
         });
 
-        
+        searchQueryEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                performSearch(s.toString());
+            }
+            @Override
+            public void afterTextChanged(Editable s) { }
+        });
+
+        searchNextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {                
+                moveToNextSearchMatch();
+            }
+        });
+        searchPrevButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {                
+                moveToPreviousSearchMatch();
+            }
+        });
+        closeSearchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {                
+                hideSearchOverlay();
+            }
+        });
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             htmlEditText.setOnScrollChangeListener(new View.OnScrollChangeListener() {
                 @Override
@@ -306,116 +314,6 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
-    
-    private void createSearchOverlay() {
-
-        FrameLayout root = findViewById(R.id.rootLayout);
-        searchOverlay = new RelativeLayout(this);
-        searchOverlay.setBackgroundColor(Color.parseColor("#88000000")); // 薄暗い半透明黒
-        RelativeLayout.LayoutParams overlayParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        overlayParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-        searchOverlay.setLayoutParams(overlayParams);
-        searchOverlay.setVisibility(View.GONE);
-
-        
-        searchQueryEditText = new EditText(this);
-        searchQueryEditText.setId(View.generateViewId());
-        RelativeLayout.LayoutParams queryParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        queryParams.addRule(RelativeLayout.ALIGN_PARENT_START);
-        queryParams.setMargins(16, 16, 16, 16);
-        searchQueryEditText.setLayoutParams(queryParams);
-        searchQueryEditText.setHint("検索キーワード");
-        searchOverlay.addView(searchQueryEditText);
-
-    
-        searchPrevButton = new Button(this);
-        searchPrevButton.setId(View.generateViewId());
-        searchPrevButton.setText("前");
-        RelativeLayout.LayoutParams prevParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        prevParams.addRule(RelativeLayout.BELOW, searchQueryEditText.getId());
-        prevParams.addRule(RelativeLayout.ALIGN_PARENT_START);
-        prevParams.setMargins(16, 0, 16, 16);
-        searchPrevButton.setLayoutParams(prevParams);
-        searchOverlay.addView(searchPrevButton);
-
-    
-        searchNextButton = new Button(this);
-        searchNextButton.setId(View.generateViewId());
-        searchNextButton.setText("次");
-        RelativeLayout.LayoutParams nextParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        nextParams.addRule(RelativeLayout.BELOW, searchQueryEditText.getId());
-        nextParams.addRule(RelativeLayout.RIGHT_OF, searchPrevButton.getId());
-        nextParams.setMargins(16, 0, 16, 16);
-        searchNextButton.setLayoutParams(nextParams);
-        searchOverlay.addView(searchNextButton);
-
-    
-        searchResultCountTextView = new TextView(this);
-        searchResultCountTextView.setId(View.generateViewId());
-        searchResultCountTextView.setTextColor(Color.WHITE);
-        RelativeLayout.LayoutParams countParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        countParams.addRule(RelativeLayout.BELOW, searchQueryEditText.getId());
-        countParams.addRule(RelativeLayout.ALIGN_PARENT_END);
-        countParams.setMargins(16, 0, 16, 16);
-        searchResultCountTextView.setLayoutParams(countParams);
-        searchOverlay.addView(searchResultCountTextView);
-
-    
-        closeSearchButton = new Button(this);
-        closeSearchButton.setId(View.generateViewId());
-        closeSearchButton.setText("閉じる");
-        RelativeLayout.LayoutParams closeParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-        closeParams.addRule(RelativeLayout.BELOW, searchQueryEditText.getId());
-        closeParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        closeParams.setMargins(16, 0, 16, 16);
-        closeSearchButton.setLayoutParams(closeParams);
-        searchOverlay.addView(closeSearchButton);
-
-        root.addView(searchOverlay);
-
-    
-        searchQueryEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            
-            }
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                performSearch(s.toString());
-            }
-            @Override
-            public void afterTextChanged(Editable s) {
-        
-            }
-        });
-
-
-        searchNextButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {                
-                moveToNextSearchMatch();
-            }
-        });
-        searchPrevButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {                
-                moveToPreviousSearchMatch();
-            }
-        });
-        closeSearchButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {                
-                hideSearchOverlay();
-            }
-        });
-    }
-
     private void showSearchOverlay() {
         searchOverlay.setVisibility(View.VISIBLE);
         searchQueryEditText.requestFocus();
@@ -434,7 +332,6 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
-    
     private void performSearch(final String query) {
         executor.execute(new Runnable() {
             @Override
@@ -463,10 +360,8 @@ public class htmlview extends AppCompatActivity {
         });
     }
 
-
     private void highlightCurrentSearchMatch() {
         Editable text = htmlEditText.getText();
-
         Object[] bgSpans = text.getSpans(0, text.length(), BackgroundColorSpan.class);
         for (Object span : bgSpans) {
             text.removeSpan(span);
@@ -474,9 +369,8 @@ public class htmlview extends AppCompatActivity {
         if (currentSearchIndex >= 0 && currentSearchIndex < searchMatchPositions.size()) {
             int start = searchMatchPositions.get(currentSearchIndex);
             int end = start + searchQueryEditText.getText().toString().length();
-            if(start >= 0 && end <= text.length()){
+            if (start >= 0 && end <= text.length()) {
                 text.setSpan(new BackgroundColorSpan(Color.YELLOW), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            
                 htmlEditText.setSelection(start, end);
             }
         }
@@ -556,7 +450,6 @@ public class htmlview extends AppCompatActivity {
         });
     }
 
-    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CODE_PICK_HTML && resultCode == Activity.RESULT_OK) {
@@ -694,7 +587,6 @@ public class htmlview extends AppCompatActivity {
         }
     }
 
-    
     private void saveHtmlToFile() {
         final String currentText = htmlEditText.getText().toString();
         final String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
