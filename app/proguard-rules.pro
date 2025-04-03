@@ -41,9 +41,6 @@
 -keepclassmembers class * implements android.os.Parcelable {
     public static final android.os.Parcelable$Creator CREATOR;
 }
--keepclasseswithmembernames class * {
-    native <methods>;
-}
 -keepclassmembers class * {
     public void set*(...);
     public void get*(...);
