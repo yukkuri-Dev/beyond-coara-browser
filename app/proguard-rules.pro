@@ -18,7 +18,7 @@
 -classobfuscationdictionary obfuscation-dictionary.txt
 -renamesourcefileattribute SourceFile
 -keepattributes Exceptions, InnerClasses, Signature, Deprecated, EnclosingMethod, Record, PermittedSubclasses, NestHost, NestMembers, Module, ModuleMainClass
--optimizationpasses 12
+-optimizationpasses 15
 -mergeinterfacesaggressively
 -adaptclassstrings
 -repackageclasses ''
@@ -40,9 +40,6 @@
 -keep class **$$Lambda$* { *; }
 -keepclassmembers class * implements android.os.Parcelable {
     public static final android.os.Parcelable$Creator CREATOR;
-}
--keepclasseswithmembernames class * {
-    native <methods>;
 }
 -keepclassmembers class * {
     public void set*(...);

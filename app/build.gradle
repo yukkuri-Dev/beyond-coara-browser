@@ -3,15 +3,20 @@ plugins {
 }
 
 android {
+<<<<<<< HEAD
     compileSdk = 35
     namespace = 'com.coara.browserV2'
+=======
+    compileSdk = 35 
+>>>>>>> f41431f05290dbad422e500bcd0e9494c6eef260
 
     defaultConfig {
         minSdk = 24
         targetSdk = 30
-        versionCode = 185
-        versionName = "4.1.19"
+        versionCode = 190
+        versionName = "4.1.22"
         multiDexEnabled = true
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
     }
 
     compileOptions {
@@ -37,7 +42,6 @@ android {
             shrinkResources true
             debuggable false
             signingConfig signingConfigs.release
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -48,15 +52,6 @@ android {
     buildFeatures {
         viewBinding true
     }
-
-    externalNativeBuild {
-        cmake {
-            path "src/main/cpp/CMakeLists.txt"
-            version "3.22.1"
-        }
-    }
-    
-    ndkVersion "25.1.8937393" 
 }
 
 tasks.withType(JavaCompile).configureEach {
