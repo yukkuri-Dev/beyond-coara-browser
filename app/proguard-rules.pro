@@ -47,4 +47,3 @@
 }
 -allowaccessmodification
 -dontpreverify
--stripdebug
