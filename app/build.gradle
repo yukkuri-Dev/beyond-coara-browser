@@ -36,6 +36,7 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
+            kotlin.coroutines.debug=false
             debuggable false
             signingConfig signingConfigs.release
         }
