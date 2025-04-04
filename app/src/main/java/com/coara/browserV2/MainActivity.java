@@ -118,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_UA_ENABLED = "ua_enabled";
     private static final String KEY_DESKUA_ENABLED = "deskua_enabled";
     private static final String KEY_CT3UA_ENABLED = "ct3ua_enabled";
+    private static final String KEY_CHANGEUA_ENABLED = "changeua_enabled";
     private static final String KEY_TABS = "tabs";
     private static final String KEY_CURRENT_TAB = "current_tab_index";
     private static final String KEY_BOOKMARKS = "bookmarks";
@@ -173,6 +174,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean imgBlockEnabled = false;
     private boolean uaEnabled = false;
     private boolean deskuaEnabled = false;
+    private boolean changeUAEnabled = false;
     private boolean ct3uaEnabled = false;
 
     private final Map<WebView, Bitmap> webViewFavicons = new HashMap<>();
@@ -251,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
         uaEnabled = pref.getBoolean(KEY_UA_ENABLED, false);
         deskuaEnabled = pref.getBoolean(KEY_DESKUA_ENABLED, false);
         ct3uaEnabled = pref.getBoolean(KEY_CT3UA_ENABLED, false);
-
+        changeUAEnabled = pref.getBoolean(KEY_CHANGEUA_ENABLED, false);
         final int maxMemory = (int)(Runtime.getRuntime().maxMemory() / 1024);
         final int cacheSize = maxMemory / 8;
         faviconCache = new LruCache<String, Bitmap>(cacheSize) {
@@ -1515,6 +1517,8 @@ public class MainActivity extends AppCompatActivity {
         if (imgItem != null) imgItem.setChecked(imgBlockEnabled);
         MenuItem basicAuthItem = menu.findItem(R.id.action_basic_auth);
         if (basicAuthItem != null) basicAuthItem.setChecked(basicAuthEnabled);
+        MenuItem changeuaItem = menu.findItem(R.id.change_ua);
+        if (changeuaItem != null) changeuaItem.setChecked(changeUAEnabled);
         return super.onPrepareOptionsMenu(menu);
     }
     @Override
@@ -1610,7 +1614,12 @@ public class MainActivity extends AppCompatActivity {
                     ct3uaEnabled = false;
                     pref.edit().putBoolean(KEY_CT3UA_ENABLED, false).apply();
                 }
-                enableUA();
+                if (changeUAEnabled){
+                    ChangeUA();
+                    changeUAEnabled = false;
+                    pref.edit().putBoolean(KEY_CHANGEUA_ENABLED, false).apply();
+                }
+
                 uaEnabled = true;
             } else {
                 disableUA();
@@ -1630,6 +1639,11 @@ public class MainActivity extends AppCompatActivity {
                     disableCT3UA();
                     ct3uaEnabled = false;
                     pref.edit().putBoolean(KEY_CT3UA_ENABLED, false).apply();
+                }
+                if (changeUAEnabled){
+                    ChangeUA();
+                    changeUAEnabled = false;
+                    pref.edit().putBoolean(KEY_CHANGEUA_ENABLED, false).apply();
                 }
                 enabledeskUA();
                 deskuaEnabled = true;
@@ -1897,6 +1911,13 @@ private void saveScreenshot(Bitmap bitmap) {
         settings.setUserAgentString("DoCoMo/2.0 SH902i(c100;TB)");
         Toast.makeText(MainActivity.this, "ガラケーUA有効", Toast.LENGTH_SHORT).show();
         reloadCurrentPage();
+    }
+    private void ChangeUA(){
+        WebSettings settings = getCurrentWebView().getSettings();
+        settings.setUserAgentString("Moddddd!!!!");
+        Toast.makeText(MainActivity.this, "ガラケーUA有効", Toast.LENGTH_SHORT).show();
+        reloadCurrentPage();
+
     }
 
     private void disableUA() {
