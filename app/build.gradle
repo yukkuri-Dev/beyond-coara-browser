@@ -51,10 +51,7 @@ android {
     
     packagingOptions {
         excludes += "DebugProbesKt.bin"
-        excludes += "assets/dexopt/baseline.prof"
-        excludes += "assets/dexopt/baseline.profm"
         excludes += "META-INF/com/android/build/gradle/app-metadata.properties"
-        excludes += "Kotlin/**"
     }
 }
 
