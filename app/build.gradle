@@ -5,10 +5,6 @@ plugins {
 android {
     compileSdk = 35
     namespace = 'com.coara.browserV2'
-=======
-    compileSdk = 35 
->>>>>>> f41431f05290dbad422e500bcd0e9494c6eef260
-
 
 
     defaultConfig {
