@@ -51,7 +51,6 @@ android {
     
     packagingOptions {
         excludes += "DebugProbesKt.bin"
-        excludes += "META-INF/com/android/build/gradle/app-metadata.properties"
     }
 }
 
