@@ -48,6 +48,10 @@ android {
     buildFeatures {
         viewBinding true
     }
+    
+    packagingOptions {
+        excludes += "DebugProbesKt.bin"
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
