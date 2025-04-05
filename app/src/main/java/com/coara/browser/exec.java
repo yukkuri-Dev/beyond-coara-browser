@@ -12,7 +12,6 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
@@ -73,17 +72,17 @@ public class exec extends Activity {
         if (requestCode == FILE_CHOOSER_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (uri != null) {
-                selectedBinary = copyFileToInternalStorage(uri);
-                if (selectedBinary != null) {
-            
-                    boolean executableSet = selectedBinary.setExecutable(true, false);
                 
+                selectedBinary = copyFileToBinDirectory(uri);
+                if (selectedBinary != null) {
+                    
+                    boolean executableSet = selectedBinary.setExecutable(true, false);
                     if (!executableSet) {
                         try {
                             Process chmod = Runtime.getRuntime().exec("chmod 755 " + selectedBinary.getAbsolutePath());
                             chmod.waitFor();
                         } catch (Exception e) {
-                    
+                            
                         }
                     }
                     if (selectedBinary.canExecute()) {
@@ -202,8 +201,8 @@ public class exec extends Activity {
     }
 
     @Nullable
-    private File copyFileToInternalStorage(Uri uri) {
-        File directory = new File(getFilesDir(), "binaries");
+    private File copyFileToBinDirectory(Uri uri) {
+        File directory = getDir("bin", MODE_PRIVATE);
         if (!directory.exists() && !directory.mkdirs()) {
             runOnUiThread(() -> webView.evaluateJavascript(
                     "javascript:showToast('ディレクトリ作成に失敗しました。')", null));
