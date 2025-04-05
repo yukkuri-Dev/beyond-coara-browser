@@ -73,7 +73,7 @@ public class exec extends Activity {
                             Process chmod = Runtime.getRuntime().exec("chmod 755 " + selectedBinary.getAbsolutePath());
                             chmod.waitFor();
                         } catch (Exception e) {
-                            // 必要に応じて例外処理
+                    
                         }
                     }
                     if (selectedBinary.canExecute()) {
