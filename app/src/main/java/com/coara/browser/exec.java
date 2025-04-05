@@ -73,16 +73,15 @@ public class exec extends Activity {
             Uri uri = data.getData();
             if (uri != null) {
                 
-                selectedBinary = copyFileToBinDirectory(uri);
+                selectedBinary = copyFileToDataDirectory(uri);
                 if (selectedBinary != null) {
-                    
                     boolean executableSet = selectedBinary.setExecutable(true, false);
                     if (!executableSet) {
                         try {
                             Process chmod = Runtime.getRuntime().exec("chmod 755 " + selectedBinary.getAbsolutePath());
                             chmod.waitFor();
                         } catch (Exception e) {
-                            
+                        
                         }
                     }
                     if (selectedBinary.canExecute()) {
@@ -200,9 +199,11 @@ public class exec extends Activity {
                     .replace("\r", "");
     }
 
+
     @Nullable
-    private File copyFileToBinDirectory(Uri uri) {
-        File directory = getDir("bin", MODE_PRIVATE);
+    private File copyFileToDataDirectory(Uri uri) {
+        
+        File directory = new File(getApplicationInfo().dataDir, "bin");
         if (!directory.exists() && !directory.mkdirs()) {
             runOnUiThread(() -> webView.evaluateJavascript(
                     "javascript:showToast('ディレクトリ作成に失敗しました。')", null));
