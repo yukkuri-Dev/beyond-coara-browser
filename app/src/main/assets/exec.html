@@ -29,43 +29,30 @@
     }
   </style>
   <script type="text/javascript">
-
     function showToast(message) {
       alert(message);
     }
-  
     function appendOutput(message) {
       document.getElementById('output').innerText += message;
     }
-    
     function clearOutput() {
       document.getElementById('output').innerText = "";
     }
-    
     function executeCommand() {
       var command = document.getElementById('command').value;
-      if (command.trim() === "") {
-        showToast("コマンドを入力してください。");
-        return;
-      }
       clearOutput();
       Android.executeCommand(command);
     }
-  
     function clearBinary() {
       Android.clearBinary();
     }
-    
     function stopCommand() {
       Android.stopCommand();
     }
-
     function toggleKeyboard() {
       Android.toggleKeyboard();
     }
-  
     function pickBinary() {
-    
       document.getElementById('filePicker').click();
     }
   </script>
@@ -73,7 +60,7 @@
 <body>
   <h1>ExecApp</h1>
   <div>
-    <input type="text" id="command" placeholder="実行するコマンドを入力" />
+    <input type="text" id="command" placeholder="実行するコマンドを入力（バイナリが選択されていれば省略可）" />
     <button onclick="executeCommand()">実行</button>
   </div>
   <div>
@@ -82,7 +69,6 @@
     <button onclick="stopCommand()">強制停止</button>
     <button onclick="toggleKeyboard()">キーボード切替</button>
   </div>
-  
   <input type="file" id="filePicker" style="display:none" accept="*/*" />
   <h2>出力</h2>
   <div id="output"></div>
