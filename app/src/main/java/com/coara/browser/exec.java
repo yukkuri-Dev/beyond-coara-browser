@@ -52,7 +52,6 @@ public class exec extends Activity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
 
-    
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> filePathCallback,
@@ -65,7 +64,6 @@ public class exec extends Activity {
                 return true;
             }
         });
-        
         webView.addJavascriptInterface(new JSInterface(), "Android");
         webView.loadUrl("file:///android_asset/exec.html");
     }
@@ -76,13 +74,26 @@ public class exec extends Activity {
             Uri uri = data.getData();
             if (uri != null) {
                 selectedBinary = copyFileToInternalStorage(uri);
-                if (selectedBinary != null && selectedBinary.setExecutable(true)) {
-                    runOnUiThread(() -> webView.evaluateJavascript(
-                            "javascript:showToast('バイナリが選択され、実行権限が付与されました: " 
-                            + escapeForJS(selectedBinary.getAbsolutePath()) + "')", null));
-                } else {
-                    runOnUiThread(() -> webView.evaluateJavascript(
-                            "javascript:showToast('バイナリ選択または実行権限付与に失敗しました。')", null));
+                if (selectedBinary != null) {
+            
+                    boolean executableSet = selectedBinary.setExecutable(true, false);
+                
+                    if (!executableSet) {
+                        try {
+                            Process chmod = Runtime.getRuntime().exec("chmod 755 " + selectedBinary.getAbsolutePath());
+                            chmod.waitFor();
+                        } catch (Exception e) {
+                    
+                        }
+                    }
+                    if (selectedBinary.canExecute()) {
+                        runOnUiThread(() -> webView.evaluateJavascript(
+                                "javascript:showToast('バイナリが選択され、実行権限が付与されました: " 
+                                + escapeForJS(selectedBinary.getAbsolutePath()) + "')", null));
+                    } else {
+                        runOnUiThread(() -> webView.evaluateJavascript(
+                                "javascript:showToast('バイナリ選択または実行権限付与に失敗しました。')", null));
+                    }
                 }
             }
             if (filePathCallback != null) {
@@ -97,13 +108,11 @@ public class exec extends Activity {
     public class JSInterface {
         @JavascriptInterface
         public void executeCommand(String command) {
-        
             if (command.trim().isEmpty() && (selectedBinary == null || !selectedBinary.exists())) {
                 runOnUiThread(() -> webView.evaluateJavascript(
                         "javascript:showToast('コマンドまたはバイナリを指定してください。')", null));
                 return;
             }
-            
             if (selectedBinary != null && selectedBinary.exists()) {
                 command = selectedBinary.getAbsolutePath() + (command.trim().isEmpty() ? "" : " " + command);
             }
@@ -146,7 +155,6 @@ public class exec extends Activity {
             currentProcess = Runtime.getRuntime().exec(command);
             StringBuilder outputBuilder = new StringBuilder();
 
-        
             timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
             timeoutExecutor.schedule(() -> {
                 if (currentProcess.isAlive()) {
@@ -173,7 +181,6 @@ public class exec extends Activity {
                         runOnUiThread(() -> webView.evaluateJavascript(
                                 "javascript:appendOutput('ERROR: " + escapeForJS(finalErrorLine) + "\\n')", null));
                     }
-                
                     saveLogToFile(command, outputBuilder.toString());
                 } catch (IOException e) {
                     runOnUiThread(() -> webView.evaluateJavascript(
