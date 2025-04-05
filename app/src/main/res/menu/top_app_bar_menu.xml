@@ -29,12 +29,12 @@
             <item android:id="@+id/action_asciiart" android:title="画像→TXT" />
             <item android:id="@+id/action_pgdl" android:title="ページ保存" />
             <item android:id="@+id/action_num" android:title="電卓" />
+            <item android:id="@+id/action_exec" android:title="exec" />
             <item android:id="@+id/action_grep" android:title="grep-i/md5" />
             <item android:id="@+id/action_qr" android:title="QRコード" />
         </menu>
     </item>
 
-    <!-- タブ管理 -->
     <group>
         <item android:id="@+id/action_tabs" android:title="タブ一覧" />
         <item android:id="@+id/action_clear_tabs" android:title="タブをクリア" />
