@@ -1536,6 +1536,8 @@ public class MainActivity extends AppCompatActivity {
             }
         } else if (id == R.id.action_Settings) {
             startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+        } else if (id == R.id.action_exec) {
+            startActivity(new Intent(MainActivity.this, exec.class));
         } else if (id == R.id.action_downloads) {
             startActivity(new Intent(MainActivity.this, DownloadHistoryActivity.class));
         } else if (id == R.id.action_qr) {
