@@ -6,26 +6,19 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
-import android.view.inputmethod.InputMethodManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-
 import androidx.annotation.Nullable;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -72,8 +65,7 @@ public class exec extends Activity {
         if (requestCode == FILE_CHOOSER_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (uri != null) {
-                
-                selectedBinary = copyFileToDataDirectory(uri);
+                selectedBinary = copyFileToCacheDirectory(uri);
                 if (selectedBinary != null) {
                     boolean executableSet = selectedBinary.setExecutable(true, false);
                     if (!executableSet) {
@@ -81,7 +73,7 @@ public class exec extends Activity {
                             Process chmod = Runtime.getRuntime().exec("chmod 755 " + selectedBinary.getAbsolutePath());
                             chmod.waitFor();
                         } catch (Exception e) {
-                        
+                            // 必要に応じて例外処理
                         }
                     }
                     if (selectedBinary.canExecute()) {
@@ -135,16 +127,6 @@ public class exec extends Activity {
                         "javascript:showToast('実行中のプロセスはありません。')", null));
             }
         }
-
-        @JavascriptInterface
-        public void toggleKeyboard() {
-            runOnUiThread(() -> {
-                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-                if (imm != null) {
-                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-                }
-            });
-        }
     }
 
     private void executeCommandInternal(String command) {
@@ -179,7 +161,6 @@ public class exec extends Activity {
                         runOnUiThread(() -> webView.evaluateJavascript(
                                 "javascript:appendOutput('ERROR: " + escapeForJS(finalErrorLine) + "\\n')", null));
                     }
-                    saveLogToFile(command, outputBuilder.toString());
                 } catch (IOException e) {
                     runOnUiThread(() -> webView.evaluateJavascript(
                             "javascript:appendOutput('ERROR: " + escapeForJS(e.getMessage()) + "\\n')", null));
@@ -199,11 +180,8 @@ public class exec extends Activity {
                     .replace("\r", "");
     }
 
-
-    @Nullable
-    private File copyFileToDataDirectory(Uri uri) {
-        
-        File directory = new File(getApplicationInfo().dataDir, "bin");
+    private File copyFileToCacheDirectory(Uri uri) {
+        File directory = getCacheDir();
         if (!directory.exists() && !directory.mkdirs()) {
             runOnUiThread(() -> webView.evaluateJavascript(
                     "javascript:showToast('ディレクトリ作成に失敗しました。')", null));
@@ -248,22 +226,5 @@ public class exec extends Activity {
             }
         }
         return result;
-    }
-
-    private void saveLogToFile(String command, String logContent) {
-        File directory = new File(getExternalFilesDir(null), "command_logs");
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String fileName = command.replaceAll("[^a-zA-Z0-9]", "_") + "_" + timeStamp + ".txt";
-        File logFile = new File(directory, fileName);
-        try (FileOutputStream fos = new FileOutputStream(logFile);
-             OutputStreamWriter writer = new OutputStreamWriter(fos)) {
-            writer.write(logContent);
-        } catch (Exception e) {
-            runOnUiThread(() -> webView.evaluateJavascript(
-                    "javascript:showToast('ログ保存中にエラー: " + escapeForJS(e.getMessage()) + "')", null));
-        }
     }
 }
