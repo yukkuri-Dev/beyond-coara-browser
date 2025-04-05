@@ -69,6 +69,11 @@
             android:exported="true" />
         
         <activity
+            android:name=".exec"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true" />
+        
+        <activity
             android:name=".htmlview"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="true" />
