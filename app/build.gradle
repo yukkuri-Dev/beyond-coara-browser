@@ -7,8 +7,8 @@ android {
     namespace = 'com.coara.browser'
 
     defaultConfig {
-        minSdk = 23
-        targetSdk = 23
+        minSdk = 24
+        targetSdk = 31
         versionCode = 191
         versionName = "4.1.23"
         multiDexEnabled = true
