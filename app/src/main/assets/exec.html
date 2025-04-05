@@ -43,29 +43,18 @@
       clearOutput();
       Android.executeCommand(command);
     }
-    function clearBinary() {
-      Android.clearBinary();
-    }
     function stopCommand() {
       Android.stopCommand();
-    }
-    function pickBinary() {
-      document.getElementById('filePicker').click();
     }
   </script>
 </head>
 <body>
   <h1>ExecApp</h1>
   <div>
-    <input type="text" id="command" placeholder="実行するコマンドを入力（バイナリが選択されていれば省略可）" />
+    <input type="text" id="command" placeholder="実行するコマンドを入力" />
     <button onclick="executeCommand()">実行</button>
-  </div>
-  <div>
-    <button onclick="pickBinary()">バイナリ選択</button>
-    <button onclick="clearBinary()">バイナリ解除</button>
     <button onclick="stopCommand()">強制停止</button>
   </div>
-  <input type="file" id="filePicker" style="display:none" accept="*/*" />
   <h2>出力</h2>
   <div id="output"></div>
 </body>
