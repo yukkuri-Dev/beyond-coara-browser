@@ -39,6 +39,9 @@ public class SettingsActivity extends AppCompatActivity {
         settingsList.add(new SettingItem("端末情報", "デバイスの(getprop)情報を表示", this::showDeviceInfo));
         settingsList.add(new SettingItem("アプリバージョン", getAppVersion(), null));
         settingsList.add(new SettingItem("ライセンス", "利用規約を表示", this::showLicense));
+
+        settingsList.add(new SettingItem("Beyond Version","1.0.0",null));
+        settingsList.add(new SettingItem("⚠テストコードが含まれています",null,null));
         settingsList.add(new SettingItem("Created by","coara-chocomaru",null));
         settingsList.add(new SettingItem("Forked and Tweaked by","CloverTech1105",null));
         adapter = new SettingsAdapter(settingsList);

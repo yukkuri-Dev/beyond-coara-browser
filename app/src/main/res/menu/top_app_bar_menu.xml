@@ -68,4 +68,11 @@
         <item android:id="@+id/action_clear_history" android:title="完全履歴消去" />
     </group>
 
+    <item android:title="Beyond Tools">
+        <menu>
+            <item android:id="@+id/TestCall" android:title="TestCall"/>
+
+
+        </menu>
+    </item>
 </menu>
