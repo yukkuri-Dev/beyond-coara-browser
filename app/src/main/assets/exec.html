@@ -49,9 +49,6 @@
     function stopCommand() {
       Android.stopCommand();
     }
-    function toggleKeyboard() {
-      Android.toggleKeyboard();
-    }
     function pickBinary() {
       document.getElementById('filePicker').click();
     }
@@ -67,7 +64,6 @@
     <button onclick="pickBinary()">バイナリ選択</button>
     <button onclick="clearBinary()">バイナリ解除</button>
     <button onclick="stopCommand()">強制停止</button>
-    <button onclick="toggleKeyboard()">キーボード切替</button>
   </div>
   <input type="file" id="filePicker" style="display:none" accept="*/*" />
   <h2>出力</h2>
