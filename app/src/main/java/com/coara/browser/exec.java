@@ -44,7 +44,6 @@ public class exec extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    
         setContentView(R.layout.exec);
 
         webView = findViewById(R.id.webview);
@@ -53,6 +52,7 @@ public class exec extends Activity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
 
+    
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> filePathCallback,
@@ -65,11 +65,11 @@ public class exec extends Activity {
                 return true;
             }
         });
+        
         webView.addJavascriptInterface(new JSInterface(), "Android");
         webView.loadUrl("file:///android_asset/exec.html");
     }
 
-    
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == FILE_CHOOSER_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
@@ -97,8 +97,15 @@ public class exec extends Activity {
     public class JSInterface {
         @JavascriptInterface
         public void executeCommand(String command) {
+        
+            if (command.trim().isEmpty() && (selectedBinary == null || !selectedBinary.exists())) {
+                runOnUiThread(() -> webView.evaluateJavascript(
+                        "javascript:showToast('コマンドまたはバイナリを指定してください。')", null));
+                return;
+            }
+            
             if (selectedBinary != null && selectedBinary.exists()) {
-                command = selectedBinary.getAbsolutePath() + " " + command;
+                command = selectedBinary.getAbsolutePath() + (command.trim().isEmpty() ? "" : " " + command);
             }
             executeCommandInternal(command);
         }
@@ -132,13 +139,14 @@ public class exec extends Activity {
             });
         }
     }
+
     private void executeCommandInternal(String command) {
         runOnUiThread(() -> webView.evaluateJavascript("javascript:clearOutput()", null));
         try {
             currentProcess = Runtime.getRuntime().exec(command);
             StringBuilder outputBuilder = new StringBuilder();
 
-            
+        
             timeoutExecutor = Executors.newSingleThreadScheduledExecutor();
             timeoutExecutor.schedule(() -> {
                 if (currentProcess.isAlive()) {
@@ -165,6 +173,7 @@ public class exec extends Activity {
                         runOnUiThread(() -> webView.evaluateJavascript(
                                 "javascript:appendOutput('ERROR: " + escapeForJS(finalErrorLine) + "\\n')", null));
                     }
+                
                     saveLogToFile(command, outputBuilder.toString());
                 } catch (IOException e) {
                     runOnUiThread(() -> webView.evaluateJavascript(
@@ -177,7 +186,6 @@ public class exec extends Activity {
         }
     }
 
-    
     private String escapeForJS(String input) {
         if (input == null) return "";
         return input.replace("\\", "\\\\")
@@ -212,6 +220,7 @@ public class exec extends Activity {
             return null;
         }
     }
+
     private String getFileName(Uri uri) {
         String result = null;
         if ("content".equals(uri.getScheme())) {
@@ -245,8 +254,6 @@ public class exec extends Activity {
         try (FileOutputStream fos = new FileOutputStream(logFile);
              OutputStreamWriter writer = new OutputStreamWriter(fos)) {
             writer.write(logContent);
-            runOnUiThread(() -> webView.evaluateJavascript(
-                    "javascript:showToast('ログが保存されました: " + escapeForJS(logFile.getAbsolutePath()) + "')", null));
         } catch (Exception e) {
             runOnUiThread(() -> webView.evaluateJavascript(
                     "javascript:showToast('ログ保存中にエラー: " + escapeForJS(e.getMessage()) + "')", null));
