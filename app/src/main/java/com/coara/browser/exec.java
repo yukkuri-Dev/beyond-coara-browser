@@ -57,7 +57,7 @@ public class exec extends Activity {
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> filePathCallback,
                                                FileChooserParams fileChooserParams) {
-                MainActivity.this.filePathCallback = filePathCallback;
+                exec.this.filePathCallback = filePathCallback;
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("*/*");
