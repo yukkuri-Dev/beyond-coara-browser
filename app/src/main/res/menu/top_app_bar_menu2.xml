@@ -22,7 +22,7 @@
     <item android:title="ツール">
         <menu>
             <item android:id="@+id/action_basic_auth" android:title="basicモード" android:checkable="true" />
-            <item android:id="@+id/action_Secret" android:title="シークレットモード" />
+            <item android:id="@+id/action_Secret" android:title="シークレットモード解除" />
             <item android:id="@+id/action_find_in_page" android:title="ページ内検索" />
             <item android:id="@+id/action_txtphoto" android:title="TXT→画像" />
             <item android:id="@+id/action_htmlview" android:title="htmlview" />
