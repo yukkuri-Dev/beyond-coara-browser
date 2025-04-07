@@ -44,11 +44,6 @@ android {
     lint {
         disable += ['ExpiredTargetSdkVersion', 'NewApi', 'Range', 'SetTextI18n', 'ScopedStorage', 'FieldCanBeLocal', 'GradleDependency']
     }
-
-    buildFeatures {
-        viewBinding true
-    }
-    
     packagingOptions {
         excludes += "DebugProbesKt.bin"
     }
