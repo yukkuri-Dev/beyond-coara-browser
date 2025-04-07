@@ -232,7 +232,7 @@ public class SecretActivity extends AppCompatActivity {
             WebView.setDataDirectorySuffix("SecretActivity");
         }
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.Secret_main);
 
         createNotificationChannel();
 
