@@ -67,7 +67,7 @@
             android:name=".SecretActivity"
             android:process=":Secret_webview"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:exported="false" />
+            android:exported="true" />
 
         <activity
             android:name=".grepmd5appActivity"
