@@ -39,12 +39,12 @@
    - 著作権: © The Android Open Source Project
 
 8. **WebKit for Android**  
-   - アーティファクト: `androidx.webkit:webkit:1.12.1`  
+   - アーティファクト: `androidx.webkit:webkit:1.13.0`  
    - ライセンス: Apache License, Version 2.0  
    - 著作権: © The Android Open Source Project
 
 9. **AndroidX Activity**  
-   - アーティファクト: `androidx.activity:activity:1.9.3`  
+   - アーティファクト: `androidx.activity:activity:1.10.1`  
    - ライセンス: Apache License, Version 2.0  
    - 著作権: © The Android Open Source Project
 
@@ -54,7 +54,7 @@
     - 著作権: © ZXing authors
 
 11. **Markwon**  
-    - アーティファクト: `io.noties:markwon:4.6.2`  
+    - アーティファクト: `io.noties:markwon`  
     - ライセンス: Apache License, Version 2.0  
     - 著作権: © Noties
 
