@@ -1544,9 +1544,7 @@ public class MainActivity extends AppCompatActivity {
         } else if (id == R.id.action_Settings) {
             startActivity(new Intent(MainActivity.this, SettingsActivity.class));
         } else if (id == R.id.action_Secret) {
-         Intent intent = new Intent(MainActivity.this, SecretActivity.class);
-         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-         startActivity(intent);
+            startActivity(new Intent(MainActivity.this, SecretActivity.class));
         } else if (id == R.id.action_exec) {
             startActivity(new Intent(MainActivity.this, exec.class));
         } else if (id == R.id.action_downloads) {
