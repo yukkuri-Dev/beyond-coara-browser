@@ -65,7 +65,7 @@
     - アーティファクト: `io.noties.markwon:core`  
     - 公式サイト: [noties GitHub]([https://github.com/zxing/zxing](https://github.com/noties/Markwon?tab=readme-ov-file))  
     - ライセンス: Apache License, Version 2.0  
-    - 著作権: © noties authors
+    - 著作権: © Dimitry Ivanov
       
 12. **Android SDKライセンス**  
     - Android SDKに関する詳細なライセンス情報は下記を参照してください。  
