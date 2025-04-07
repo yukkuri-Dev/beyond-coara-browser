@@ -716,7 +716,6 @@ public class SecretActivity extends AppCompatActivity {
     }
     CookieManager cookieManager = CookieManager.getInstance();
     cookieManager.setAcceptCookie(false);
-    } 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setOffscreenPreRaster(true);
         }
