@@ -1029,9 +1029,16 @@ public class MainActivity extends AppCompatActivity {
                         injectLazyLoading(view);
                     }, 1000);
                 }
-                if (view == getCurrentWebView()) {
-                    urlEditText.setText(url);
-                }
+                if (url.equals(START_PAGE)) {
+        
+                  faviconImageView.setVisibility(View.GONE);
+                  urlEditText.setText("");
+               } else {
+                 faviconImageView.setVisibility(View.VISIBLE);
+              if (view == getCurrentWebView()) {
+                  urlEditText.setText(url);
+                 }
+               }
                 if (!isBackNavigation) {
                     if (historyItems.size() > currentHistoryIndex + 1) {
                         historyItems.subList(currentHistoryIndex + 1, historyItems.size()).clear();
