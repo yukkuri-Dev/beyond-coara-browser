@@ -228,19 +228,16 @@ public class SecretActivity extends AppCompatActivity {
     }
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            WebView.setDataDirectorySuffix("SecretActivity");
-        }
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.secret_main);
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.secret_main);
 
-        createNotificationChannel();
+    createNotificationChannel();
 
-        toolbar = findViewById(R.id.topAppBar);
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("");
-        }
+    toolbar = findViewById(R.id.topAppBar);
+    setSupportActionBar(toolbar);
+    if (getSupportActionBar() != null) {
+        getSupportActionBar().setTitle("");
+    }
 
         pref = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         checkSentinelAndClearTabsIfNecessary();
