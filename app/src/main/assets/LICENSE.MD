@@ -58,16 +58,26 @@
     - ライセンス: Apache License, Version 2.0  
     - 著作権: © Noties
 
-12. **Android SDKライセンス**  
+12. **ProfileInstaller**  
+    - アーティファクト: `androidx.profileinstaller:profileinstaller` 
+    - ライセンス: Apache License, Version 2.0  
+    - 著作権: © The Android Open Source Project
+    
+13. **androidx.startup**  
+    - アーティファクト: `androidx.startup:startup-runtime`  
+    - ライセンス: Apache License, Version 2.0  
+    - 著作権: © The Android Open Source Project
+
+14. **Android SDKライセンス**  
     - Android SDKに関する詳細なライセンス情報は(developer.android.com)をご覧下さい。
 
 ## 商標通知
 
-13. **Android™** は Google LLC の商標です。
+15. **Android™** は Google LLC の商標です。
 
 ---
 
-以上の13項目がライセンス情報です。  
+以上の15項目がライセンス情報です。  
 各ライブラリの詳細なライセンス情報および利用条件については、各ライブラリの配布物に含まれるファイルをご確認ください。
 
 ---
