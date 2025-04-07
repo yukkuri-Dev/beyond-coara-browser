@@ -72,8 +72,8 @@
     - 公式サイト: [AndroidX Activity](https://developer.android.com/jetpa)  
     - ライセンス: Apache License, Version 2.0  
     - 著作権: © The Android Open Source Project
-
-13 **androidx.startup**  
+    
+13. **androidx.startup**  
     - アーティファクト: `androidx.startup:startup-runtime`  
     - 公式サイト: [AndroidX Activity](https://developer.android.com/jetpack/androidx/releases/startup?hl=ja)  
     - ライセンス: Apache License, Version 2.0  
