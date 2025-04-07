@@ -716,7 +716,7 @@ public class SecretActivity extends AppCompatActivity {
     }
     CookieManager cookieManager = CookieManager.getInstance();
     cookieManager.setAcceptCookie(false);
-    }
+    } 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setOffscreenPreRaster(true);
         }
@@ -738,9 +738,6 @@ public class SecretActivity extends AppCompatActivity {
 
     private WebView createNewWebView() {
         WebView webView;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-             cookieManager.setAcceptThirdPartyCookies(webView, false);
-        } 
         if (preloadedWebView != null) {
             webView = preloadedWebView;
             preloadedWebView = null;
