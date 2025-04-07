@@ -60,7 +60,7 @@ tasks.withType(JavaCompile).configureEach {
 
 dependencies {
     implementation 'androidx.startup:startup-runtime:1.2.0'
-    implementation 'androidx.profileinstaller:1.1.0'
+    implementation 'androidx.profileinstaller:1.4.1'
     implementation "io.noties.markwon:core:4.6.2"
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'androidx.appcompat:appcompat:1.7.0'
