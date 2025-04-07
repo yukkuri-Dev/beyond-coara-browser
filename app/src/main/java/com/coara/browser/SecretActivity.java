@@ -1755,6 +1755,8 @@ public class SecretActivity extends AppCompatActivity {
         webView.clearHistory();
         webView.clearFormData();
     }
+    clearPageCache();
+    clearTabs();
     WebViewDatabase.getInstance(this).clearHttpAuthUsernamePassword();
     WebViewDatabase.getInstance(this).clearFormData();
 
