@@ -19,6 +19,7 @@
             </menu>
         </item>
     </group>
+
     <item android:title="ツール">
         <menu>
             <item android:id="@+id/action_basic_auth" android:title="basicモード" android:checkable="true" />
