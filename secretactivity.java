@@ -1039,7 +1039,6 @@ public class MainActivity extends AppCompatActivity {
                     }, 1000);
                 }
                 if (url.equals(START_PAGE)) {
-        
                   faviconImageView.setVisibility(View.GONE);
                   urlEditText.setText("");
                } else {
@@ -1058,7 +1057,7 @@ public class MainActivity extends AppCompatActivity {
                             historyItems.remove(0);
                         }
                         currentHistoryIndex = historyItems.size() - 1;
-                        saveHistory();
+                        view.clearHistory();
                     }
                 } else {
                     isBackNavigation = false;
