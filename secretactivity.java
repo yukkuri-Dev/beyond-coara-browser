@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_HISTORY = "history";
     private static final String APPEND_STR = " CoaraBrowser";
     private static final String CHANNEL_ID = "download_channel";
-    private static final String START_PAGE = "file:///android_asset/index.html";
+    private static final String START_PAGE = "file:///android_asset/secret.html";
     private static final int FILE_SELECT_CODE = 1001;
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
@@ -714,6 +714,9 @@ public class MainActivity extends AppCompatActivity {
     settings.setBuiltInZoomControls(false);
     settings.setSupportZoom(false);
     settings.setMediaPlaybackRequiresUserGesture(true);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        WebView.setWebContentsDebuggingEnabled(false);
+    }
     CookieManager cookieManager = CookieManager.getInstance();
     cookieManager.setAcceptCookie(false);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
