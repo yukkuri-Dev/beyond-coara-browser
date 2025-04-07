@@ -1762,8 +1762,6 @@ public class SecretActivity extends AppCompatActivity {
     cookieManager.removeAllCookies(null);
     cookieManager.flush();
 
-    clearApplicationCache();
-
     SharedPreferences secretPrefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
     secretPrefs.edit()
             .remove(KEY_HISTORY)
@@ -1775,28 +1773,6 @@ public class SecretActivity extends AppCompatActivity {
     startActivity(intent);
 
     finish();
-    }
-    private void clearApplicationCache() {
-    try {
-        File dir = getCacheDir();
-        deleteDir(dir);
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-   }
-    private boolean deleteDir(File dir) {
-    if (dir != null && dir.isDirectory()) {
-        String[] children = dir.list();
-        if (children != null) {
-            for (String child : children) {
-                boolean success = deleteDir(new File(dir, child));
-                if (!success) {
-                    return false;
-                }
-            }
-        }
-    }
-    return dir.delete();
     }
     private void applyNegapoji() {
         String js = "javascript:(function() {" +
