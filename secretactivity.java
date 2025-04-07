@@ -110,7 +110,7 @@ import java.util.regex.Pattern;
 public class MainActivity extends AppCompatActivity {
 
     private static final Pattern CACHE_MODE_PATTERN = Pattern.compile("(^|[/.])(?:(chatx2|chatx|chat|auth|nicovideo|login|disk|cgi|session|cloud))($|[/.])", Pattern.CASE_INSENSITIVE);
-    private static final String PREF_NAME = "AdvancedBrowserPrefs";
+    private static final String PREF_NAME = "SecretBrowserPrefs";
     private static final String KEY_CURRENT_TAB_ID = "current_tab_id";
     private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_BASIC_AUTH = "basic_auth";
@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int FILE_SELECT_CODE = 1001;
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
-    private static final String SENTINEL_FILENAME = "cache_sentinel.txt";
+    private static final String SENTINEL_FILENAME = "secret_cache_sentinel.txt";
     private static Method sSetSaveFormDataMethod;
     private static Method sSetDatabaseEnabledMethod;
     private static Method sSetAppCacheEnabledMethod;
