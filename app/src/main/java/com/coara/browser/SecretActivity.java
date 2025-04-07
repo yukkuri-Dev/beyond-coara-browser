@@ -1503,7 +1503,7 @@ public class SecretActivity extends AppCompatActivity {
 }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.top_app_bar_menu, menu);
+        getMenuInflater().inflate(R.menu.top_app_bar_menu2, menu);
         return true;
     }
     @Override
