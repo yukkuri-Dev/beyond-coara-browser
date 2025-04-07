@@ -1545,6 +1545,9 @@ public class SecretActivity extends AppCompatActivity {
             }
         } else if (id == R.id.action_Settings) {
             startActivity(new Intent(SecretActivity.this, SettingsActivity.class));
+        } else if (id == R.id.action_Secret) {
+            clearSecretDataAndReturnToMain();
+            return true;
         } else if (id == R.id.action_exec) {
             startActivity(new Intent(SecretActivity.this, exec.class));
         } else if (id == R.id.action_downloads) {
@@ -1746,7 +1749,55 @@ public class SecretActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+    private void clearSecretDataAndReturnToMain() {
+    for (WebView webView : webViews) {
+        webView.clearCache(true);
+        webView.clearHistory();
+        webView.clearFormData();
+    }
+    WebViewDatabase.getInstance(this).clearHttpAuthUsernamePassword();
+    WebViewDatabase.getInstance(this).clearFormData();
 
+    CookieManager cookieManager = CookieManager.getInstance();
+    cookieManager.removeAllCookies(null);
+    cookieManager.flush();
+
+    clearApplicationCache();
+
+    SharedPreferences secretPrefs = getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+    secretPrefs.edit()
+            .remove(KEY_HISTORY)
+            .remove(KEY_TABS)
+            .apply();
+
+    Intent intent = new Intent(this, MainActivity.class);
+    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+    startActivity(intent);
+
+    finish();
+    }
+    private void clearApplicationCache() {
+    try {
+        File dir = getCacheDir();
+        deleteDir(dir);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+   }
+    private boolean deleteDir(File dir) {
+    if (dir != null && dir.isDirectory()) {
+        String[] children = dir.list();
+        if (children != null) {
+            for (String child : children) {
+                boolean success = deleteDir(new File(dir, child));
+                if (!success) {
+                    return false;
+                }
+            }
+        }
+    }
+    return dir.delete();
+    }
     private void applyNegapoji() {
         String js = "javascript:(function() {" +
                 "document.documentElement.style.filter = 'invert(1)';" +
