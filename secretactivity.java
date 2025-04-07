@@ -698,21 +698,27 @@ public class MainActivity extends AppCompatActivity {
     webView.evaluateJavascript(js, null);
     }
     private void applyOptimizedSettings(WebSettings settings) {
-        settings.setJavaScriptEnabled(true);
-        settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(true);
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
-        settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setDomStorageEnabled(true);
-        settings.setGeolocationEnabled(false);
-        settings.setTextZoom(100);
-        settings.setDisplayZoomControls(false);
-        settings.setBuiltInZoomControls(false);
-        settings.setSupportZoom(false);
-        settings.setMediaPlaybackRequiresUserGesture(true);
+    settings.setJavaScriptEnabled(true);
+    settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+    settings.setAllowFileAccess(true);
+    settings.setAllowContentAccess(true);
+    settings.setLoadWithOverviewMode(true);
+    settings.setUseWideViewPort(true);
+    settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+    settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+    settings.setDomStorageEnabled(false);
+    settings.setSaveFormData(false);
+    settings.setGeolocationEnabled(false);
+    settings.setTextZoom(100);
+    settings.setDisplayZoomControls(false);
+    settings.setBuiltInZoomControls(false);
+    settings.setSupportZoom(false);
+    settings.setMediaPlaybackRequiresUserGesture(true);
+    CookieManager cookieManager = CookieManager.getInstance();
+    cookieManager.setAcceptCookie(false);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+    cookieManager.setAcceptThirdPartyCookies(webView, false);
+    } 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             settings.setOffscreenPreRaster(true);
         }
