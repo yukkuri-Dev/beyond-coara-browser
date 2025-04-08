@@ -395,21 +395,6 @@ public class SecretActivity extends AppCompatActivity {
             }
             return false;
         });
-    private void clear0() {
-        WebView webView = getCurrentWebView();
-    if (webView != null) {
-        webView.clearHistory();
-        webView.clearCache(true);
-        webView.clearFormData();
-        webView.clearSslPreferences();
-        webView.clearMatches();
-      }
-    WebStorage.getInstance().deleteAllData();
-    CookieManager cookieManager = CookieManager.getInstance();
-    cookieManager.removeAllCookies(null);
-    cookieManager.flush();
-     }
-
         btnNewTab.setOnClickListener(v -> createNewTab());
 
         handleIntent(getIntent());
@@ -435,6 +420,20 @@ public class SecretActivity extends AppCompatActivity {
             }
         });
     }
+    private void clear0() {
+        WebView webView = getCurrentWebView();
+    if (webView != null) {
+        webView.clearHistory();
+        webView.clearCache(true);
+        webView.clearFormData();
+        webView.clearSslPreferences();
+        webView.clearMatches();
+      }
+    WebStorage.getInstance().deleteAllData();
+    CookieManager cookieManager = CookieManager.getInstance();
+    cookieManager.removeAllCookies(null);
+    cookieManager.flush();
+     }
     private void saveBundleToFile(Bundle bundle, String fileName) {
         File file = new File(getFilesDir(), fileName);
         Parcel parcel = Parcel.obtain();
