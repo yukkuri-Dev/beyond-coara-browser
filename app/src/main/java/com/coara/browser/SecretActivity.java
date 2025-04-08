@@ -428,6 +428,7 @@ public class SecretActivity extends AppCompatActivity {
         webView.clearFormData();
         webView.clearSslPreferences();
         webView.clearMatches();
+    　  clearTabs();
       }
     WebStorage.getInstance().deleteAllData();
     CookieManager cookieManager = CookieManager.getInstance();
