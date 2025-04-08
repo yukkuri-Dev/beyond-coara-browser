@@ -703,7 +703,7 @@ public class SecretActivity extends AppCompatActivity {
     settings.setUseWideViewPort(true);
     settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
     settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-    settings.setDomStorageEnabled(false);
+    settings.setDomStorageEnabled(true);
     settings.setSaveFormData(false);
     settings.setGeolocationEnabled(false);
     settings.setTextZoom(100);
