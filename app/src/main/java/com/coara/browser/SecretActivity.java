@@ -232,7 +232,25 @@ public class SecretActivity extends AppCompatActivity {
     boolean shouldClear = getIntent()
             .getBooleanExtra(MainActivity.EXTRA_CLEAR_HISTORY, false);
         if (shouldClear) {
-            clearHistory();
+            WebView current = getCurrentWebView();
+                current.clearHistory();
+            historyItems.clear();
+            saveHistory();
+            clearWebStorage();
+            clearPageCache();
+            clearTabs();
+            WebViewDatabase.getInstance(SecretActivity.this).clearFormData();
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.removeAllCookies(null);
+            cookieManager.flush();
+            urlEditText.setInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_URI | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            urlEditText.setRawInputType(EditorInfo.TYPE_CLASS_TEXT | EditorInfo.TYPE_TEXT_VARIATION_URI | EditorInfo.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            urlEditText.setPrivateImeOptions("nm");
+            urlEditText.setAutofillHints("");
+            urlEditText.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+            String currentText = urlEditText.getText().toString();
+            urlEditText.setText("");
+            urlEditText.setText(currentText);
     }
     setContentView(R.layout.secret_main);
 
