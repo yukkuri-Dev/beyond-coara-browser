@@ -1699,6 +1699,9 @@ public class MainActivity extends AppCompatActivity {
             if (current != null) {
                 current.clearHistory();
             }
+            WebStorage.getInstance().deleteAllData();
+            webView.clearSslPreferences();
+            webView.clearMatches();
             historyItems.clear();
             saveHistory();
             clearWebStorage();
