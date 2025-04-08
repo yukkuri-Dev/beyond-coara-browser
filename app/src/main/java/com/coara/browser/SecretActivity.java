@@ -1018,7 +1018,7 @@ public class SecretActivity extends AppCompatActivity {
                 if (isMatched) {
                     view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
                 } else {
-                    view.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+                    view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
                 }
                 urlEditText.setText(url);
                 super.onPageStarted(view, url, favicon);
