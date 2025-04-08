@@ -233,7 +233,6 @@ public class SecretActivity extends AppCompatActivity {
             .getBooleanExtra(MainActivity.EXTRA_CLEAR_HISTORY, false);
         if (shouldClear) {
             clearHistory();
-        }
     setContentView(R.layout.secret_main);
 
     createNotificationChannel();
