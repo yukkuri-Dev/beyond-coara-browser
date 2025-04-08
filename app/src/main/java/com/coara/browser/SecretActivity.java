@@ -229,6 +229,11 @@ public class SecretActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    boolean shouldClear = getIntent()
+            .getBooleanExtra(MainActivity.EXTRA_CLEAR_HISTORY, false);
+        if (shouldClear) {
+            clearHistory();
+        }
     setContentView(R.layout.secret_main);
 
     createNotificationChannel();
