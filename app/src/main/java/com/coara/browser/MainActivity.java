@@ -131,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int MAX_TABS = 30;
     private static final int MAX_HISTORY_SIZE = 100;
     private static final String SENTINEL_FILENAME = "cache_sentinel.txt";
+    public static final String EXTRA_CLEAR_HISTORY ="com.coara.browser.EXTRA_CLEAR_HISTORY";
+
     private static Method sSetSaveFormDataMethod;
     private static Method sSetDatabaseEnabledMethod;
     private static Method sSetAppCacheEnabledMethod;
@@ -1547,9 +1549,10 @@ public class MainActivity extends AppCompatActivity {
         } else if (id == R.id.action_Settings) {
             startActivity(new Intent(MainActivity.this, SettingsActivity.class));
         } else if (id == R.id.action_Secret) {
-         Intent intent = new Intent(MainActivity.this, SecretActivity.class);
-         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-         startActivity(intent);
+            Intent intent = new Intent(MainActivity.this, SecretActivity.class);
+            intent.putExtra(EXTRA_CLEAR_HISTORY, true);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
         } else if (id == R.id.action_exec) {
             startActivity(new Intent(MainActivity.this, exec.class));
         } else if (id == R.id.action_downloads) {
