@@ -229,11 +229,6 @@ public class SecretActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    boolean shouldClear = getIntent()
-            .getBooleanExtra(MainActivity.EXTRA_CLEAR_HISTORY, false);
-        if (shouldClear) {
-            clear0();
-    }
     setContentView(R.layout.secret_main);
 
     createNotificationChannel();
@@ -294,6 +289,11 @@ public class SecretActivity extends AppCompatActivity {
             initialWebView.loadUrl(START_PAGE);
         }
         updateTabCount();
+        boolean shouldClear = getIntent()
+            .getBooleanExtra(MainActivity.EXTRA_CLEAR_HISTORY, false);
+        if (shouldClear) {
+            clear0();
+       }
 
         preInitializeWebView();
         if (!defaultLoadsImagesAutomaticallyInitialized && !webViews.isEmpty()) {
