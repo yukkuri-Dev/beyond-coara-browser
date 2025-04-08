@@ -1699,13 +1699,11 @@ public class MainActivity extends AppCompatActivity {
             if (current != null) {
                 current.clearHistory();
             }
-            WebStorage.getInstance().deleteAllData();
-            webView.clearSslPreferences();
-            webView.clearMatches();
             historyItems.clear();
             saveHistory();
             clearWebStorage();
             clearPageCache();
+            clearSSL();
             clearTabs();
             WebViewDatabase.getInstance(MainActivity.this).clearFormData();
             CookieManager cookieManager = CookieManager.getInstance();
@@ -1790,6 +1788,12 @@ public class MainActivity extends AppCompatActivity {
             webView.clearCache(true);
         }
     }
+    private void clearSSL() {
+        for (WebView webView : webViews) {
+            webView.clearSslPreferences();
+            webView.clearMatches();
+        }
+    }
 
     private void clearTabs() {
         WebView current = getCurrentWebView();
@@ -1806,7 +1810,6 @@ public class MainActivity extends AppCompatActivity {
         webViewContainer.addView(current);
         updateTabCount();
     }
-
     private void takeScreenshot() {
     View rootView = getWindow().getDecorView().getRootView();
     int width = rootView.getWidth();
