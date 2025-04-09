@@ -1232,6 +1232,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             getCurrentWebView().loadUrl(START_PAGE);
         }
+    });
     private void closeTab(WebView webView) {
         int index = webViews.indexOf(webView);
         if (index != -1) {
