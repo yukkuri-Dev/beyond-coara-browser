@@ -456,16 +456,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleIntent(Intent intent) {
-        if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
-            Uri data = intent.getData();
-            if (data != null) {
-                String url = data.toString();
-                createNewTab(url);
-                getCurrentWebView().setTag("external");
+    if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
+        Uri data = intent.getData();
+        if (data != null) {
+            String url = data.toString();
+        
+            if (!url.startsWith("http://") 
+                && !url.startsWith("https://") 
+                && !url.startsWith("intent:")) {
+                url = "http://" + url;
             }
-            setIntent(new Intent());
+        
+            WebView current = getCurrentWebView();
+            if (current == null) {
+                current = createNewWebView();
+                webViews.add(current);
+                currentTabIndex = 0;
+                webViewContainer.addView(current);
+            }
+            current.loadUrl(url);
+            current.setTag("external");
         }
+        setIntent(new Intent());
     }
+}
 
     @Override
     protected void onNewIntent(Intent intent) {
