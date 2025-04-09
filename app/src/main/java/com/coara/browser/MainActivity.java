@@ -456,30 +456,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleIntent(Intent intent) {
-    if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
-        Uri data = intent.getData();
-        if (data != null) {
-            String url = data.toString();
-        
-            if (!url.startsWith("http://") 
-                && !url.startsWith("https://") 
-                && !url.startsWith("intent:")) {
-                url = "http://" + url;
+        if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
+            Uri data = intent.getData();
+            if (data != null) {
+                String url = data.toString();
+                createNewTab(url);
+                getCurrentWebView().setTag("external");
             }
-        
-            WebView current = getCurrentWebView();
-            if (current == null) {
-                current = createNewWebView();
-                webViews.add(current);
-                currentTabIndex = 0;
-                webViewContainer.addView(current);
-            }
-            current.loadUrl(url);
-            current.setTag("external");
+            setIntent(new Intent());
         }
-        setIntent(new Intent());
     }
-}
 
     @Override
     protected void onNewIntent(Intent intent) {
@@ -500,28 +486,46 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void saveTabsState() {
-        JSONArray tabsArray = new JSONArray();
-        for (WebView webView : webViews) {
-            int id = (int) webView.getTag();
-            String url = webView.getUrl();
-            if (url == null) url = "";
-            JSONObject tabObj = new JSONObject();
-            try {
-                tabObj.put("id", id);
-                tabObj.put("url", url);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            tabsArray.put(tabObj);
-            Bundle state = new Bundle();
-            webView.saveState(state);
-            saveBundleToFile(state, "tab_state_" + id + ".dat");
+    JSONArray tabsArray = new JSONArray();
+    for (WebView webView : webViews) {
+        Object tag = webView.getTag();
+        int id;
+        if (tag instanceof Integer) {
+            id = (Integer) tag;
+        } else {
+            id = nextTabId++;
+            webView.setTag(id);
         }
-        int currentTabId = (int) getCurrentWebView().getTag();
-        pref.edit()
-            .putString(KEY_TABS, tabsArray.toString())
-            .putInt(KEY_CURRENT_TAB_ID, currentTabId)
-            .apply();
+        String url = webView.getUrl();
+        if (url == null) {
+            url = "";
+        }
+        JSONObject tabObj = new JSONObject();
+        try {
+            tabObj.put("id", id);
+            tabObj.put("url", url);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        tabsArray.put(tabObj);
+        
+        Bundle state = new Bundle();
+        webView.saveState(state);
+        saveBundleToFile(state, "tab_state_" + id + ".dat");
+        }
+        Object currentTag = getCurrentWebView().getTag();
+        int currentTabId;
+    if (currentTag instanceof Integer) {
+        currentTabId = (Integer) currentTag;
+     } else {
+       currentTabId = nextTabId++;
+       getCurrentWebView().setTag(currentTabId);
+     }
+
+     pref.edit()
+    .putString(KEY_TABS, tabsArray.toString())
+    .putInt(KEY_CURRENT_TAB_ID, currentTabId)
+    .apply();
     }
     private void loadTabsState() {
         String tabsJsonStr = pref.getString(KEY_TABS, "[]");
@@ -1227,15 +1231,12 @@ public class MainActivity extends AppCompatActivity {
                 handleDownload(url, userAgent, contentDisposition, mimeType, contentLength);
             }
             if ("external".equals(getCurrentWebView().getTag())) {
-             if (webViews.size() > 1) {
                 closeTab(getCurrentWebView());
-            } else {
-               getCurrentWebView().loadUrl(START_PAGE);
             }
-          }
         });
         return webView;
     }
+
     private void closeTab(WebView webView) {
         int index = webViews.indexOf(webView);
         if (index != -1) {
