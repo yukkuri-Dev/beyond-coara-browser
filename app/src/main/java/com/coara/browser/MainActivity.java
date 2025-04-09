@@ -454,6 +454,37 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
     }
+    @Override
+    public void onHideCustomView() {
+                if (customView == null) {
+                    return;
+                }
+                FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+                decor.removeView(customView);
+                customView = null;
+                if (customViewCallback != null) {
+                    customViewCallback.onCustomViewHidden();
+                    customViewCallback = null;
+                }
+                webViewContainer.setVisibility(View.VISIBLE);
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            }
+        });
+
+        webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+         if (url.startsWith("blob:")) {
+        handleBlobDownload(url, userAgent, contentDisposition, mimeType, contentLength);
+        } else {
+        handleDownload(url, userAgent, contentDisposition, mimeType, contentLength);
+        }
+         if ("external".equals(getCurrentWebView().getTag())) {
+         if (webViews.size() > 1) {
+            closeTab(getCurrentWebView());
+        } else {
+            getCurrentWebView().loadUrl(START_PAGE);
+        }
+    }
+    });
 
     private void handleIntent(Intent intent) {
     if (intent != null && Intent.ACTION_VIEW.equals(intent.getAction())) {
@@ -1203,37 +1234,7 @@ public class MainActivity extends AppCompatActivity {
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             }
-            @Override
-            public void onHideCustomView() {
-                if (customView == null) {
-                    return;
-                }
-                FrameLayout decor = (FrameLayout) getWindow().getDecorView();
-                decor.removeView(customView);
-                customView = null;
-                if (customViewCallback != null) {
-                    customViewCallback.onCustomViewHidden();
-                    customViewCallback = null;
-                }
-                webViewContainer.setVisibility(View.VISIBLE);
-                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-            }
-        });
-
-        webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
-         if (url.startsWith("blob:")) {
-        handleBlobDownload(url, userAgent, contentDisposition, mimeType, contentLength);
-        } else {
-        handleDownload(url, userAgent, contentDisposition, mimeType, contentLength);
-        }
-         if ("external".equals(getCurrentWebView().getTag())) {
-         if (webViews.size() > 1) {
-            closeTab(getCurrentWebView());
-        } else {
-            getCurrentWebView().loadUrl(START_PAGE);
-        }
-    }
-    });
+           
     private void closeTab(WebView webView) {
         int index = webViews.indexOf(webView);
         if (index != -1) {
