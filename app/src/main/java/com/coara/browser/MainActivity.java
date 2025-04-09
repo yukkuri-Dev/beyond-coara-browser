@@ -1221,18 +1221,19 @@ public class MainActivity extends AppCompatActivity {
         });
 
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
-            if (url.startsWith("blob:")) {
-                handleBlobDownload(url, userAgent, contentDisposition, mimeType, contentLength);
-            } else {
-                handleDownload(url, userAgent, contentDisposition, mimeType, contentLength);
-            }
-            if ("external".equals(getCurrentWebView().getTag())) {
-                closeTab(getCurrentWebView());
-            }
-        });
-        return webView;
+         if (url.startsWith("blob:")) {
+        handleBlobDownload(url, userAgent, contentDisposition, mimeType, contentLength);
+        } else {
+        handleDownload(url, userAgent, contentDisposition, mimeType, contentLength);
+        }
+         if ("external".equals(getCurrentWebView().getTag())) {
+         if (webViews.size() > 1) {
+            closeTab(getCurrentWebView());
+        } else {
+            getCurrentWebView().loadUrl(START_PAGE);
+        }
     }
-
+});
     private void closeTab(WebView webView) {
         int index = webViews.indexOf(webView);
         if (index != -1) {
